@@ -6,7 +6,7 @@ import ForgotPasswordEvaluator from '../views/Login/LoginEvaluator/ForgotPasswor
 import EvaluatorRegistration from '../views/Login/LoginEvaluator/EvaluatorRegistration.vue'
 // ==================== กลุ่ม Login/Administrator ====================
 import LoginAdministrator from '../views/Login/LoginAdministrator/LoginAdministrator.vue'
-
+import ForgotPasswordAdministrator from '../views/Login/LoginAdministrator/ForgotPasswordAdministrator.vue'
 const routes = [
   // ==================== กลุ่ม Login/Evaluator ====================
   {
@@ -30,6 +30,11 @@ const routes = [
     path: '/login-administrator',
     name: 'LoginAdministrator',
     component: LoginAdministrator
+  },
+  {
+    path: '/forgot-password-administrator',
+    name: 'ForgotPasswordAdministrator',
+    component: ForgotPasswordAdministrator
   }
 ]
 

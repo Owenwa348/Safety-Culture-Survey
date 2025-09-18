@@ -1,3 +1,4 @@
+<!-- LoginAdministrator -->
 <template>
   <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
     <div class="w-full max-w-md bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-8 border border-white/20 relative overflow-hidden">
@@ -183,7 +184,7 @@
         <!-- Forgot Password Link -->
         <div class="text-center pt-4 border-t border-gray-100 mt-4">
           <router-link
-            to="/forgot-password-owner-safety"
+            to="/forgot-password-administrator"
             class="text-blue-600 hover:text-blue-700 font-medium hover:underline transition-all duration-200 text-sm"
           >
             ลืมรหัสผ่าน?
@@ -193,7 +194,7 @@
         to="/"
         class="text-blue-600 hover:text-blue-700 font-medium hover:underline transition-all duration-200"
       >
-        กลับไปหน้าเข้าสู่ระบบคู่ธุรกิจ
+        กลับไปหน้าเข้าผู้ประเมิน
       </router-link>
       </form>
     </div>
@@ -215,10 +216,9 @@ const emailMessage = ref('')
 
 // Mock database - ในการใช้งานจริงควรเรียก API
 const mockDatabase = [
-  { email: 'administrator01@gmail.com', hasPassword: true, password: '123456', role: 'administrator' },//ผู้ดูแลระบบ
-  { email: 'safety01@gmail.com', hasPassword: true, password: '123456', role: 'safety' },//Admin
-  { email: 'administrator02@gmail.com', hasPassword: false, role: 'administrator' },//ผู้ดูแลระบบ
-  { email: 'safety02@gmail.com', hasPassword: false, role: 'safety' },//Admin
+  { email: 'superadmin01@gmail.com', hasPassword: true, password: '123456', role: 'superadmin' },//ผู้ดูแลระบบ
+  { email: 'admin01@gmail.com', hasPassword: true, password: '123456', role: 'admin' },//Admin
+  { email: 'admin02@gmail.com', hasPassword: false, role: 'admin' },//Admin
 ]
 
 // Computed properties
@@ -279,14 +279,11 @@ const handleLogin = () => {
     
     // Role-based routing
     switch (user.role) {
-      case 'administrator':
+      case 'superadmin':
         router.push('/caretaker-user-management')
         break
-      case 'safety':
+      case 'admin':
         router.push('/list-employees')
-        break
-      case 'manager':
-        router.push('/approval-officer')
         break
       default:
         router.push('/list-employees') // fallback

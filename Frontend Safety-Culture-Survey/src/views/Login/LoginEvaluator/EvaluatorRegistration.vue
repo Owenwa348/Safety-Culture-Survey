@@ -1,3 +1,4 @@
+<!-- EvaluatorRegistration -->
 <template>
   <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
     <div class="w-full max-w-2xl bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
