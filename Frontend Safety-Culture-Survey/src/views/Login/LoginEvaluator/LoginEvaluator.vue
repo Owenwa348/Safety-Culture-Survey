@@ -225,11 +225,11 @@ const handleLogin = () => {
   }
 
   // Use auth composable to login
-  login('contractor', {
-    email: user.email,
-    role: "contractor"
-  });
-  
-  router.push("/manage-team");
+  // login('contractor', {
+  //   email: user.email,
+  //   role: "contractor"
+  // });
+
+  router.push("/home");
 };
 </script>

@@ -8,10 +8,16 @@ import EvaluatorRegistration from '../views/Login/LoginEvaluator/EvaluatorRegist
 import LoginAdministrator from '../views/Login/LoginAdministrator/LoginAdministrator.vue'
 import ForgotPasswordAdministrator from '../views/Login/LoginAdministrator/ForgotPasswordAdministrator.vue'
 
+//=============================หน้าผู้ประเมิน=============================
+import Home from '../views/Assessor/Home.vue'
+
+//=============================Dashboard=============================
+import Dashboard from '../views/Dashboard/Dashboard.vue'
+
 // Not Found
 import NotFound from '../views/other/NotFound.vue'
 const routes = [
-  // ==================== กลุ่ม Login/Evaluator ====================
+// ==================== กลุ่ม Login/Evaluator ====================
   {
     path: '/',
     name: 'LoginEvaluator',
@@ -27,7 +33,6 @@ const routes = [
     name: 'EvaluatorRegistration',
     component: EvaluatorRegistration
   },
-
   // ==================== กลุ่ม Login/Administrator ====================
   {
     path: '/login-administrator',
@@ -39,9 +44,21 @@ const routes = [
     name: 'ForgotPasswordAdministrator',
     component: ForgotPasswordAdministrator
   },
+//=============================หน้าผู้ประเมิน=============================
+  {
+    path: '/home',
+    name: 'Home',
+    component: Home
+  },
 
+  //=============================Dashboard=============================
+  {
+    path: '/dashboard',
+    name: 'Dashboard',
+    component: Dashboard
+  },
 
-  // Not Found
+  //========================== Not Found==============================
   {
     path: '/:catchAll(.*)',
     name: 'NotFound',
