@@ -1,5 +1,5 @@
 <script setup>
-import NavbarDashboard from '../../../components/NavbarDashboard.vue'
+import NavbarDashboard from '../../../components/NavbarDashboard.vue';
 </script>
 
 <template>

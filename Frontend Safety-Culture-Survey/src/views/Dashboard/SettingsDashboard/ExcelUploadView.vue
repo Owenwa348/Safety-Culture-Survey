@@ -161,7 +161,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import NavbarDashboard from '../../../components/NavbarDashboard.vue'
+import NavbarDashboard from '../../../components/NavbarDashboard.vue';
 import axios from 'axios'
 
 const file = ref(null)

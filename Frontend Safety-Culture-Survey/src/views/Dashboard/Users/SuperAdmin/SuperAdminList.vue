@@ -229,12 +229,12 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
-import AddSuperAdminForm from './AddSuperAdminForm.vue'; // ✅ เอา comment ออก
+import AddSuperAdminForm from './AddSuperAdminForm.vue'; 
 import NavbarDashboard from '../../../../components/NavbarDashboard.vue';
 
 const showForm = ref(false);
 const showDetailModal = ref(false);
-const admins = ref([]); // ✅ ให้ default เป็น empty array
+const admins = ref([]); // ให้ default เป็น empty array
 const search = ref('');
 const roleFilter = ref('all');
 const selectedAdmin = ref(null);
@@ -243,11 +243,11 @@ const selectedAdmin = ref(null);
 async function fetchAdmins() {
   try {
     const { data } = await axios.get('/api/admin');
-    // ✅ ตรวจสอบว่า data เป็น array หรือไม่
+    //  ตรวจสอบว่า data เป็น array หรือไม่
     admins.value = Array.isArray(data) ? data : [];
   } catch (error) {
     console.error('Failed to fetch admins:', error);
-    // ✅ กรณี error ให้ set เป็น empty array
+    //  กรณี error ให้ set เป็น empty array
     admins.value = [];
     alert('ไม่สามารถโหลดข้อมูลผู้ดูแลได้');
   }
@@ -348,12 +348,12 @@ const inactiveCount = computed(() => {
 });
 
 const filteredAdmins = computed(() => {
-  // ✅ ตรวจสอบให้แน่ใจว่า admins.value เป็น array
+  //  ตรวจสอบให้แน่ใจว่า admins.value เป็น array
   if (!Array.isArray(admins.value)) {
     return [];
   }
 
-  let filtered = [...admins.value]; // ✅ สร้าง copy ของ array
+  let filtered = [...admins.value]; //  สร้าง copy ของ array
 
   // Filter by role
   if (roleFilter.value !== 'all') {
