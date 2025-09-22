@@ -1,0 +1,391 @@
+<!-- LoginAdministrator -->
+<template>
+  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+    <div class="w-full max-w-md bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-8 border border-white/20 relative overflow-hidden">
+      
+      <!-- Background decoration -->
+      <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-200/30 to-purple-200/30 rounded-full -translate-y-16 translate-x-16"></div>
+      <div class="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-indigo-200/30 to-blue-200/30 rounded-full translate-y-12 -translate-x-12"></div>
+      
+      <!-- Header -->
+      <div class="text-center mb-8 relative z-10">
+        <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg">
+          <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+          </svg>
+        </div>
+        <h1 class="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-2">
+          เข้าสู่ระบบ
+        </h1>
+        <p class="text-gray-500 text-sm">สำหรับบุคลากรภายใน</p>
+      </div>
+
+      <!-- Error Alert -->
+      <div v-if="errorMessage" class="mb-6 bg-red-50 border border-red-200 rounded-xl p-4">
+        <div class="flex items-center space-x-2 text-red-800">
+          <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+          </svg>
+          <span class="text-sm font-medium">{{ errorMessage }}</span>
+        </div>
+      </div>
+
+      <form @submit.prevent="handleLogin" class="space-y-6 relative z-10">
+        
+        <!-- Email Field -->
+        <div class="space-y-2">
+          <label class="block text-sm font-semibold text-gray-700">อีเมล</label>
+          <div class="relative group">
+            <input
+              v-model="email"
+              type="email"
+              placeholder="example@company.com"
+              :class="[
+                'w-full border-2 rounded-xl px-4 py-3 pl-12 transition-all duration-300',
+                'focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500',
+                'group-hover:border-gray-300',
+                emailStatus === 'invalid' ? 'border-red-300 bg-red-50' : 
+                emailStatus === 'no-password' ? 'border-amber-300 bg-amber-50' : 
+                emailStatus === 'valid' ? 'border-green-300 bg-green-50' : 'border-gray-200'
+              ]"
+              @input="resetEmailStatus"
+              required
+            />
+            <div class="absolute inset-y-0 left-0 flex items-center pl-4">
+              <svg class="w-5 h-5 text-gray-400 group-hover:text-gray-500 transition-colors duration-200" 
+                   fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"></path>
+              </svg>
+            </div>
+            
+            <!-- Status icon -->
+            <div v-if="emailStatus" class="absolute inset-y-0 right-0 flex items-center pr-4">
+              <svg v-if="emailStatus === 'valid'" class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+              </svg>
+              <svg v-else-if="emailStatus === 'no-password'" class="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+              </svg>
+              <svg v-else-if="emailStatus === 'invalid'" class="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+              </svg>
+            </div>
+          </div>
+          
+          <!-- Email Status Messages -->
+          <div v-if="emailMessage" class="mt-2">
+            <div v-if="emailStatus === 'invalid'" 
+                 class="flex items-center space-x-2 text-red-600 bg-red-50 px-3 py-2 rounded-lg border border-red-200">
+              <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+              </svg>
+              <span class="text-sm font-medium">{{ emailMessage }}</span>
+            </div>
+            
+            <div v-else-if="emailStatus === 'no-password'" 
+                 class="flex items-center space-x-2 text-amber-700 bg-amber-50 px-3 py-2 rounded-lg border border-amber-200">
+              <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+              </svg>
+              <span class="text-sm font-medium">{{ emailMessage }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Password Field -->
+        <div class="space-y-2" v-show="showPasswordField">
+          <label class="block text-sm font-semibold text-gray-700">รหัสผ่าน</label>
+          <div class="relative group">
+            <input
+              v-model="password"
+              :type="showPassword ? 'text' : 'password'"
+              placeholder="ระบุรหัสผ่าน"
+              :disabled="emailStatus !== 'valid'"
+              class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 pl-12 pr-12 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 group-hover:border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              required
+            />
+            <div class="absolute inset-y-0 left-0 flex items-center pl-4">
+              <svg class="w-5 h-5 text-gray-400 group-hover:text-gray-500 transition-colors duration-200" 
+                   fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+              </svg>
+            </div>
+            
+            <!-- Toggle Password Visibility -->
+            <button
+              type="button"
+              @click="showPassword = !showPassword"
+              :disabled="emailStatus !== 'valid'"
+              class="absolute inset-y-0 right-0 flex items-center pr-4 disabled:opacity-50"
+            >
+              <svg v-if="showPassword" class="w-5 h-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"></path>
+              </svg>
+              <svg v-else class="w-5 h-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Check Email Button -->
+        <button
+          type="button"
+          @click="checkEmail"
+          :disabled="!email || isLoading"
+          :class="[
+            'w-full py-3 px-6 rounded-xl font-semibold text-lg transition-all duration-300 transform mb-4',
+            'focus:outline-none focus:ring-4 focus:ring-blue-100 relative overflow-hidden',
+            (email && !isLoading)
+              ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:scale-[1.02] hover:shadow-xl hover:from-indigo-700 hover:to-purple-700' 
+              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          ]"
+        >
+          <span class="flex items-center justify-center gap-2">
+            <svg v-if="!isLoading" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <svg v-else class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            {{ isLoading ? 'กำลังตรวจสอบ...' : 'ตรวจสอบอีเมล' }}
+          </span>
+        </button>
+
+        <!-- Submit Button -->
+        <button
+          type="submit"
+          v-show="emailStatus === 'valid'"
+          :disabled="!canSubmit || isLoading"
+          :class="[
+            'w-full py-3 px-6 rounded-xl font-semibold text-lg transition-all duration-300 transform',
+            'focus:outline-none focus:ring-4 focus:ring-blue-100 relative overflow-hidden',
+            (canSubmit && !isLoading)
+              ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:scale-[1.02] hover:shadow-xl hover:from-blue-700 hover:to-indigo-700' 
+              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          ]"
+        >
+          <span class="flex items-center justify-center gap-2">
+            <svg v-if="!isLoading" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+            </svg>
+            <svg v-else class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            {{ isLoading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ' }}
+          </span>
+          
+          <!-- Button shine effect -->
+          <div v-if="canSubmit && !isLoading" class="absolute inset-0 -top-1 -bottom-1 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+        </button>
+
+        <!-- Links -->
+        <div class="space-y-3 pt-6 border-t border-gray-100" v-if="emailStatus === 'no-password'">
+          <p class="text-sm text-center">
+            <span class="text-gray-500">ยังไม่มีรหัสผ่าน? </span>
+            <router-link
+              :to="`/setpasswordownerandsafety?email=${encodeURIComponent(email)}`"
+              class="text-blue-600 hover:text-blue-700 font-medium hover:underline transition-all duration-200 relative"
+            >
+              ตั้งรหัสผ่านที่นี่
+              <span class="absolute inset-x-0 bottom-0 h-px bg-blue-600 transform scale-x-0 transition-transform duration-200 hover:scale-x-100"></span>
+            </router-link>
+          </p>
+        </div>
+        
+        <!-- Forgot Password Link -->
+        <div class="text-center pt-4 border-t border-gray-100 mt-4">
+          <router-link
+            to="/forgot-password-administrator"
+            class="text-blue-600 hover:text-blue-700 font-medium hover:underline transition-all duration-200 text-sm"
+          >
+            ลืมรหัสผ่าน?
+          </router-link>
+        </div>
+        
+        <div class="text-center">
+          <router-link
+            to="/"
+            class="text-blue-600 hover:text-blue-700 font-medium hover:underline transition-all duration-200 text-sm"
+          >
+            กลับไปหน้าเข้าผู้ประเมิน
+          </router-link>
+        </div>
+      </form>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
+// เพิ่ม import สำหรับ auth composable (ปรับตามโครงสร้างโปรเจคของคุณ)
+// import { useAuth } from '@/composables/useAuth'
+
+const router = useRouter()
+// const { login } = useAuth() // uncomment เมื่อมี auth composable
+
+// Reactive data
+const email = ref('')
+const password = ref('')
+const showPassword = ref(false)
+const emailStatus = ref(null) // null, 'valid', 'no-password', 'invalid'
+const emailMessage = ref('')
+const errorMessage = ref('')
+const isLoading = ref(false)
+
+// Mock database - ในการใช้งานจริงควรเรียก API
+const mockDatabase = [
+  { email: 'superadmin01@gmail.com', hasPassword: true, password: '123456', role: 'superadmin' }, //ผู้ดูแลระบบ
+  { email: 'admin01@gmail.com', hasPassword: true, password: '123456', role: 'admin' }, //Admin
+  { email: 'admin02@gmail.com', hasPassword: false, role: 'admin' }, //Admin
+]
+
+// Computed properties
+const showPasswordField = computed(() => {
+  return emailStatus.value === 'valid'
+})
+
+const canSubmit = computed(() => {
+  return emailStatus.value === 'valid' && email.value && password.value && !isLoading.value
+})
+
+// Methods
+const checkEmail = async () => {
+  if (!email.value) {
+    resetEmailStatus()
+    return
+  }
+  
+  isLoading.value = true
+  errorMessage.value = ''
+  
+  try {
+    // จำลอง API call delay
+    await new Promise(resolve => setTimeout(resolve, 800))
+    
+    // จำลองการตรวจสอบอีเมลในระบบ
+    const user = mockDatabase.find(u => u.email.toLowerCase() === email.value.toLowerCase())
+    
+    if (!user) {
+      // อีเมลไม่มีในระบบ
+      emailStatus.value = 'invalid'
+      emailMessage.value = 'อีเมลของท่านไม่มีในระบบ'
+    } else if (!user.hasPassword) {
+      // มีอีเมลแต่ยังไม่ได้ตั้งรหัสผ่าน
+      emailStatus.value = 'no-password'
+      emailMessage.value = 'กรุณาตั้งรหัสผ่านของท่าน'
+    } else {
+      // มีอีเมลและมีรหัสผ่านแล้ว
+      emailStatus.value = 'valid'
+      emailMessage.value = ''
+      // Auto focus ไปที่ password field
+      setTimeout(() => {
+        const passwordInput = document.querySelector('input[type="password"], input[type="text"][placeholder="ระบุรหัสผ่าน"]')
+        if (passwordInput) passwordInput.focus()
+      }, 100)
+    }
+  } catch (error) {
+    errorMessage.value = 'เกิดข้อผิดพลาดในการตรวจสอบอีเมล กรุณาลองใหม่อีกครั้ง'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const resetEmailStatus = () => {
+  emailStatus.value = null
+  emailMessage.value = ''
+  password.value = ''
+  errorMessage.value = ''
+}
+
+const handleLogin = async () => {
+  if (!canSubmit.value) return
+  
+  isLoading.value = true
+  errorMessage.value = ''
+  
+  try {
+    // จำลอง API call delay
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    
+    // ตรวจสอบรหัสผ่าน
+    const user = mockDatabase.find(u => u.email.toLowerCase() === email.value.toLowerCase())
+    
+    if (user && user.hasPassword && user.password === password.value) {
+      // ถ้ามี auth composable ให้ uncomment บรรทัดข้างล่าง
+      // await login('internal', {
+      //   email: email.value,
+      //   role: user.role
+      // })
+      
+      // จำลองการ login สำเร็จ (เก็บข้อมูลใน localStorage ชั่วคราว)
+      localStorage.setItem('user', JSON.stringify({
+        email: email.value,
+        role: user.role,
+        loginType: 'internal'
+      }))
+      
+      console.log('เข้าสู่ระบบสำเร็จ:', email.value, 'Role:', user.role)
+      
+      // Role-based routing
+      switch (user.role) {
+        case 'superadmin':
+          router.push('/caretaker-user-management')
+          break
+        case 'admin':
+          router.push('/dashboard')
+          break
+        default:
+          router.push('/dashboard') // fallback
+      }
+    } else {
+      // รหัสผ่านไม่ถูกต้อง
+      errorMessage.value = 'รหัสผ่านไม่ถูกต้อง กรุณาตรวจสอบและลองใหม่อีกครั้ง'
+      // เคลียร์รหัสผ่าน
+      password.value = ''
+      // Focus กลับไปที่ password field
+      setTimeout(() => {
+        const passwordInput = document.querySelector('input[type="password"], input[type="text"][placeholder="ระบุรหัสผ่าน"]')
+        if (passwordInput) passwordInput.focus()
+      }, 100)
+    }
+  } catch (error) {
+    errorMessage.value = 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ กรุณาลองใหม่อีกครั้ง'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// Auto check email on blur
+const onEmailBlur = () => {
+  if (email.value && !emailStatus.value) {
+    checkEmail()
+  }
+}
+</script>
+
+<style scoped>
+/* Additional custom styles if needed */
+.group:hover .group-hover\:translate-x-full {
+  transform: translateX(100%);
+}
+
+/* Loading animation */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+</style>
