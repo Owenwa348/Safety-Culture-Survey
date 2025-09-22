@@ -1,6 +1,6 @@
 <script setup>
 import UserList from '../Users/UserList.vue';
-import Admin from '../Users/Admin.vue';
+import Admin from './Admin/AdminList.vue';
 </script>
 
 <template>

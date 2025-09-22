@@ -34,7 +34,7 @@ const isOpen = ref(false);
         <!-- ปุ่มหลัก -->
         <div class="flex flex-col sm:flex-row gap-6 justify-center items-center mt-12 animate-fade-in-up">
           <!-- ปุ่มทำแบบประเมิน -->
-          <router-link to="/login" style="color: white;">
+          <router-link to="/assessment" style="color: white;">
             <button
               style="background-color: #7ae2cf"
               class="relative px-8 py-6 rounded-full text-xl font-semibold hover:bg-[#62CFC0] text-[#000000] transition-all duration-300 shadow-2xl transform hover:scale-105 hover:shadow-[#7ae2cf]/25 overflow-hidden group"

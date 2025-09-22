@@ -10,9 +10,21 @@ import ForgotPasswordAdministrator from '../views/Login/LoginAdministrator/Forgo
 
 //=============================หน้าผู้ประเมิน=============================
 import Home from '../views/Assessor/Home.vue'
+import AboutUs from '../views/Assessor/PageAboutUs/AboutUs.vue'
+import Contact from '../views/Assessor/PageContact/Contact.vue'
+import Assessment from '../views/Assessor/PageAssessment/Assessment.vue'
 
-//=============================Dashboard=============================
+//=============================Dashboard Admin =============================
 import Dashboard from '../views/Dashboard/Dashboard.vue'
+import UserList from '../views/Dashboard/Users/UserList.vue'
+import PositionResults from '../views/Dashboard/Analytics/PositionResults.vue'
+import QuestionResults from '../views/Dashboard/Analytics/QuestionResults.vue'
+
+//=============================Dashboard Superadmin =============================
+import ExcelUploadView from '../views/Dashboard/SettingsDashboard/ExcelUploadView.vue'
+import SettingsView from '../views/Dashboard/SettingsDashboard/SettingsView.vue'
+import Admin from '../views/Dashboard/Users/Admin/AdminList.vue'
+import SuperAdmin from '../views/Dashboard/Users/SuperAdmin/SuperAdminList.vue'
 
 // Not Found
 import NotFound from '../views/other/NotFound.vue'
@@ -50,12 +62,69 @@ const routes = [
     name: 'Home',
     component: Home
   },
+  {
+    path: '/about',
+    name: 'AboutUs',
+    component: AboutUs
+  },
+  {
+    path: '/contact',
+    name: 'Contact',
+    component: Contact
+  },
+  {
+    path: '/assessment',
+    name: 'Assessment',
+    component: Assessment
+  },
+  {
+  path: '/team/:id',
+  name: 'TeamMemberProfile',
+  component: () => import('../views/Assessor/PageAboutUs/TeamMemberProfile.vue'),
+  props: true
+  },
 
-  //=============================Dashboard=============================
+  //=============================Dashboard Adnim=============================
   {
     path: '/dashboard',
     name: 'Dashboard',
     component: Dashboard
+  },
+  {
+    path: '/puestion-results',
+    name: 'PositionResults',
+    component: PositionResults
+  },
+  {
+    path: '/question-results',
+    name: 'QuestionResults',
+    component: QuestionResults
+  },
+  {
+    path: '/user-list',
+    name: 'UserList',
+    component: UserList
+  },
+  //========================== Dashboard Superadmin =============================
+  {
+    path: '/settings',
+    name: 'SettingsView',
+    component: SettingsView
+  },
+  {
+    path: '/admin',
+    name: 'Admin',
+    component: Admin
+  },
+  {
+    path: '/superadmin',
+    name: 'SuperAdmin',
+    component: SuperAdmin
+  },
+  {
+    path: '/excelupload',
+    name: 'ExcelUploadView',
+    component: ExcelUploadView
   },
 
   //========================== Not Found==============================

@@ -1,173 +1,270 @@
 <template>
-  <div class="min-h-screen bg-[#0A2A3A] text-white">
-    <!-- Navbar -->
-    <nav class="bg-gradient-to-r from-[#06202B] to-[#0A2A3A] shadow-lg border-b border-gray-700 sticky top-0 z-50 backdrop-blur-sm">
-      <div class="w-full px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center h-16">
-          <!-- Logo + Toggle -->
-          <div class="flex items-center">
-            <button @click="sidebarOpen = !sidebarOpen" class="mr-4 lg:hidden p-2 rounded-lg hover:bg-white/10">
-              <span class="block w-5 h-0.5 bg-white mb-1"></span>
-              <span class="block w-5 h-0.5 bg-white mb-1"></span>
-              <span class="block w-5 h-0.5 bg-white"></span>
-            </button>
-            <router-link to="/Home" class="flex items-center">
-              <img src="/logoandname.png" alt="Logo" class="h-10 w-auto drop-shadow-lg" />
-            </router-link>
-          </div>
+  <nav class="fixed top-0 left-0 h-full w-60 z-50 bg-[#06202B] backdrop-blur-md shadow-md flex flex-col">
+    <!-- โลโก้ -->
+    <div class="flex items-center justify-center h-20 border-b border-gray-700">
+      <router-link to="/home" class="flex items-center">
+        <img src="/logoandname.png" alt="Logo" class="h-15 w-40" />
+      </router-link>
+    </div>
 
-          <!-- Right: Notifications + Avatar -->
+    <!-- แถบเลือกเมนู (แนวตั้ง) -->
+    <div class="flex-1 flex flex-col mt-6 space-y-2 px-4">
+      <router-link to="/dashboard"
+        class="text-lg text-white hover:text-white hover:bg-[#7AE2CF] px-3 py-2 rounded-md transition">
+        หน้าหลัก
+      </router-link>
+      
+      <!-- ผลลัพธ์การประเมิน - Dropdown Menu -->
+      <div class="relative">
+        <button 
+          @click="toggleAssessmentMenu"
+          class="w-full text-left text-lg text-white hover:text-white hover:bg-[#7AE2CF] px-3 py-2 rounded-md transition flex items-center justify-between"
+        >
+          <span>ผลลัพธ์การประเมิน</span>
+          <svg class="w-4 h-4 transition-transform duration-200"
+            :class="{ 'rotate-180': isAssessmentMenuOpen }"
+            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        <!-- Assessment Results Dropdown -->
+        <div v-if="isAssessmentMenuOpen"
+          class="mt-1 ml-4 space-y-1 bg-[#0A2A3A] rounded-md shadow-lg border border-gray-600">
+          <router-link to="/puestion-results"
+            class="block text-base text-white hover:text-white hover:bg-[#7AE2CF] px-3 py-2 rounded-md transition">
+            ผลการประเมินแยกตามหน่วยงาน
+          </router-link>
+          <router-link to="/question-results"
+            class="block text-base text-white hover:text-white hover:bg-[#7AE2CF] px-3 py-2 rounded-md transition">
+            ผลประเมินตามข้อคำถาม
+          </router-link>
+        </div>
+      </div>
+
+      <router-link to="/user-list"
+        class="text-lg text-white hover:text-white hover:bg-[#7AE2CF] px-3 py-2 rounded-md transition">
+        รายชื่อผู้ประเมิน
+      </router-link>
+      
+      <!-- ตั้งค่าระบบ - Dropdown Menu -->
+      <div class="relative">
+        <button 
+          @click="toggleSettingsMenu"
+          class="w-full text-left text-lg text-white hover:text-white hover:bg-[#7AE2CF] px-3 py-2 rounded-md transition flex items-center justify-between"
+        >
+          <span>ตั้งค่าระบบ</span>
+          <svg class="w-4 h-4 transition-transform duration-200"
+            :class="{ 'rotate-180': isSettingsMenuOpen }"
+            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        <!-- Settings Dropdown -->
+        <div v-if="isSettingsMenuOpen"
+          class="mt-1 ml-4 space-y-1 bg-[#0A2A3A] rounded-md shadow-lg border border-gray-600">
+          <router-link to="/settings"
+            class="block text-base text-white hover:text-white hover:bg-[#7AE2CF] px-3 py-2 rounded-md transition">
+            ตั้งค่าทั่วไป
+          </router-link>
+          <router-link to="/admin"
+            class="block text-base text-white hover:text-white hover:bg-[#7AE2CF] px-3 py-2 rounded-md transition">
+            จัดการรายชื่อAdmin
+          </router-link>
+          <router-link to="/superadmin"
+            class="block text-base text-white hover:text-white hover:bg-[#7AE2CF] px-3 py-2 rounded-md transition">
+            จัดการรายชื่อsuperadmin
+          </router-link>
+          <router-link to="/excelupload"
+            class="block text-base text-white hover:text-white hover:bg-[#7AE2CF] px-3 py-2 rounded-md transition">
+            อัปโหลดรายชื่อของผู้ประเมิน
+          </router-link>
+        </div>
+      </div>
+    </div>
+
+    <!-- User Profile Dropdown -->
+    <div class="relative border-t border-gray-700 p-1">
+      <button 
+        @click="toggleUserMenu"
+        class="flex items-center w-full text-left space-x-3 text-white hover:bg-white/10 px-3 py-2 rounded-lg transition-colors duration-200"
+      >
+        <!-- Avatar -->
+        <div class="w-10 h-10 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center text-sm font-bold ring-2 ring-white/20">
+          {{ userInitials }}
+        </div>
+        
+        <!-- User Info -->
+        <div class="flex-1">
+          <div class="text-sm font-medium">{{ userData.fullName }}</div>
+          <div class="text-xs text-gray-300">{{ userData.position }}</div>
+        </div>
+
+        <!-- Arrow -->
+        <svg class="w-4 h-4 transition-transform duration-200"
+          :class="{ 'rotate-180': isUserMenuOpen }"
+          fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      <!-- Dropdown -->
+      <div v-if="isUserMenuOpen"
+        class="absolute bottom-16 left-0 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50">
+        
+        <!-- Header -->
+        <div class="px-4 py-3 border-b border-gray-200">
           <div class="flex items-center space-x-3">
-            <button class="p-2 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg relative group">
-              <svg class="w-5 h-5 group-hover:animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-              <span class="absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold shadow-lg animate-pulse">
-                3
-              </span>
-            </button>
-            <div class="w-8 h-8 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center text-sm font-bold ring-2 ring-white/20">
-              JD
+            <div class="w-12 h-12 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold">
+              {{ userInitials }}
+            </div>
+            <div>
+              <div class="font-semibold text-gray-900">{{ userData.fullName }}</div>
             </div>
           </div>
         </div>
-      </div>
-    </nav>
 
-    <!-- Overlay for mobile -->
-    <div v-if="sidebarOpen" @click="sidebarOpen = false" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 lg:hidden"></div>
-
-    <!-- Sidebar -->
-    <aside :class="['lg:translate-x-0 fixed lg:static inset-y-0 right-0 z-40 w-72 transition-all duration-300 ease-out', sidebarOpen ? 'translate-x-0' : 'translate-x-full']">
-      <div class="h-full bg-gradient-to-b from-[#06202B] via-[#0A2A3A] to-[#06202B] backdrop-blur-lg border-l border-white/10 shadow-2xl p-4 space-y-2">
-        <template v-for="item in navItems">
-          <!-- Menu without children -->
-          <button
-            v-if="!item.children"
-            :key="`btn-${item.id}`"
-            @click="selectTab(item.id)"
-            :class="getClass(item.id)"
-          >
-            <svg class="w-5 h-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="item.iconPath" />
-            </svg>
-            {{ item.label }}
-          </button>
-
-          <!-- Menu with children (Dropdown) -->
-          <div v-else :key="`div-${item.id}`">
-            <button @click="toggleExpand(item.id)" :class="getClass(item.id, true)">
-              <svg class="w-5 h-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="item.iconPath" />
-              </svg>
-              {{ item.label }}
-              <svg class="ml-auto w-4 h-4 transition-transform" :class="{ 'rotate-180': expandedMenu === item.id }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7" />
-              </svg>
-            </button>
-
-            <div v-if="expandedMenu === item.id" class="ml-6 mt-1 space-y-1">
-              <button
-                v-for="sub in item.children"
-                :key="sub.id"
-                @click="selectTab(sub.id)"
-                :class="getClass(sub.id)"
-              >
-                <svg v-if="sub.iconPath" class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="sub.iconPath" />
-                </svg>
-                <span v-else class="w-4 h-4 mr-2 flex items-center justify-center text-xs">•</span>
-                {{ sub.label }}
-              </button>
-            </div>
+        <!-- Details -->
+        <div class="px-4 py-3 space-y-2">
+          <div class="flex justify-between items-center">
+            <span class="text-sm font-medium text-gray-600">ชื่อ-สกุล:</span>
+            <span class="text-sm text-gray-900">{{ userData.fullName }}</span>
           </div>
-        </template>
+          <div class="flex justify-between items-center">
+            <span class="text-sm font-medium text-gray-600">บริษัท:</span>
+            <span class="text-sm text-gray-900">{{ userData.company }}</span>
+          </div>
+        </div>
+
+        <!-- Logout -->
+        <div class="border-t border-gray-200 px-4 py-2">
+          <button @click="logout"
+            class="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors duration-200 flex items-center space-x-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            <span>ออกจากระบบ</span>
+          </button>
+        </div>
       </div>
-    </aside>
-  </div>
+    </div>
+  </nav>
 </template>
 
 <script setup>
-import { ref, defineProps } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 
-const props = defineProps({ activeTab: String });
-const emit = defineEmits(['update:activeTab']);
+// Reactive state
+const isUserMenuOpen = ref(false)
+const isAssessmentMenuOpen = ref(false)
+const isSettingsMenuOpen = ref(false)
 
-const sidebarOpen = ref(false);
-const expandedMenu = ref(null);
+// Sample user data - ในการใช้งานจริงควรดึงจาก store หรือ API
+const userData = ref({
+  fullName: 'สมชาย ใจดี',
+  company: 'บริษัท ความปลอดภัย จำกัด',
+})
 
-const toggleExpand = (id) => {
-  expandedMenu.value = expandedMenu.value === id ? null : id;
-};
+// Computed properties
+const userInitials = computed(() => {
+  const names = userData.value.fullName.split(' ')
+  if (names.length >= 2) {
+    return names[0].charAt(0) + names[1].charAt(0)
+  }
+  return names[0].charAt(0) + names[0].charAt(1)
+})
 
-const selectTab = (id) => {
-  emit('update:activeTab', id);
-  sidebarOpen.value = false;
-};
+// Methods
+const toggleUserMenu = () => {
+  isUserMenuOpen.value = !isUserMenuOpen.value
+  // ปิด menus อื่นเมื่อเปิด user menu
+  if (isUserMenuOpen.value) {
+    isAssessmentMenuOpen.value = false
+    isSettingsMenuOpen.value = false
+  }
+}
 
-// SVG path definitions for icons
-const navItems = [
-  { 
-    id: 'Dashboard', 
-    iconPath: "m3 12 2-2m0 0 7-7 7 7M5 10v10a1 1 0 0 0 1 1h3m10-11 2 2m-2-2v10a1 1 0 0 1-1 1h-3m-6 0a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1m-6 0h6", 
-    label: 'หน้าหลัก' 
-  },
-  {
-    id: 'Analytics',
-    iconPath: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
-    label: 'ผลลัพธ์การประเมิน',
-    children: [
-      { id: 'PositionResults', label: 'ผลการประเมินแยกตามหน่วยงาน' },
-      { id: 'Analytics-by-unit', label: 'ผลประเมินตามข้อคำถาม' },
-    ],
-  },
-  { 
-    id: 'Users', 
-    iconPath: "M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m0 0a4 4 0 005-3.803", 
-    label: 'รายชื่อผู้ใช้' 
-  },
-  {
-    id: 'settings',
-    iconPath: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z",
-    label: 'การตั้งค่าระบบ',
-    children: [
-      { 
-        id: 'Admin', 
-        iconPath: "M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m0 0a4 4 0 005-3.803", 
-        label: 'ผู้ดูแลระบบ' 
-      },
-      { 
-        id: 'UploadContacts', 
-        iconPath: "M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12", 
-        label: 'อัปโหลดรายชื่อผู้ตประเมิน' 
-      },
-    ],
-  },
-];
+const toggleAssessmentMenu = () => {
+  isAssessmentMenuOpen.value = !isAssessmentMenuOpen.value
+  // ปิด menus อื่นเมื่อเปิด assessment menu
+  if (isAssessmentMenuOpen.value) {
+    isUserMenuOpen.value = false
+    isSettingsMenuOpen.value = false
+  }
+}
 
-const getClass = (id, isParent = false) => {
-  const baseClasses = 'w-full flex items-center px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 group relative';
-  const activeClasses = 'bg-gradient-to-r from-[#7AE2CF] to-[#5DD4C1] text-black shadow-md scale-105';
-  const inactiveClasses = 'text-gray-300 hover:bg-white/10 hover:text-white';
-  const parentClasses = isParent ? 'justify-between' : '';
+const toggleSettingsMenu = () => {
+  isSettingsMenuOpen.value = !isSettingsMenuOpen.value
+  // ปิด menus อื่นเมื่อเปิด settings menu
+  if (isSettingsMenuOpen.value) {
+    isUserMenuOpen.value = false
+    isAssessmentMenuOpen.value = false
+  }
+}
+
+const closeUserMenu = () => {
+  isUserMenuOpen.value = false
+}
+
+const closeAssessmentMenu = () => {
+  isAssessmentMenuOpen.value = false
+}
+
+const closeSettingsMenu = () => {
+  isSettingsMenuOpen.value = false
+}
+
+const closeAllMenus = () => {
+  isUserMenuOpen.value = false
+  isAssessmentMenuOpen.value = false
+  isSettingsMenuOpen.value = false
+}
+
+const viewProfile = () => {
+  console.log('View profile clicked')
+  closeUserMenu()
+  // Navigate to profile page
+}
+
+const logout = () => {
+  console.log('Logout clicked')
+  closeUserMenu()
+  // Clear user data and navigate to home page
+  window.location.href = '/'
+}
+
+// Click outside to close
+const handleClickOutside = (event) => {
+  const userDropdown = event.target.closest('.relative:last-child')
+  const assessmentDropdown = event.target.closest('.relative:not(:last-child)')
+  const settingsDropdown = event.target.closest('.relative:last-child:not(.border-t)')
   
-  return `${baseClasses} ${props.activeTab === id ? activeClasses : inactiveClasses} ${parentClasses}`;
-};
-</script>
+  if (!userDropdown && !assessmentDropdown && !settingsDropdown) {
+    closeAllMenus()
+  } else {
+    if (!userDropdown && isUserMenuOpen.value) {
+      closeUserMenu()
+    }
+    if (!assessmentDropdown && isAssessmentMenuOpen.value) {
+      closeAssessmentMenu()
+    }
+    if (!settingsDropdown && isSettingsMenuOpen.value) {
+      closeSettingsMenu()
+    }
+  }
+}
 
-<style scoped>
-/* Optional smooth animation */
-nav button {
-  animation: slideIn 0.3s ease-out forwards;
-}
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-</style>
+// Lifecycle hooks
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
+</script>

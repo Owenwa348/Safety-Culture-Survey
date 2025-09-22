@@ -1,7 +1,8 @@
 
 <script setup>
 import { ref, computed } from "vue";
-import StackedBar from "../../../components/StackedBar.vue";
+import StackedBar from "../Showgraph/StackedBar.vue";
+import NavbarDashboard from '../../../components/NavbarDashboard.vue';
 
 const selectedGroup = ref("All");
 const selectedType = ref("ทั้งหมด");
@@ -273,71 +274,94 @@ const timeframeOptions = [
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-b from-gray-50 to-gray-200 p-6">
-    <h1 class="text-3xl font-bold text-center mb-10 text-gray-800">ผลประเมินตามข้อคำถาม</h1>
+  <div class="flex min-h-screen bg-gradient-to-b from-gray-50 to-gray-200">
+    <!-- Sidebar -->
+    <NavbarDashboard />
 
-    <!-- Filters -->
-    <div class="flex flex-wrap justify-center gap-6 mb-10">
-      <div class="flex flex-col">
-        <label class="text-sm text-gray-600 mb-1">เลือกกลุ่ม</label>
-        <select
-          v-model="selectedGroup"
-          class="px-4 py-2 rounded-xl bg-white shadow-sm border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
-        >
-          <option v-for="option in groupOptions" :key="option.value" :value="option.value">
-            {{ option.label }}
-          </option>
-        </select>
-      </div>
+    <!-- Main Content -->
+    <main class="flex-1 ml-60 p-6">
+      <h1 class="text-3xl font-bold text-center mb-10 text-gray-800">
+        ผลประเมินตามข้อคำถาม
+      </h1>
 
-      <div class="flex flex-col">
-        <label class="text-sm text-gray-600 mb-1">ช่วงเวลา</label>
-        <select
-          v-model="selectedTimeframe"
-          class="px-4 py-2 rounded-xl bg-white shadow-sm border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
-        >
-          <option v-for="option in timeframeOptions" :key="option.value" :value="option.value">
-            {{ option.label }}
-          </option>
-        </select>
-      </div>
-    </div>
+      <!-- Filters -->
+      <div class="flex flex-wrap justify-center gap-6 mb-10">
+        <div class="flex flex-col">
+          <label class="text-sm text-gray-600 mb-1">เลือกกลุ่ม</label>
+          <select
+            v-model="selectedGroup"
+            class="px-4 py-2 rounded-xl bg-white shadow-sm border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          >
+            <option
+              v-for="option in groupOptions"
+              :key="option.value"
+              :value="option.value"
+            >
+              {{ option.label }}
+            </option>
+          </select>
+        </div>
 
-    <!-- Combined -->
-    <div v-if="isCombinedView" class="bg-white rounded-2xl shadow-xl p-6 mb-12">
-      <h2 class="text-2xl font-semibold text-blue-600 mb-4">รวมผล (V1 + V2)</h2>
-      <div class="overflow-x-auto">
-        <div class="min-w-[800px] h-[600px]">
-          <StackedBar :chart-data="stackedBarCombinedData" />
+        <div class="flex flex-col">
+          <label class="text-sm text-gray-600 mb-1">ช่วงเวลา</label>
+          <select
+            v-model="selectedTimeframe"
+            class="px-4 py-2 rounded-xl bg-white shadow-sm border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          >
+            <option
+              v-for="option in timeframeOptions"
+              :key="option.value"
+              :value="option.value"
+            >
+              {{ option.label }}
+            </option>
+          </select>
         </div>
       </div>
-    </div>
 
-    <!-- Separate -->
-<div v-else>
-  <!-- V1 -->
-  <div class="bg-white rounded-2xl shadow-xl p-6 mb-12">
-    <h2 class="text-2xl font-semibold text-green-600 mb-4">
-      {{ selectedGroup }} - เวอร์ชัน V1 ({{ selectedTimeframe === "current" ? "ปัจจุบัน" : "คาดในอนาคต" }})
-    </h2>
-    <div class="overflow-x-auto">
-      <div class="min-w-[800px] h-[600px]">
-        <StackedBar :chart-data="stackedBarV1Data" />
+      <!-- Combined -->
+      <div
+        v-if="isCombinedView"
+        class="bg-white rounded-2xl shadow-xl p-6 mb-12"
+      >
+        <h2 class="text-2xl font-semibold text-blue-600 mb-4">
+          รวมผล (V1 + V2)
+        </h2>
+        <div class="overflow-x-auto">
+          <div class="min-w-[800px] h-[600px]">
+            <StackedBar :chart-data="stackedBarCombinedData" />
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
 
-  <!-- V2 -->
-  <div class="bg-white rounded-2xl shadow-xl p-6">
-    <h2 class="text-2xl font-semibold text-purple-600 mb-4">
-      {{ selectedGroup }} - เวอร์ชัน V2 ({{ selectedTimeframe === "current" ? "ปัจจุบัน" : "คาดในอนาคต" }})
-    </h2>
-    <div class="overflow-x-auto">
-      <div class="min-w-[800px] h-[600px]">
-        <StackedBar :chart-data="stackedBarV2Data" />
+      <!-- Separate -->
+      <div v-else>
+        <!-- V1 -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 mb-12">
+          <h2 class="text-2xl font-semibold text-green-600 mb-4">
+            {{ selectedGroup }} - เวอร์ชัน V1
+            ({{ selectedTimeframe === "current" ? "ปัจจุบัน" : "คาดในอนาคต" }})
+          </h2>
+          <div class="overflow-x-auto">
+            <div class="min-w-[800px] h-[600px]">
+              <StackedBar :chart-data="stackedBarV1Data" />
+            </div>
+          </div>
+        </div>
+
+        <!-- V2 -->
+        <div class="bg-white rounded-2xl shadow-xl p-6">
+          <h2 class="text-2xl font-semibold text-purple-600 mb-4">
+            {{ selectedGroup }} - เวอร์ชัน V2
+            ({{ selectedTimeframe === "current" ? "ปัจจุบัน" : "คาดในอนาคต" }})
+          </h2>
+          <div class="overflow-x-auto">
+            <div class="min-w-[800px] h-[600px]">
+              <StackedBar :chart-data="stackedBarV2Data" />
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+    </main>
   </div>
-</div>
-</div>
 </template>

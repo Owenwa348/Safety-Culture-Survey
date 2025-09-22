@@ -20,6 +20,16 @@
         <p class="text-gray-500 text-sm">สำหรับบุคลากรภายใน</p>
       </div>
 
+      <!-- Error Alert -->
+      <div v-if="errorMessage" class="mb-6 bg-red-50 border border-red-200 rounded-xl p-4">
+        <div class="flex items-center space-x-2 text-red-800">
+          <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+          </svg>
+          <span class="text-sm font-medium">{{ errorMessage }}</span>
+        </div>
+      </div>
+
       <form @submit.prevent="handleLogin" class="space-y-6 relative z-10">
         
         <!-- Email Field -->
@@ -38,6 +48,7 @@
                 emailStatus === 'no-password' ? 'border-amber-300 bg-amber-50' : 
                 emailStatus === 'valid' ? 'border-green-300 bg-green-50' : 'border-gray-200'
               ]"
+              @input="resetEmailStatus"
               required
             />
             <div class="absolute inset-y-0 left-0 flex items-center pl-4">
@@ -124,21 +135,25 @@
         <button
           type="button"
           @click="checkEmail"
-          :disabled="!email"
+          :disabled="!email || isLoading"
           :class="[
             'w-full py-3 px-6 rounded-xl font-semibold text-lg transition-all duration-300 transform mb-4',
             'focus:outline-none focus:ring-4 focus:ring-blue-100 relative overflow-hidden',
-            email 
+            (email && !isLoading)
               ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:scale-[1.02] hover:shadow-xl hover:from-indigo-700 hover:to-purple-700' 
               : 'bg-gray-300 text-gray-500 cursor-not-allowed'
           ]"
         >
           <span class="flex items-center justify-center gap-2">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg v-if="!isLoading" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
                     d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
-            ตรวจสอบอีเมล
+            <svg v-else class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            {{ isLoading ? 'กำลังตรวจสอบ...' : 'ตรวจสอบอีเมล' }}
           </span>
         </button>
 
@@ -146,25 +161,29 @@
         <button
           type="submit"
           v-show="emailStatus === 'valid'"
-          :disabled="!canSubmit"
+          :disabled="!canSubmit || isLoading"
           :class="[
             'w-full py-3 px-6 rounded-xl font-semibold text-lg transition-all duration-300 transform',
             'focus:outline-none focus:ring-4 focus:ring-blue-100 relative overflow-hidden',
-            canSubmit 
+            (canSubmit && !isLoading)
               ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:scale-[1.02] hover:shadow-xl hover:from-blue-700 hover:to-indigo-700' 
               : 'bg-gray-300 text-gray-500 cursor-not-allowed'
           ]"
         >
           <span class="flex items-center justify-center gap-2">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg v-if="!isLoading" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
                     d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
             </svg>
-            เข้าสู่ระบบ
+            <svg v-else class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            {{ isLoading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ' }}
           </span>
           
           <!-- Button shine effect -->
-          <div v-if="canSubmit" class="absolute inset-0 -top-1 -bottom-1 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+          <div v-if="canSubmit && !isLoading" class="absolute inset-0 -top-1 -bottom-1 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
         </button>
 
         <!-- Links -->
@@ -190,22 +209,28 @@
             ลืมรหัสผ่าน?
           </router-link>
         </div>
-        <router-link
-        to="/"
-        class="text-blue-600 hover:text-blue-700 font-medium hover:underline transition-all duration-200"
-      >
-        กลับไปหน้าเข้าผู้ประเมิน
-      </router-link>
+        
+        <div class="text-center">
+          <router-link
+            to="/"
+            class="text-blue-600 hover:text-blue-700 font-medium hover:underline transition-all duration-200 text-sm"
+          >
+            กลับไปหน้าเข้าผู้ประเมิน
+          </router-link>
+        </div>
       </form>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+// เพิ่ม import สำหรับ auth composable (ปรับตามโครงสร้างโปรเจคของคุณ)
+// import { useAuth } from '@/composables/useAuth'
 
 const router = useRouter()
+// const { login } = useAuth() // uncomment เมื่อมี auth composable
 
 // Reactive data
 const email = ref('')
@@ -213,12 +238,14 @@ const password = ref('')
 const showPassword = ref(false)
 const emailStatus = ref(null) // null, 'valid', 'no-password', 'invalid'
 const emailMessage = ref('')
+const errorMessage = ref('')
+const isLoading = ref(false)
 
 // Mock database - ในการใช้งานจริงควรเรียก API
 const mockDatabase = [
-  { email: 'superadmin01@gmail.com', hasPassword: true, password: '123456', role: 'superadmin' },//ผู้ดูแลระบบ
-  { email: 'admin01@gmail.com', hasPassword: true, password: '123456', role: 'admin' },//Admin
-  { email: 'admin02@gmail.com', hasPassword: false, role: 'admin' },//Admin
+  { email: 'superadmin01@gmail.com', hasPassword: true, password: '123456', role: 'superadmin' }, //ผู้ดูแลระบบ
+  { email: 'admin01@gmail.com', hasPassword: true, password: '123456', role: 'admin' }, //Admin
+  { email: 'admin02@gmail.com', hasPassword: false, role: 'admin' }, //Admin
 ]
 
 // Computed properties
@@ -227,31 +254,48 @@ const showPasswordField = computed(() => {
 })
 
 const canSubmit = computed(() => {
-  return emailStatus.value === 'valid' && email.value && password.value
+  return emailStatus.value === 'valid' && email.value && password.value && !isLoading.value
 })
 
 // Methods
-const checkEmail = () => {
+const checkEmail = async () => {
   if (!email.value) {
     resetEmailStatus()
     return
   }
   
-  // จำลองการตรวจสอบอีเมลในระบบ
-  const user = mockDatabase.find(u => u.email.toLowerCase() === email.value.toLowerCase())
+  isLoading.value = true
+  errorMessage.value = ''
   
-  if (!user) {
-    // อีเมลไม่มีในระบบ
-    emailStatus.value = 'invalid'
-    emailMessage.value = 'อีเมลของท่านไม่มีในระบบ'
-  } else if (!user.hasPassword) {
-    // มีอีเมลแต่ยังไม่ได้ตั้งรหัสผ่าน
-    emailStatus.value = 'no-password'
-    emailMessage.value = 'กรุณาตั้งรหัสผ่านของท่าน'
-  } else {
-    // มีอีเมลและมีรหัสผ่านแล้ว
-    emailStatus.value = 'valid'
-    emailMessage.value = ''
+  try {
+    // จำลอง API call delay
+    await new Promise(resolve => setTimeout(resolve, 800))
+    
+    // จำลองการตรวจสอบอีเมลในระบบ
+    const user = mockDatabase.find(u => u.email.toLowerCase() === email.value.toLowerCase())
+    
+    if (!user) {
+      // อีเมลไม่มีในระบบ
+      emailStatus.value = 'invalid'
+      emailMessage.value = 'อีเมลของท่านไม่มีในระบบ'
+    } else if (!user.hasPassword) {
+      // มีอีเมลแต่ยังไม่ได้ตั้งรหัสผ่าน
+      emailStatus.value = 'no-password'
+      emailMessage.value = 'กรุณาตั้งรหัสผ่านของท่าน'
+    } else {
+      // มีอีเมลและมีรหัสผ่านแล้ว
+      emailStatus.value = 'valid'
+      emailMessage.value = ''
+      // Auto focus ไปที่ password field
+      setTimeout(() => {
+        const passwordInput = document.querySelector('input[type="password"], input[type="text"][placeholder="ระบุรหัสผ่าน"]')
+        if (passwordInput) passwordInput.focus()
+      }, 100)
+    }
+  } catch (error) {
+    errorMessage.value = 'เกิดข้อผิดพลาดในการตรวจสอบอีเมล กรุณาลองใหม่อีกครั้ง'
+  } finally {
+    isLoading.value = false
   }
 }
 
@@ -259,38 +303,71 @@ const resetEmailStatus = () => {
   emailStatus.value = null
   emailMessage.value = ''
   password.value = ''
+  errorMessage.value = ''
 }
 
-const handleLogin = () => {
+const handleLogin = async () => {
   if (!canSubmit.value) return
   
-  // ตรวจสอบรหัสผ่าน
-  const user = mockDatabase.find(u => u.email.toLowerCase() === email.value.toLowerCase())
+  isLoading.value = true
+  errorMessage.value = ''
   
-  if (user && user.hasPassword && user.password === password.value) {
-    // Use auth composable to login
-    login('internal', {
-      email: email.value,
-      role: user.role
-    })
+  try {
+    // จำลอง API call delay
+    await new Promise(resolve => setTimeout(resolve, 1000))
     
-    // เข้าสู่ระบบสำเร็จ - redirect based on role
-    console.log('เข้าสู่ระบบสำเร็จ:', email.value, 'Role:', user.role)
+    // ตรวจสอบรหัสผ่าน
+    const user = mockDatabase.find(u => u.email.toLowerCase() === email.value.toLowerCase())
     
-    // Role-based routing
-    switch (user.role) {
-      case 'superadmin':
-        router.push('/caretaker-user-management')
-        break
-      case 'admin':
-        router.push('/list-employees')
-        break
-      default:
-        router.push('/list-employees') // fallback
+    if (user && user.hasPassword && user.password === password.value) {
+      // ถ้ามี auth composable ให้ uncomment บรรทัดข้างล่าง
+      // await login('internal', {
+      //   email: email.value,
+      //   role: user.role
+      // })
+      
+      // จำลองการ login สำเร็จ (เก็บข้อมูลใน localStorage ชั่วคราว)
+      localStorage.setItem('user', JSON.stringify({
+        email: email.value,
+        role: user.role,
+        loginType: 'internal'
+      }))
+      
+      console.log('เข้าสู่ระบบสำเร็จ:', email.value, 'Role:', user.role)
+      
+      // Role-based routing
+      switch (user.role) {
+        case 'superadmin':
+          router.push('/caretaker-user-management')
+          break
+        case 'admin':
+          router.push('/dashboard')
+          break
+        default:
+          router.push('/dashboard') // fallback
+      }
+    } else {
+      // รหัสผ่านไม่ถูกต้อง
+      errorMessage.value = 'รหัสผ่านไม่ถูกต้อง กรุณาตรวจสอบและลองใหม่อีกครั้ง'
+      // เคลียร์รหัสผ่าน
+      password.value = ''
+      // Focus กลับไปที่ password field
+      setTimeout(() => {
+        const passwordInput = document.querySelector('input[type="password"], input[type="text"][placeholder="ระบุรหัสผ่าน"]')
+        if (passwordInput) passwordInput.focus()
+      }, 100)
     }
-  } else {
-    // รหัสผ่านไม่ถูกต้อง
-    alert('รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง')
+  } catch (error) {
+    errorMessage.value = 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ กรุณาลองใหม่อีกครั้ง'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// Auto check email on blur
+const onEmailBlur = () => {
+  if (email.value && !emailStatus.value) {
+    checkEmail()
   }
 }
 </script>
@@ -299,5 +376,16 @@ const handleLogin = () => {
 /* Additional custom styles if needed */
 .group:hover .group-hover\:translate-x-full {
   transform: translateX(100%);
+}
+
+/* Loading animation */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
 </style>

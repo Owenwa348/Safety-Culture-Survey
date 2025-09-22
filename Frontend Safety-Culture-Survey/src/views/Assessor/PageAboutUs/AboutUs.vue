@@ -13,12 +13,6 @@ const teamMembers = ref([
     position: "ความปลอดภัย ความปลอดภัยกระบวนการผลิต SSHE software",
     image: "/คทาประภาสะวัต.webp",
   },
-  {
-    id: 2,
-    name: "นาย ธันวา ชัยรัตนานนท์",
-    position: "Full stack developer",
-    image: "/ดร.นพดลพงษ์ศิริ.webp",
-  },
 ]);
 </script>
 
