@@ -124,7 +124,7 @@ const isUserMenuOpen = ref(false)
 // Sample user data - ในการใช้งานจริงควรดึงจาก store หรือ API
 const userData = ref({
   fullName: 'สมชาย ใจดี',
-  company: 'บริษัท ความปลอดภัย จำกัด',
+  company: 'บริษัท ABC จำกัด',
   position: 'ผู้จัดการแผนก / ผู้จัดการ / พนักงานอาวุโส'
 })
 

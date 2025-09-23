@@ -1,17 +1,17 @@
-<!-- ForgotPasswordAdministrator -->
+<!-- ForgotPasswordSuperAdmin -->
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-rose-50 to-orange-50">
     <div class="w-full max-w-md bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-8 border border-white/20 relative overflow-hidden">
       
       <!-- Background decoration -->
-      <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-200/30 to-purple-200/30 rounded-full -translate-y-16 translate-x-16"></div>
-      <div class="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-indigo-200/30 to-blue-200/30 rounded-full translate-y-12 -translate-x-12"></div>
+      <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-200/30 to-orange-200/30 rounded-full -translate-y-16 translate-x-16"></div>
+      <div class="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-rose-200/30 to-purple-200/30 rounded-full translate-y-12 -translate-x-12"></div>
       
       <!-- Header -->
       <div class="text-center mb-8 relative z-10">
-        <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg">
+        <div class="w-16 h-16 bg-gradient-to-r from-purple-600 to-orange-600 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg">
           <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a4 4 0 000 8m0 0V9a5 5 0 015 5v1M15 15H9a5 5 0 01-5-5V9"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
         </div>
         <h1 class="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-2">
@@ -20,6 +20,12 @@
         <p class="text-gray-500 text-sm">
           {{ getDescription() }}
         </p>
+        <div class="inline-flex items-center gap-2 mt-2 px-3 py-1 bg-gradient-to-r from-purple-100 to-orange-100 text-purple-700 rounded-full text-xs font-medium">
+          <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"></path>
+          </svg>
+          ผู้ดูแลระบบสูงสุด
+        </div>
       </div>
 
       <!-- Step 1: Email and Phone Input -->
@@ -32,10 +38,10 @@
               <input
                 v-model="email"
                 type="email"
-                placeholder="example@company.com"
+                placeholder="superadmin@company.com"
                 :class="[
                   'w-full border-2 rounded-xl px-4 py-3 pl-12 transition-all duration-300',
-                  'focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500',
+                  'focus:outline-none focus:ring-4 focus:ring-purple-100 focus:border-purple-500',
                   'group-hover:border-gray-300',
                   emailError ? 'border-red-300 bg-red-50' : 'border-gray-200'
                 ]"
@@ -63,7 +69,7 @@
                 maxlength="12"
                 :class="[
                   'w-full border-2 rounded-xl px-4 py-3 pl-12 pr-16 text-lg font-mono tracking-wider transition-all duration-300',
-                  'focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500',
+                  'focus:outline-none focus:ring-4 focus:ring-purple-100 focus:border-purple-500',
                   'group-hover:border-gray-300',
                   phoneError ? 'border-red-300 bg-red-50' : 'border-gray-200'
                 ]"
@@ -81,14 +87,51 @@
             <p v-if="phoneError" class="text-red-500 text-sm">{{ phoneError }}</p>
           </div>
 
+          <!-- Security PIN -->
+          <div class="space-y-2">
+            <label class="block text-sm font-semibold text-gray-700">รหัส PIN ความปลอดภัย</label>
+            <div class="relative group">
+              <input
+                v-model="securityPin"
+                type="password"
+                @input="formatSecurityPin"
+                @keypress="onlyNumberInput"
+                placeholder="กรอกรหัส PIN 6 หลัก"
+                maxlength="6"
+                :class="[
+                  'w-full border-2 rounded-xl px-4 py-3 pl-12 pr-16 text-lg font-mono tracking-wider text-center transition-all duration-300',
+                  'focus:outline-none focus:ring-4 focus:ring-purple-100 focus:border-purple-500',
+                  'group-hover:border-gray-300',
+                  pinError ? 'border-red-300 bg-red-50' : 'border-gray-200'
+                ]"
+                required
+              />
+              <div class="absolute inset-y-0 left-0 flex items-center pl-4">
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                </svg>
+              </div>
+              <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                <span class="text-xs text-gray-400 font-mono">{{ securityPin.length }}/6</span>
+              </div>
+            </div>
+            <p v-if="pinError" class="text-red-500 text-sm">{{ pinError }}</p>
+            <p class="text-xs text-purple-600 bg-purple-50 p-2 rounded-lg">
+              <svg class="w-3 h-3 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+              </svg>
+              รหัส PIN เพิ่มเติมสำหรับผู้ดูแลระบบสูงสุด
+            </p>
+          </div>
+
           <button
             type="submit"
-            :disabled="!email || !phoneNumber || isLoading"
+            :disabled="!email || !phoneNumber || !securityPin || isLoading"
             :class="[
               'w-full py-3 px-6 rounded-xl font-semibold text-lg transition-all duration-300 transform mt-6',
-              'focus:outline-none focus:ring-4 focus:ring-blue-100 relative overflow-hidden',
-              email && phoneNumber && !isLoading
-                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:scale-[1.02] hover:shadow-xl' 
+              'focus:outline-none focus:ring-4 focus:ring-purple-100 relative overflow-hidden',
+              email && phoneNumber && securityPin && !isLoading
+                ? 'bg-gradient-to-r from-purple-600 to-orange-600 text-white hover:scale-[1.02] hover:shadow-xl' 
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             ]"
           >
@@ -110,8 +153,8 @@
 
       <!-- Step 2: OTP Verification -->
       <div v-if="currentStep === 'otp'" class="relative z-10">
-        <OTPAdministrator
-          ref="otpAdministrator"
+        <OTPSuperAdministrator
+          ref="otpSuperAdministrator"
           :phone-number="phoneNumber"
           :generated-otp="generatedOtp"
           :is-loading="isLoading"
@@ -131,7 +174,7 @@
                 v-model="newPassword"
                 :type="showNewPassword ? 'text' : 'password'"
                 placeholder="ระบุรหัสผ่านใหม่"
-                class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 pl-12 pr-12 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 group-hover:border-gray-300"
+                class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 pl-12 pr-12 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-purple-100 focus:border-purple-500 group-hover:border-gray-300"
                 required
               />
               <div class="absolute inset-y-0 left-0 flex items-center pl-4">
@@ -159,7 +202,7 @@
                 v-model="confirmPassword"
                 :type="showConfirmPassword ? 'text' : 'password'"
                 placeholder="ยืนยันรหัสผ่านใหม่"
-                class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 pl-12 pr-12 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 group-hover:border-gray-300"
+                class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 pl-12 pr-12 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-purple-100 focus:border-purple-500 group-hover:border-gray-300"
                 required
               />
               <div class="absolute inset-y-0 left-0 flex items-center pl-4">
@@ -181,45 +224,16 @@
 
           <p v-if="passwordError" class="text-red-500 text-sm">{{ passwordError }}</p>
 
-          <!-- Password Requirements -->
-          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
-            <h4 class="text-sm font-semibold text-blue-800 mb-2">ข้อกำหนดรหัสผ่าน:</h4>
-            <ul class="text-xs text-blue-700 space-y-1">
-              <li class="flex items-center gap-2">
-                <svg class="w-3 h-3" :class="newPassword.length >= 8 ? 'text-green-500' : 'text-gray-400'" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                </svg>
-                มีความยาวอย่างน้อย 8 ตัวอักษร
-              </li>
-              <li class="flex items-center gap-2">
-                <svg class="w-3 h-3" :class="/[A-Z]/.test(newPassword) ? 'text-green-500' : 'text-gray-400'" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                </svg>
-                มีตัวอักษรพิมพ์ใหญ่อย่างน้อย 1 ตัว
-              </li>
-              <li class="flex items-center gap-2">
-                <svg class="w-3 h-3" :class="/[a-z]/.test(newPassword) ? 'text-green-500' : 'text-gray-400'" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                </svg>
-                มีตัวอักษรพิมพ์เล็กอย่างน้อย 1 ตัว
-              </li>
-              <li class="flex items-center gap-2">
-                <svg class="w-3 h-3" :class="/[0-9]/.test(newPassword) ? 'text-green-500' : 'text-gray-400'" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                </svg>
-                มีตัวเลขอย่างน้อย 1 ตัว
-              </li>
-            </ul>
-          </div>
+
 
           <button
             type="submit"
             :disabled="!isPasswordValid || isLoading"
             :class="[
-              'w-full py-3 px-6 rounded-xl font-semibold text-lg transition-all duration-300 transform mt-6',
-              'focus:outline-none focus:ring-4 focus:ring-green-100',
+              'w-full py-3 px-6 rounded-xl font-semibold text-lg transition-all duration-300 transform',
+              'focus:outline-none focus:ring-4 focus:ring-purple-100',
               isPasswordValid && !isLoading
-                ? 'bg-gradient-to-r from-green-600 to-green-700 text-white hover:scale-[1.02] hover:shadow-xl' 
+                ? 'bg-gradient-to-r from-purple-600 to-orange-600 text-white hover:scale-[1.02] hover:shadow-xl' 
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             ]"
           >
@@ -236,18 +250,24 @@
 
       <!-- Success Message -->
       <div v-if="currentStep === 'success'" class="text-center space-y-6 relative z-10">
-        <div class="w-20 h-20 bg-green-100 rounded-full mx-auto flex items-center justify-center">
-          <svg class="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="w-20 h-20 bg-gradient-to-r from-purple-100 to-orange-100 rounded-full mx-auto flex items-center justify-center">
+          <svg class="w-10 h-10 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
           </svg>
         </div>
         <div>
           <h3 class="text-xl font-bold text-gray-800 mb-2">ตั้งรหัสผ่านใหม่สำเร็จ!</h3>
           <p class="text-gray-600">ท่านสามารถเข้าสู่ระบบด้วยรหัสผ่านใหม่ได้แล้ว</p>
+          <div class="inline-flex items-center gap-2 mt-2 px-3 py-1 bg-gradient-to-r from-purple-100 to-orange-100 text-purple-700 rounded-full text-xs font-medium">
+            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"></path>
+            </svg>
+            บัญชีผู้ดูแลระบบสูงสุด
+          </div>
         </div>
         <button
           @click="goToLogin"
-          class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-6 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-[1.02] hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-100"
+          class="w-full bg-gradient-to-r from-purple-600 to-orange-600 text-white py-3 px-6 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-[1.02] hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-purple-100"
         >
           เข้าสู่ระบบ
         </button>
@@ -256,8 +276,8 @@
       <!-- Back to Login Link -->
       <div v-if="currentStep !== 'success'" class="text-center pt-6 border-t border-gray-100 relative z-10">
         <router-link
-          to="/login-administrator"
-          class="text-blue-600 hover:text-blue-700 font-medium hover:underline transition-all duration-200 text-sm"
+          to="/login-superadministrator"
+          class="text-purple-600 hover:text-purple-700 font-medium hover:underline transition-all duration-200 text-sm"
         >
           ← กลับไปหน้าเข้าสู่ระบบ
         </router-link>
@@ -269,12 +289,12 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import OTPAdministrator from './OTPAdministrator.vue'
+import OTPSuperAdministrator from './OTPSuperAdmin.vue'
 
 const router = useRouter()
 
 // Refs
-const otpAdministrator = ref(null)
+const otpSuperAdministrator = ref(null)
 
 // Data
 const currentStep = ref('email') // 'email', 'otp', 'reset', 'success'
@@ -283,8 +303,10 @@ const isLoading = ref(false)
 // Email step data
 const email = ref('')
 const phoneNumber = ref('')
+const securityPin = ref('')
 const emailError = ref('')
 const phoneError = ref('')
+const pinError = ref('')
 
 // OTP step data
 const generatedOtp = ref('')
@@ -296,20 +318,21 @@ const showNewPassword = ref(false)
 const showConfirmPassword = ref(false)
 const passwordError = ref('')
 
-// Mock database
-const mockDatabase = [
-  { email: 'admin01@gmail.com', phone: '0811577922', role: 'admin' },
-  { email: 'admin02@gmail.com', phone: '0812345678', role: 'admin' },
-  { email: 'superadmin01@gmail.com', phone: '0845678901', role: 'superadmin' },
-  { email: 'superadmin02@gmail.com', phone: '0856789012', role: 'superadmin' },
+// Mock database - เฉพาะ SuperAdmin
+const mockSuperAdminDatabase = [
+  { email: 'superadmin01@gmail.com', phone: '0845678901', pin: '123456', role: 'superadmin' },
+  { email: 'superadmin02@gmail.com', phone: '0856789012', pin: '654321', role: 'superadmin' },
+  { email: 'superadmin03@gmail.com', phone: '0867890123', pin: '111222', role: 'superadmin' },
+  { email: 'superadmin04@gmail.com', phone: '0878901234', pin: '999888', role: 'superadmin' },
 ]
 
 // Computed properties
 const isPasswordValid = computed(() => {
-  return newPassword.value.length >= 8 &&
+  return newPassword.value.length >= 12 &&
          /[A-Z]/.test(newPassword.value) &&
          /[a-z]/.test(newPassword.value) &&
          /[0-9]/.test(newPassword.value) &&
+         /[!@#$%^&*(),.?\":{}|<>]/.test(newPassword.value) &&
          newPassword.value === confirmPassword.value
 })
 
@@ -330,11 +353,11 @@ const getTitle = () => {
 const getDescription = () => {
   switch (currentStep.value) {
     case 'email':
-      return 'กรุณาระบุอีเมลและเบอร์โทรเพื่อรีเซ็ตรหัสผ่าน'
+      return 'กรุณาระบุข้อมูลเพื่อรีเซ็ตรหัสผ่าน (ความปลอดภัยเพิ่มเติม)'
     case 'otp':
       return 'กรุณากรอกรหัส OTP ที่ส่งไปยังเบอร์โทรของท่าน'
     case 'reset':
-      return 'กรุณาตั้งรหัสผ่านใหม่ของท่าน'
+      return 'กรุณาตั้งรหัสผ่านใหม่ (ข้อกำหนดเข้มงวดสำหรับผู้ดูแลสูงสุด)'
     default:
       return 'ตั้งรหัสผ่านใหม่เรียบร้อย'
   }
@@ -364,12 +387,26 @@ const formatPhoneNumber = (e) => {
   clearPhoneError()
 }
 
+const formatSecurityPin = (e) => {
+  let value = e.target.value.replace(/\D/g, '')
+  if (value.length > 6) {
+    value = value.slice(0, 6)
+  }
+  
+  securityPin.value = value
+  clearPinError()
+}
+
 const clearEmailError = () => {
   emailError.value = ''
 }
 
 const clearPhoneError = () => {
   phoneError.value = ''
+}
+
+const clearPinError = () => {
+  pinError.value = ''
 }
 
 const validateEmail = () => {
@@ -397,33 +434,47 @@ const validatePhone = () => {
   return true
 }
 
+const validatePin = () => {
+  if (!securityPin.value) {
+    pinError.value = 'กรุณากรอกรหัส PIN'
+    return false
+  }
+  if (!/^\d{6}$/.test(securityPin.value)) {
+    pinError.value = 'รหัส PIN ต้องเป็นตัวเลข 6 หลัก'
+    return false
+  }
+  return true
+}
+
 const handleEmailSubmit = async () => {
   emailError.value = ''
   phoneError.value = ''
+  pinError.value = ''
   
-  if (!validateEmail() || !validatePhone()) {
+  if (!validateEmail() || !validatePhone() || !validatePin()) {
     return
   }
   
   isLoading.value = true
   
   try {
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    await new Promise(resolve => setTimeout(resolve, 3000)) // เพิ่มเวลาโหลดสำหรับความปลอดภัย
     
     const cleanedPhone = phoneNumber.value.replace(/\D/g, '')
-    const user = mockDatabase.find(u => 
+    const superAdmin = mockSuperAdminDatabase.find(u => 
       u.email.toLowerCase() === email.value.toLowerCase() && 
-      u.phone === cleanedPhone
+      u.phone === cleanedPhone &&
+      u.pin === securityPin.value
     )
     
-    if (!user) {
-      emailError.value = 'ไม่พบข้อมูลผู้ใช้ในระบบ กรุณาตรวจสอบอีเมลและเบอร์โทร'
+    if (!superAdmin) {
+      emailError.value = 'ไม่พบข้อมูลผู้ดูแลระบบสูงสุดในระบบ กรุณาตรวจสอบข้อมูลทั้งหมด'
       return
     }
     
     // Generate OTP
     generatedOtp.value = Math.floor(100000 + Math.random() * 900000).toString()
-    console.log('Generated OTP:', generatedOtp.value) // For testing purposes
+    console.log('Generated OTP for SuperAdmin:', generatedOtp.value) // For testing purposes
     
     currentStep.value = 'otp'
     
@@ -438,7 +489,7 @@ const handleOtpVerified = async (otpCode) => {
   isLoading.value = true
   
   try {
-    await new Promise(resolve => setTimeout(resolve, 1500))
+    await new Promise(resolve => setTimeout(resolve, 2000))
     currentStep.value = 'reset'
   } catch (error) {
     console.error('OTP verification failed:', error)
@@ -449,7 +500,7 @@ const handleOtpVerified = async (otpCode) => {
 
 const handleOtpResend = () => {
   generatedOtp.value = Math.floor(100000 + Math.random() * 900000).toString()
-  console.log('New OTP:', generatedOtp.value) // For testing purposes
+  console.log('New OTP for SuperAdmin:', generatedOtp.value) // For testing purposes
 }
 
 const handlePasswordReset = async () => {
@@ -461,14 +512,14 @@ const handlePasswordReset = async () => {
   }
   
   if (!isPasswordValid.value) {
-    passwordError.value = 'รหัสผ่านไม่ตรงตามข้อกำหนด'
+    passwordError.value = 'รหัสผ่านไม่ตรงตามข้อกำหนดความปลอดภัยสูง'
     return
   }
   
   isLoading.value = true
   
   try {
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    await new Promise(resolve => setTimeout(resolve, 2500)) // เพิ่มเวลาสำหรับความปลอดภัย
     currentStep.value = 'success'
     
   } catch (error) {
@@ -479,7 +530,7 @@ const handlePasswordReset = async () => {
 }
 
 const goToLogin = () => {
-  router.push('/login-administrator')
+  router.push('/login-superadministrator')
 }
 </script>
 

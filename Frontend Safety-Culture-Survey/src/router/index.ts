@@ -4,9 +4,17 @@ import { createRouter, createWebHistory } from 'vue-router'
 import LoginEvaluator from '../views/Login/LoginEvaluator/LoginEvaluator.vue'
 import ForgotPasswordEvaluator from '../views/Login/LoginEvaluator/ForgotPasswordEvaluator.vue'
 import EvaluatorRegistration from '../views/Login/LoginEvaluator/EvaluatorRegistration.vue'
-// ==================== กลุ่ม Login/Administrator ====================
-import LoginAdministrator from '../views/Login/LoginAdministrator/LoginAdministrator.vue'
-import ForgotPasswordAdministrator from '../views/Login/LoginAdministrator/ForgotPasswordAdministrator.vue'
+
+
+// ====================  LoginAll ====================
+import LoginAll from '../views/Login/Administrator/LoginAll.vue'
+// ==================== กลุ่ม Login/Admin ====================
+import ForgotPasswordAdmin from '../views/Login/Administrator/LoginAdmin/ForgotPasswordAdmin.vue'
+import SetPasswordAdmin from '../views/Login/Administrator/LoginAdmin/SetPasswordAdmin.vue'
+//  ==================== กลุ่ม Login/Admin ====================
+import ForgotPasswordSuperAdmin from '../views/Login/Administrator/LoginSuperAdmin/ForgotPasswordSuperAdmin.vue'
+import SetPasswordSuperAdmin from '../views/Login/Administrator/LoginSuperAdmin/SetPasswordSuperAdmin.vue'
+
 
 //=============================หน้าผู้ประเมิน=============================
 import Home from '../views/Assessor/Home.vue'
@@ -21,7 +29,7 @@ import PositionResults from '../views/Dashboard/Analytics/PositionResults.vue'
 import QuestionResults from '../views/Dashboard/Analytics/QuestionResults.vue'
 
 //=============================Dashboard Superadmin =============================
-import ExcelUploadView from '../views/Dashboard/SettingsDashboard/ExcelUploadView.vue'
+import ExcelUploadView from '../views/Dashboard/SettingsDashboard/Uploadlistfile/ExcelUploadView.vue'
 import SettingsView from '../views/Dashboard/SettingsDashboard/SettingsView.vue'
 import Admin from '../views/Dashboard/Users/Admin/AdminList.vue'
 import SuperAdmin from '../views/Dashboard/Users/SuperAdmin/SuperAdminList.vue'
@@ -45,16 +53,33 @@ const routes = [
     name: 'EvaluatorRegistration',
     component: EvaluatorRegistration
   },
-  // ==================== กลุ่ม Login/Administrator ====================
+  // ====================  LoginAll ====================
   {
-    path: '/login-administrator',
-    name: 'LoginAdministrator',
-    component: LoginAdministrator
+    path: '/Login-all',
+    name: 'LoginAll',
+    component: LoginAll
+  },
+  // ==================== กลุ่ม Login/Admin====================
+  {
+    path: '/forgot-password-admin',
+    name: 'ForgotPasswordAdmin',
+    component: ForgotPasswordAdmin
   },
   {
-    path: '/forgot-password-administrator',
-    name: 'ForgotPasswordAdministrator',
-    component: ForgotPasswordAdministrator
+    path: '/set-password-admin',
+    name: 'SetPasswordAdmin',
+    component: SetPasswordAdmin
+  },
+  // ==================== กลุ่ม Login/SuperAdmin ====================
+  {
+    path: '/forgot-password-superadmin',
+    name: 'ForgotPasswordSuperAdmin',
+    component: ForgotPasswordSuperAdmin
+  },
+  {
+    path: '/set-password-superadmin',
+    name: 'SetPasswordSuperAdmin',
+    component: SetPasswordSuperAdmin
   },
 //=============================หน้าผู้ประเมิน=============================
   {

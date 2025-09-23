@@ -100,7 +100,7 @@
         <!-- User Info -->
         <div class="flex-1">
           <div class="text-sm font-medium">{{ userData.fullName }}</div>
-          <div class="text-xs text-gray-300">{{ userData.position }}</div>
+          <div class="text-xs text-gray-300">{{ displayPosition }}</div>
         </div>
 
         <!-- Arrow -->
@@ -124,6 +124,8 @@
             </div>
             <div>
               <div class="font-semibold text-gray-900">{{ userData.fullName }}</div>
+              <!-- แสดงตำแหน่งตามบทบาท -->
+              <div class="text-sm text-gray-600">{{ displayPosition }}</div>
             </div>
           </div>
         </div>
@@ -131,17 +133,30 @@
         <!-- Details -->
         <div class="px-4 py-3 space-y-2">
           <div class="flex justify-between items-center">
-            <span class="text-sm font-medium text-gray-600">ชื่อ-สกุล:</span>
-            <span class="text-sm text-gray-900">{{ userData.fullName }}</span>
+            <span class="text-sm font-medium text-gray-600">อีเมล:</span>
+            <span class="text-sm text-gray-900">{{ userData.email }}</span>
           </div>
           <div class="flex justify-between items-center">
+            <span class="text-sm font-medium text-gray-600">บทบาท:</span>
+            <span class="text-sm text-gray-900 px-2 py-1 rounded-full text-xs"
+              :class="roleStyleClass">
+              {{ userData.role }}
+            </span>
+          </div>
+          <!-- แสดงบริษัทเฉพาะ Admin -->
+          <div v-if="userData.role === 'Admin'" class="flex justify-between items-center">
             <span class="text-sm font-medium text-gray-600">บริษัท:</span>
             <span class="text-sm text-gray-900">{{ userData.company }}</span>
           </div>
+          <!-- แสดงข้อมูลเพิ่มเติมสำหรับ SuperAdmin -->
+          <div v-if="userData.role === 'SuperAdmin'" class="flex justify-between items-center">
+            <span class="text-sm font-medium text-gray-600">ระดับการเข้าถึง:</span>
+            <span class="text-sm text-gray-900">ทั้งหมด</span>
+          </div>
         </div>
 
-        <!-- Logout -->
-        <div class="border-t border-gray-200 px-4 py-2">
+        <!-- Actions -->
+        <div class="border-t border-gray-200 px-4 py-2 space-y-1">
           <button @click="logout"
             class="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors duration-200 flex items-center space-x-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -167,7 +182,10 @@ const isSettingsMenuOpen = ref(false)
 // Sample user data - ในการใช้งานจริงควรดึงจาก store หรือ API
 const userData = ref({
   fullName: 'สมชาย ใจดี',
+  email: 'superadmin01@gmail.com',
   company: 'บริษัท ความปลอดภัย จำกัด',
+  role: 'SuperAdmin', // สามารถเป็น 'Admin', 'SuperAdmin', หรือ 'User'
+  position: 'ผู้จัดการระบบ'
 })
 
 // Computed properties
@@ -177,6 +195,28 @@ const userInitials = computed(() => {
     return names[0].charAt(0) + names[1].charAt(0)
   }
   return names[0].charAt(0) + names[0].charAt(1)
+})
+
+const displayPosition = computed(() => {
+  switch (userData.value.role) {
+    case 'Admin':
+      return userData.value.company || 'Admin'
+    case 'SuperAdmin':
+      return 'ผู้ดูแลระบบ'
+    default:
+      return userData.value.position || 'ผู้ใช้งาน'
+  }
+})
+
+const roleStyleClass = computed(() => {
+  switch (userData.value.role) {
+    case 'SuperAdmin':
+      return 'bg-red-100 text-red-800'
+    case 'Admin':
+      return 'bg-blue-100 text-blue-800'
+    default:
+      return 'bg-gray-100 text-gray-800'
+  }
 })
 
 // Methods
@@ -222,7 +262,7 @@ const closeSettingsMenu = () => {
 const closeAllMenus = () => {
   isUserMenuOpen.value = false
   isAssessmentMenuOpen.value = false
-  isSettingsMenuOpen.value = false
+  isSettingsMenuMenu.value = false
 }
 
 const viewProfile = () => {
