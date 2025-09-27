@@ -2,22 +2,36 @@
   <div class="bg-white border border-gray-200 rounded-lg shadow-sm">
     <!-- Header -->
     <div class="border-b border-gray-100 px-6 py-4">
-      <h3 class="text-xl font-semibold text-gray-900">Stacked Bar Chart</h3>
-      <p class="text-sm text-gray-600 mt-1">การวิเคราะห์การกระจายตัวของข้อมูลตามระดับ</p>
+      <h3 class="text-xl font-semibold text-gray-900">กราฟผลการประเมินรายข้อ (บริษัท)</h3>
+      <p class="text-sm text-gray-600 mt-1">การวิเคราะห์การกระจายตัวของข้อมูลตามระดับแต่ละข้อ</p>
     </div>
 
     <!-- Controls -->
     <div class="px-6 py-4 bg-gray-50 border-b border-gray-100">
-      <div class="flex items-center space-x-3">
-        <label class="text-sm font-medium text-gray-700">เลือกพื้นที่:</label>
-        <select 
-          v-model="selectedVersion" 
-          class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-        >
-          <option value="combined">verte group</option>
-          <option value="v1">verte smart solution</option>
-          <option value="v2">verte security</option>
-        </select>
+      <div class="flex items-center space-x-6">
+        <div class="flex items-center space-x-3">
+          <label class="text-sm font-medium text-gray-700">เลือกพื้นที่:</label>
+          <select 
+            v-model="selectedVersion" 
+            class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+          >
+            <option value="combined">verte group</option>
+            <option value="v1">verte smart solution</option>
+            <option value="v2">verte security</option>
+          </select>
+        </div>
+        
+        <div class="flex items-center space-x-3">
+          <label class="text-sm font-medium text-gray-700">ช่วงเวลา:</label>
+          <select 
+            v-model="selectedTimeframe" 
+            class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+          >
+            <option value="all">ทั้งหมด</option>
+            <option value="current">ปัจจุบัน</option>
+            <option value="future">อนาคต</option>
+          </select>
+        </div>
       </div>
     </div>
 
@@ -28,6 +42,9 @@
           <div class="w-3 h-3 rounded-sm" :style="{ backgroundColor: dataset.backgroundColor }"></div>
           <span class="text-sm font-medium text-gray-700">{{ dataset.label }}</span>
           <span class="text-sm text-gray-500">{{ dataset.total }} รายการ</span>
+        </div>
+        <div class="ml-auto text-sm text-gray-600">
+          {{ selectedTimeframeLabel }} • {{ selectedVersionLabel }}
         </div>
       </div>
     </div>
@@ -62,10 +79,11 @@ const chartLabels = [
   'E:Profit & HSE', 'F:Contractor management', 'G:Competency & training', 'H:Size of HSE Dept.',
   'I:Work planning', 'J:Worksite safety management', 'K:Purpose of procedures', 'L:Incident reporting',
   'M:Hazard reporting', 'N:What after accident', 'O:Who checks HSE day-day',
-  'P:How HSE meetings feel', 'Q:Audits & reviews', 'R:Benchmarking'
+  'P:How HSE meetings feel', 'Q:Audits & reviews', 'R:Benchmarking',
 ];
 
-const rawDataV1 = [
+// ข้อมูลปัจจุบัน (Current Data) - verte smart solution
+const currentDataV1 = [
   [10, 10, 10, 60, 40, 30, 10, 50, 40, 60, 70, 80, 30, 40, 50, 70, 60, 50],
   [20, 10, 30, 50, 10, 80, 50, 10, 10, 10, 20, 20, 10, 20, 20, 10, 40, 30],
   [20, 25, 30, 18, 15, 20, 25, 25, 18, 20, 28, 26, 21, 25, 26, 24, 10, 10],
@@ -73,7 +91,8 @@ const rawDataV1 = [
   [10, 7, 10, 10, 12, 5, 20, 10, 8, 15, 12, 9, 18, 15, 5, 8, 10, 10]
 ];
 
-const rawDataV2 = [
+// ข้อมูลปัจจุบัน - verte security
+const currentDataV2 = [
   [8, 4, 7, 3, 3, 4, 8, 5, 5, 4, 6, 6, 3, 3, 4, 6, 5, 5],
   [1, 1, 2, 4, 1, 6, 5, 1, 1, 1, 1, 1, 1, 2, 3, 1, 2, 2],
   [18, 20, 25, 15, 12, 20, 22, 20, 17, 20, 25, 23, 19, 22, 23, 20, 10, 10],
@@ -81,19 +100,86 @@ const rawDataV2 = [
   [8, 6, 8, 9, 10, 4, 18, 8, 7, 12, 10, 8, 15, 13, 4, 7, 8, 8]
 ];
 
+// ข้อมูลอนาคต (Future Data) - verte smart solution (เพิ่มขึ้น 15-25%)
+const futureDataV1 = [
+  [8, 8, 8, 45, 30, 22, 8, 38, 30, 45, 52, 60, 22, 30, 38, 52, 45, 38],
+  [15, 8, 22, 38, 8, 60, 38, 8, 8, 8, 15, 15, 8, 15, 15, 8, 30, 22],
+  [25, 30, 35, 22, 18, 25, 30, 30, 22, 25, 33, 31, 26, 30, 31, 29, 15, 15],
+  [35, 30, 8, 38, 40, 35, 22, 32, 45, 38, 30, 35, 35, 30, 40, 38, 18, 18],
+  [18, 15, 18, 18, 22, 12, 32, 18, 15, 25, 22, 18, 28, 25, 12, 15, 18, 18]
+];
+
+// ข้อมูลอนาคต - verte security (เพิ่มขึ้น 20-30%)
+const futureDataV2 = [
+  [6, 3, 5, 2, 2, 3, 6, 4, 4, 3, 4, 4, 2, 2, 3, 4, 4, 4],
+  [1, 1, 1, 3, 1, 4, 4, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1],
+  [25, 28, 35, 22, 18, 28, 32, 28, 25, 28, 35, 33, 28, 32, 33, 28, 18, 18],
+  [28, 26, 6, 32, 35, 32, 18, 28, 42, 32, 26, 32, 32, 26, 40, 32, 18, 18],
+  [15, 12, 15, 18, 20, 8, 32, 15, 12, 22, 20, 15, 28, 25, 8, 12, 15, 15]
+];
+
 const selectedVersion = ref('combined');
+const selectedTimeframe = ref('all');
 const colors = ['#7B341E', '#dc2626', '#f97316', '#fbbf24', '#10b981'];
+
+const selectedVersionLabel = computed(() => {
+  const labels = {
+    'combined': 'verte group',
+    'v1': 'verte smart solution',
+    'v2': 'verte security'
+  };
+  return labels[selectedVersion.value];
+});
+
+const selectedTimeframeLabel = computed(() => {
+  const labels = {
+    'all': 'ทั้งหมด (ปัจจุบัน + อนาคต)',
+    'current': 'ข้อมูลปัจจุบัน',
+    'future': 'ข้อมูลคาดการณ์อนาคต'
+  };
+  return labels[selectedTimeframe.value];
+});
 
 const chartData = computed(() => {
   let selectedData;
-  if (selectedVersion.value === 'v1') {
-    selectedData = rawDataV1;
-  } else if (selectedVersion.value === 'v2') {
-    selectedData = rawDataV2;
-  } else {
-    selectedData = rawDataV1.map((row, i) =>
-      row.map((v, j) => v + (rawDataV2[i]?.[j] ?? 0))
-    );
+  
+  // เลือกข้อมูลตามช่วงเวลาและพื้นที่
+  if (selectedTimeframe.value === 'current') {
+    if (selectedVersion.value === 'v1') {
+      selectedData = currentDataV1;
+    } else if (selectedVersion.value === 'v2') {
+      selectedData = currentDataV2;
+    } else {
+      selectedData = currentDataV1.map((row, i) =>
+        row.map((v, j) => v + (currentDataV2[i]?.[j] ?? 0))
+      );
+    }
+  } else if (selectedTimeframe.value === 'future') {
+    if (selectedVersion.value === 'v1') {
+      selectedData = futureDataV1;
+    } else if (selectedVersion.value === 'v2') {
+      selectedData = futureDataV2;
+    } else {
+      selectedData = futureDataV1.map((row, i) =>
+        row.map((v, j) => v + (futureDataV2[i]?.[j] ?? 0))
+      );
+    }
+  } else { // all
+    if (selectedVersion.value === 'v1') {
+      selectedData = currentDataV1.map((row, i) =>
+        row.map((v, j) => v + (futureDataV1[i]?.[j] ?? 0))
+      );
+    } else if (selectedVersion.value === 'v2') {
+      selectedData = currentDataV2.map((row, i) =>
+        row.map((v, j) => v + (futureDataV2[i]?.[j] ?? 0))
+      );
+    } else {
+      selectedData = currentDataV1.map((row, i) =>
+        row.map((v, j) => 
+          v + (currentDataV2[i]?.[j] ?? 0) + (futureDataV1[i]?.[j] ?? 0) + (futureDataV2[i]?.[j] ?? 0)
+        )
+      );
+    }
   }
 
   const totalPerCategory = chartLabels.map((_, j) =>
@@ -133,7 +219,6 @@ const chartOptions = {
     y: {
       stacked: true,
       display: false,
-      
     }
   },
   plugins: {
@@ -149,7 +234,13 @@ const chartOptions = {
       backgroundColor: 'rgba(0, 0, 0, 0.8)',
       cornerRadius: 4,
       callbacks: {
-        label: ctx => `${ctx.dataset.label}: ${ctx.raw}% (${ctx.dataset.raw[ctx.dataIndex]} รายการ)`
+        label: ctx => `${ctx.dataset.label}: ${ctx.raw}% (${ctx.dataset.raw[ctx.dataIndex]} รายการ)`,
+        afterLabel: ctx => {
+          const timeframeInfo = selectedTimeframe.value === 'current' ? '(ปัจจุบัน)' : 
+                               selectedTimeframe.value === 'future' ? '(อนาคต)' : 
+                               '(รวมทั้งหมด)';
+          return timeframeInfo;
+        }
       }
     },
     legend: { display: false }

@@ -19,8 +19,8 @@
             class="text-lg text-white hover:text-white hover:bg-[#7AE2CF] px-3 py-2 rounded-md transition">เกี่ยวกับเรา</router-link>
           <router-link to="/contact" style="color: white;"
             class="text-lg text-white hover:text-white hover:bg-[#7AE2CF] px-3 py-2 rounded-md transition">ติดต่อสอบถาม</router-link>
-          <router-link to="/dashboard" style="color: white;"
-            class="text-lg text-white hover:text-white hover:bg-[#7AE2CF] px-3 py-2 rounded-md transition">หลังบ้าน</router-link>
+          <!-- <router-link to="/dashboard" style="color: white;"
+            class="text-lg text-white hover:text-white hover:bg-[#7AE2CF] px-3 py-2 rounded-md transition">หลังบ้าน</router-link> -->
         </div>
 
         <!-- User Profile Dropdown -->
@@ -123,7 +123,7 @@ const isUserMenuOpen = ref(false)
 
 // Sample user data - ในการใช้งานจริงควรดึงจาก store หรือ API
 const userData = ref({
-  fullName: 'สมชาย ใจดี',
+  fullName: 'ธันวา ชัยรัตนานนท์',
   company: 'บริษัท ABC จำกัด',
   position: 'ผู้จัดการแผนก / ผู้จัดการ / พนักงานอาวุโส'
 })

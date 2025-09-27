@@ -10,11 +10,11 @@ import { ref } from 'vue'
 const activeTab = ref('position')
 
 const tabs = [
-  { id: 'position', name: 'ตำแหน่งงาน', icon: '👔' },
-  { id: 'department', name: 'สายงาน', icon: '🏢' },
-  { id: 'workgroup', name: 'กลุ่มงาน', icon: '👥' },
-  { id: 'experience', name: 'ประสบการณ์', icon: '⏰' },
-  { id: 'questions', name: 'คำถาม', icon: '❓' }
+  { id: 'position', name: 'ตำแหน่งงาน',},
+  { id: 'department', name: 'สายงาน',},
+  { id: 'workgroup', name: 'กลุ่มงาน',},
+  { id: 'experience', name: 'อายุงาน',},
+  { id: 'questions', name: 'คำถาม',}
 ]
 </script>
 

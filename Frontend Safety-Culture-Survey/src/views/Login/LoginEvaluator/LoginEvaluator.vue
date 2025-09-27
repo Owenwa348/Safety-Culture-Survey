@@ -194,8 +194,8 @@ const togglePassword = () => {
 
 // Mock database - จำลองข้อมูลผู้ใช้ในระบบ
 const mockEmailDatabase = [
-  { email: "user01@example.com", isRegistered: true, password: "123456" },
-  { email: "user02@example.com", isRegistered: false }, // มีอีเมลในระบบแต่ยังไม่ลงทะเบียน
+  { email: "user01@email.com", isRegistered: true, password: "123456" },
+  { email: "user02@email.com", isRegistered: false }, // มีอีเมลในระบบแต่ยังไม่ลงทะเบียน
 ];
 
 // ฟังก์ชันล้าง error

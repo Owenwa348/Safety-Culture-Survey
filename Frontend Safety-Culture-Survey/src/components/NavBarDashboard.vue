@@ -34,9 +34,13 @@
           class="mt-1 ml-4 space-y-1 bg-[#0A2A3A] rounded-md shadow-lg border border-gray-600">
           <router-link to="/puestion-results"
             class="block text-base text-white hover:text-white hover:bg-[#7AE2CF] px-3 py-2 rounded-md transition">
-            ผลการประเมินแยกตามหน่วยงาน
+            ผลการประเมินแยกตามสายงาน
           </router-link>
           <router-link to="/question-results"
+            class="block text-base text-white hover:text-white hover:bg-[#7AE2CF] px-3 py-2 rounded-md transition">
+            ผลประเมินตามข้อคำถาม
+          </router-link>
+          <router-link to="/opinion-results"
             class="block text-base text-white hover:text-white hover:bg-[#7AE2CF] px-3 py-2 rounded-md transition">
             ผลประเมินตามข้อคำถาม
           </router-link>
@@ -181,7 +185,7 @@ const isSettingsMenuOpen = ref(false)
 
 // Sample user data - ในการใช้งานจริงควรดึงจาก store หรือ API
 const userData = ref({
-  fullName: 'สมชาย ใจดี',
+  fullName: 'ธันวา ชัยรัตนานนท์',
   email: 'superadmin01@gmail.com',
   company: 'บริษัท ความปลอดภัย จำกัด',
   role: 'SuperAdmin', // สามารถเป็น 'Admin', 'SuperAdmin', หรือ 'User'

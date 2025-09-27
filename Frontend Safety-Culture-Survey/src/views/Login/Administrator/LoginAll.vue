@@ -431,7 +431,7 @@ const handleLogin = async () => {
       if (loginType.value === 'admin') {
         router.push('/dashboard')
       } else {
-        router.push('/caretaker-user-management')
+        router.push('/settings')
       }
     } else {
       // รหัสผ่านไม่ถูกต้อง

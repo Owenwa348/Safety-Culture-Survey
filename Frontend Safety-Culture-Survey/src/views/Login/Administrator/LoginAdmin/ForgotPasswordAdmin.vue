@@ -130,7 +130,7 @@
       <div v-if="currentStep === 'reset'" class="space-y-6 relative z-10">
         <form @submit.prevent="handlePasswordReset">
           <!-- New Password -->
-          <div class="space-y-2">
+          <div class="space-y-2 mb-2">
             <label class="block text-sm font-semibold text-gray-700">รหัสผ่านใหม่</label>
             <div class="relative group">
               <input
@@ -158,7 +158,7 @@
           </div>
 
           <!-- Confirm Password -->
-          <div class="space-y-2">
+          <div class="space-y-2 ">
             <label class="block text-sm font-semibold text-gray-700">ยืนยันรหัสผ่าน</label>
             <div class="relative group">
               <input

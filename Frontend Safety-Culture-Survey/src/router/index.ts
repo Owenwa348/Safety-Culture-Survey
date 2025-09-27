@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
 // ==================== กลุ่ม Login/Evaluator ====================
-// สำหรับผู้ประเมิน
 import LoginEvaluator from '../views/Login/LoginEvaluator/LoginEvaluator.vue'
 import ForgotPasswordEvaluator from '../views/Login/LoginEvaluator/ForgotPasswordEvaluator.vue'
 import EvaluatorRegistration from '../views/Login/LoginEvaluator/EvaluatorRegistration.vue'
@@ -27,6 +26,7 @@ import Dashboard from '../views/Dashboard/Dashboard.vue'
 import UserList from '../views/Dashboard/Users/UserList.vue'
 import PositionResults from '../views/Dashboard/Analytics/PositionResults.vue'
 import QuestionResults from '../views/Dashboard/Analytics/QuestionResults.vue'
+import OpinionResults from '../views/Dashboard/Analytics/OpinionResults.vue'
 
 //=============================Dashboard Superadmin =============================
 import ExcelUploadView from '../views/Dashboard/SettingsDashboard/Uploadlistfile/ExcelUploadView.vue'
@@ -124,6 +124,11 @@ const routes = [
     path: '/question-results',
     name: 'QuestionResults',
     component: QuestionResults
+  },
+  {
+    path: '/opinion-results',
+    name: 'OpinionResults',
+    component: OpinionResults
   },
   {
     path: '/user-list',

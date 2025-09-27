@@ -1,7 +1,6 @@
 <script setup>
 import { ref, computed } from "vue";
 import BetChart from "../Showgraph/BetChart.vue";
-import Comment from "../../../components/Comment.vue";
 import NavbarDashboard from '../../../components/NavbarDashboard.vue';
 
 const selectedGroup = ref("all");
@@ -358,14 +357,14 @@ const dataSummary = computed(() => {
     <main class="flex-1 ml-60 p-6 md:p-10 max-w-7xl">
       <!-- Header -->
       <header class="text-center mb-10">
-        <h1 class="text-4xl font-bold text-gray-800">ผลการประเมินแยกตามหน่วยงาน</h1>
+        <h1 class="text-4xl font-bold text-gray-800">ผลการประเมินแยกตามสายงาน</h1>
       </header>
 
       <!-- Filter -->
       <div class="bg-white rounded-2xl p-8 mb-10 shadow-xl border border-gray-200">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div class="flex flex-col gap-2">
-            <label class="text-sm font-medium text-gray-700">เลือกกลุ่ม</label>
+            <label class="text-sm font-medium text-gray-700">เลือกตำแหน่ง</label>
             <select v-model="selectedGroup" @change="handleGroupChange"
               class="px-4 py-2 border border-gray-300 rounded-lg">
               <option value="all">รวมทั้งหมด</option>
@@ -426,16 +425,6 @@ const dataSummary = computed(() => {
           </div>
           <div class="p-8">
             <BetChart :chart-data="chartData" />
-          </div>
-        </div>
-
-        <!-- Comment -->
-        <div class="bg-white rounded-2xl shadow-xl border overflow-hidden">
-          <div class="px-8 py-6 bg-gray-100 border-b">
-            <h2 class="text-xl font-semibold text-gray-800">ความคิดเห็น</h2>
-          </div>
-          <div class="p-8">
-            <Comment />
           </div>
         </div>
       </div>

@@ -10,7 +10,7 @@
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h2 class="text-2xl font-bold text-gray-900">จัดการผู้ดูแลระบบ (Admin)</h2>
+              <h2 class="text-2xl font-bold text-gray-900">จัดการผู้ตรวจสอบผลการประเมิน (Admin)</h2>
               <p class="text-sm text-gray-600 mt-1">จัดการสิทธิ์และสถานะของผู้ดูแลระบบระดับ Admin</p>
             </div>
 
@@ -99,20 +99,54 @@
                       <div class="flex-shrink-0 h-10 w-10">
                         <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
                           <span class="text-sm font-medium text-blue-700">
-                            {{ getDisplayName(admin).charAt(0).toUpperCase() }}
+                            {{ getDisplayInitial(admin) }}
                           </span>
                         </div>
                       </div>
-                      <div class="ml-4">
-                        <div class="text-sm font-medium text-gray-900">{{ getDisplayName(admin) }}</div>
-                        <div class="text-sm text-gray-500">{{ admin.email }}</div>
+                      <div class="ml-4 flex-1">
+                        <!-- Edit Mode for Name -->
+                        <template v-if="editingAdmin === admin.id && admin.is_verified">
+                          <div class="space-y-2">
+                            <div class="flex gap-2">
+                              <input
+                                v-model="editData.name"
+                                type="text"
+                                placeholder="ชื่อ - นามสกุล"
+                                class="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              />
+                            </div>
+                            <input
+                              v-model="editData.email"
+                              type="email"
+                              placeholder="อีเมล"
+                              class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            />
+                          </div>
+                        </template>
+                        <!-- Display Mode -->
+                        <template v-else>
+                          <div class="text-sm font-medium text-gray-900">{{ getDisplayName(admin) }}</div>
+                          <div class="text-sm text-gray-500">{{ admin.email }}</div>
+                        </template>
                       </div>
                     </div>
                   </td>
 
                   <!-- Company -->
                   <td class="px-6 py-4">
-                    <div class="text-sm text-gray-900">{{ admin.company }}</div>
+                    <!-- Edit Mode for Company -->
+                    <template v-if="editingAdmin === admin.id && admin.is_verified">
+                      <input
+                        v-model="editData.company"
+                        type="text"
+                        placeholder="บริษัท"
+                        class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                    </template>
+                    <!-- Display Mode -->
+                    <template v-else>
+                      <div class="text-sm text-gray-900">{{ admin.company }}</div>
+                    </template>
                   </td>
                   
                   <!-- Role (Read Only for Admin level) -->
@@ -151,26 +185,52 @@
                   <!-- Actions -->
                   <td class="px-6 py-4">
                     <div class="flex items-center space-x-3">
-                      <!-- Show toggle button only for verified users -->
-                      <template v-if="admin.is_verified">
+                      <!-- Edit Mode Actions -->
+                      <template v-if="editingAdmin === admin.id">
                         <button 
-                          @click="toggleActive(admin)" 
-                          :class="admin.active 
-                            ? 'text-yellow-600 hover:text-yellow-800' 
-                            : 'text-green-600 hover:text-green-800'"
-                          class="text-sm font-medium hover:underline transition-colors"
+                          @click="saveAdmin(admin)" 
+                          class="text-sm font-medium text-green-600 hover:text-green-800 hover:underline transition-colors"
                         >
-                          {{ admin.active ? 'ปิดบัญชี' : 'เปิดบัญชี' }}
+                          บันทึก
                         </button>
                         <span class="text-gray-300">|</span>
+                        <button 
+                          @click="cancelEdit()" 
+                          class="text-sm font-medium text-gray-600 hover:text-gray-800 hover:underline transition-colors"
+                        >
+                          ยกเลิก
+                        </button>
                       </template>
-                      <!-- Delete button available for all users -->
-                      <button 
-                        @click="removeAdmin(admin)" 
-                        class="text-sm font-medium text-red-600 hover:text-red-800 hover:underline transition-colors"
-                      >
-                        ลบ
-                      </button>
+                      <!-- Normal Mode Actions -->
+                      <template v-else>
+                        <!-- Edit button only for verified users -->
+                        <template v-if="admin.is_verified">
+                          <button 
+                            @click="startEdit(admin)" 
+                            class="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+                          >
+                            แก้ไข
+                          </button>
+                          <span class="text-gray-300">|</span>
+                          <button 
+                            @click="toggleActive(admin)" 
+                            :class="admin.active 
+                              ? 'text-yellow-600 hover:text-yellow-800' 
+                              : 'text-green-600 hover:text-green-800'"
+                            class="text-sm font-medium hover:underline transition-colors"
+                          >
+                            {{ admin.active ? 'ปิดบัญชี' : 'เปิดบัญชี' }}
+                          </button>
+                          <span class="text-gray-300">|</span>
+                        </template>
+                        <!-- Delete button available for all users -->
+                        <button 
+                          @click="removeAdmin(admin)" 
+                          class="text-sm font-medium text-red-600 hover:text-red-800 hover:underline transition-colors"
+                        >
+                          ลบ
+                        </button>
+                      </template>
                     </div>
                   </td>
                 </tr>
@@ -201,6 +261,13 @@ import NavbarDashboard from '../../../../components/NavbarDashboard.vue';
 const showForm = ref(false);
 const search = ref('');
 const selectedCompany = ref('');
+const editingAdmin = ref(null);
+const editData = ref({
+  name: '',
+  email: '',
+  company: ''
+});
+
 const admins = ref([
   {
     id: 1,
@@ -245,6 +312,14 @@ function getDisplayName(admin) {
   return admin.name || admin.email;
 }
 
+// Get display initial for avatar
+function getDisplayInitial(admin) {
+  if (!admin.is_verified || !admin.name) {
+    return admin.email.charAt(0).toUpperCase();
+  }
+  return admin.name.charAt(0).toUpperCase();
+}
+
 // Format join date - show "-" if not verified, otherwise show verified date
 function formatJoinDate(admin) {
   if (!admin.is_verified || !admin.verified_at) {
@@ -257,6 +332,88 @@ function formatJoinDate(admin) {
     month: 'short',
     day: 'numeric'
   });
+}
+
+// Start editing
+function startEdit(admin) {
+  editingAdmin.value = admin.id;
+  editData.value = {
+    name: admin.name|| '',
+    email: admin.email,
+    company: admin.company
+  };
+}
+
+// Cancel editing
+function cancelEdit() {
+  editingAdmin.value = null;
+  editData.value = {
+    name: '',
+    email: '',
+    company: ''
+  };
+}
+
+// Save admin changes
+async function saveAdmin(admin) {
+  try {
+    // Validation
+    if (!editData.value.name.trim()) {
+      alert('กรุณาระบุชื่อและสกุล');
+      return;
+    }
+    
+    if (!editData.value.email.trim()) {
+      alert('กรุณาระบุอีเมล');
+      return;
+    }
+    
+    if (!editData.value.company.trim()) {
+      alert('กรุณาระบุบริษัท');
+      return;
+    }
+    
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(editData.value.email)) {
+      alert('รูปแบบอีเมลไม่ถูกต้อง');
+      return;
+    }
+    
+    // Check for duplicate email (excluding current admin)
+    const duplicateEmail = admins.value.find(a => 
+      a.id !== admin.id && a.email.toLowerCase() === editData.value.email.toLowerCase()
+    );
+    
+    if (duplicateEmail) {
+      alert('อีเมลนี้มีอยู่ในระบบแล้ว');
+      return;
+    }
+    
+    // Update admin data
+    admin.name = editData.value.name.trim();
+    admin.email = editData.value.email.trim();
+    admin.company = editData.value.company.trim();
+    
+    // เมื่อมี API จริง ใช้โค้ดนี้
+    /*
+    await axios.patch(`/api/admin/${admin.id}`, {
+      name: admin.name,
+      email: admin.email,
+      company: admin.company
+    });
+    */
+    
+    console.log('Admin updated:', admin);
+    alert('อัปเดตข้อมูลเรียบร้อยแล้ว');
+    
+    // Reset edit mode
+    cancelEdit();
+    
+  } catch (error) {
+    console.error('Failed to update admin:', error);
+    alert('อัปเดตข้อมูลล้มเหลว');
+  }
 }
 
 // Fetch only Admin role users
@@ -331,6 +488,11 @@ function removeAdmin(admin) {
     
     // แสดงข้อความยืนยัน
     alert(`ลบ ${displayName} เรียบร้อยแล้ว`);
+    
+    // Reset edit mode if we're editing this admin
+    if (editingAdmin.value === admin.id) {
+      cancelEdit();
+    }
     
     // เมื่อมี API จริง ใช้โค้ดนี้แทน
     /*

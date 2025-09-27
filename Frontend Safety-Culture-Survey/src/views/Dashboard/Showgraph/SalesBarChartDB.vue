@@ -20,6 +20,19 @@
             <option value="v2">Verte Security</option>
           </select>
         </div>
+
+        <!-- ช่วงเวลา -->
+        <div class="flex items-center space-x-3">
+          <label class="text-sm font-medium text-gray-700">ช่วงเวลา:</label>
+          <select 
+            v-model="selectedTimePeriod" 
+            class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+          >
+            <option value="all">ทั้งหมด</option>
+            <option value="current">ปัจจุบัน (Q1-Q2)</option>
+            <option value="future">อนาคต (Q3-Q4)</option>
+          </select>
+        </div>
       </div>
     </div>
 
@@ -145,7 +158,8 @@ const chartLabels = [
   'AVG',
 ];
 
-const rawData = {
+// ข้อมูลปัจจุบัน (Q1-Q2)
+const currentData = {
   'ผู้บริหารระดับสูง / ผู้จัดการส่วน': {
     v1: [4.40, 4.30, 4.10, 3.90, 4.40, 4.00, 3.90, 4.14],
     v2: [4.48, 4.36, 4.24, 4.10, 4.60, 4.28, 4.10, 4.28]
@@ -164,6 +178,26 @@ const rawData = {
   }
 };
 
+// ข้อมูลอนาคต (Q3-Q4) - เพิ่มขึ้นเล็กน้อย
+const futureData = {
+  'ผู้บริหารระดับสูง / ผู้จัดการส่วน': {
+    v1: [4.52, 4.45, 4.28, 4.15, 4.55, 4.18, 4.08, 4.31],
+    v2: [4.65, 4.52, 4.41, 4.28, 4.75, 4.45, 4.28, 4.48]
+  },
+  'ผู้จัดการแผนก / ผู้จัดการ / พนักงานอาวุโส': {
+    v1: [4.22, 4.18, 4.08, 3.98, 4.58, 4.12, 3.88, 4.15],
+    v2: [4.35, 4.42, 4.32, 4.32, 4.75, 4.31, 4.16, 4.33]
+  },
+  'พนักงาน': {
+    v1: [4.25, 4.12, 4.24, 4.25, 4.48, 4.23, 4.03, 4.23],
+    v2: [4.36, 4.25, 4.40, 4.39, 4.56, 4.35, 4.12, 4.35]
+  },
+  'ผู้รับเหมาประจำ': {
+    v1: [4.08, 3.98, 3.88, 3.78, 4.18, 3.88, 3.68, 3.92],
+    v2: [4.23, 4.13, 4.18, 4.18, 4.38, 4.18, 3.98, 4.18]
+  }
+};
+
 // แมปชื่อพื้นที่
 const areaNameMap = {
   'combined': 'Verte Group',
@@ -171,62 +205,124 @@ const areaNameMap = {
   'v2': 'Verte Security'
 };
 
+// แมปชื่อช่วงเวลา
+const timePeriodMap = {
+  'all': 'ทั้งหมด',
+  'current': 'ปัจจุบัน',
+  'future': 'อนาคต'
+};
+
 const selectedVersion = ref("combined");
-const selectedGroup = ref("all");
-const individualGroup = ref("ผู้บริหารระดับสูง");
+const selectedTimePeriod = ref("all");
 
 const colors = {
   'ผู้บริหารระดับสูง / ผู้จัดการส่วน': '#1e40af',
   'ผู้จัดการแผนก / ผู้จัดการ / พนักงานอาวุโส': '#059669',
   'พนักงาน': '#dc2626',
   'ผู้รับเหมาประจำ': '#f97316',
-  'all': '#7c3aed'
+  'all_current': '#7c3aed',
+  'all_future': '#059669',
+  'all_combined': '#1e40af'
+};
+
+// ฟังก์ชันสำหรับคำนวณข้อมูลตามช่วงเวลา
+const getDataForTimePeriod = (timePeriod) => {
+  if (timePeriod === 'current') {
+    return currentData;
+  } else if (timePeriod === 'future') {
+    return futureData;
+  } else {
+    // รวมข้อมูลทั้งหมด (เฉลี่ยของ current และ future)
+    const combinedData = {};
+    for (const group in currentData) {
+      combinedData[group] = {
+        v1: currentData[group].v1.map((val, idx) => (val + futureData[group].v1[idx]) / 2),
+        v2: currentData[group].v2.map((val, idx) => (val + futureData[group].v2[idx]) / 2)
+      };
+    }
+    return combinedData;
+  }
 };
 
 const chartData = computed(() => {
   const datasets = [];
+  const rawData = getDataForTimePeriod(selectedTimePeriod.value);
 
   if (selectedVersion.value === "combined") {
-    const totalGroups = Object.keys(rawData).length;
-    const data = chartLabels.map((_, i) => {
-      let sum = 0;
-      for (const group in rawData) {
-        const v1 = rawData[group].v1[i];
-        const v2 = rawData[group].v2[i];
-        const avg = (v1 + v2) / 2;
-        sum += avg;
-      }
-      return sum / totalGroups;
-    });
+    if (selectedTimePeriod.value === 'all') {
+      // แสดงทั้ง current และ future
+      const currentCombined = getDataForTimePeriod('current');
+      const futureCombined = getDataForTimePeriod('future');
+      
+      // ข้อมูลปัจจุบัน
+      const totalGroups = Object.keys(currentCombined).length;
+      const currentDataPoints = chartLabels.map((_, i) => {
+        let sum = 0;
+        for (const group in currentCombined) {
+          const v1 = currentCombined[group].v1[i];
+          const v2 = currentCombined[group].v2[i];
+          const avg = (v1 + v2) / 2;
+          sum += avg;
+        }
+        return sum / totalGroups;
+      });
 
-    datasets.push({
-      label: `รวมทุกกลุ่ม (${areaNameMap[selectedVersion.value]})`,
-      backgroundColor: colors.all,
-      data,
-    });
-  } else if (selectedGroup.value === "all") {
+      // ข้อมูลอนาคต
+      const futureDataPoints = chartLabels.map((_, i) => {
+        let sum = 0;
+        for (const group in futureCombined) {
+          const v1 = futureCombined[group].v1[i];
+          const v2 = futureCombined[group].v2[i];
+          const avg = (v1 + v2) / 2;
+          sum += avg;
+        }
+        return sum / totalGroups;
+      });
+
+      datasets.push({
+        label: `ปัจจุบัน (${areaNameMap[selectedVersion.value]})`,
+        backgroundColor: colors.all_current,
+        data: currentDataPoints,
+      });
+
+      datasets.push({
+        label: `อนาคต (${areaNameMap[selectedVersion.value]})`,
+        backgroundColor: colors.all_future,
+        data: futureDataPoints,
+      });
+    } else {
+      // แสดงเฉพาะช่วงเวลาที่เลือก
+      const totalGroups = Object.keys(rawData).length;
+      const data = chartLabels.map((_, i) => {
+        let sum = 0;
+        for (const group in rawData) {
+          const v1 = rawData[group].v1[i];
+          const v2 = rawData[group].v2[i];
+          const avg = (v1 + v2) / 2;
+          sum += avg;
+        }
+        return sum / totalGroups;
+      });
+
+      datasets.push({
+        label: `รวมทุกกลุ่ม (${areaNameMap[selectedVersion.value]} - ${timePeriodMap[selectedTimePeriod.value]})`,
+        backgroundColor: colors.all_combined,
+        data,
+      });
+    }
+  } else {
+    // แสดงแต่ละกลุ่ม
     for (const group in rawData) {
       const v1 = rawData[group].v1;
       const v2 = rawData[group].v2;
       const data = selectedVersion.value === 'v1' ? v1 : v2;
 
       datasets.push({
-        label: `${group} (${areaNameMap[selectedVersion.value]})`,
+        label: `${group} (${areaNameMap[selectedVersion.value]} - ${timePeriodMap[selectedTimePeriod.value]})`,
         backgroundColor: colors[group],
         data,
       });
     }
-  } else {
-    const group = individualGroup.value;
-    const v1 = rawData[group].v1;
-    const v2 = rawData[group].v2;
-    const data = selectedVersion.value === 'v1' ? v1 : v2;
-
-    datasets.push({
-      label: `${group} (${areaNameMap[selectedVersion.value]})`,
-      backgroundColor: colors[group],
-      data,
-    });
   }
 
   return { labels: chartLabels, datasets };
@@ -260,12 +356,13 @@ const getScoreClass = (score) => {
 
 // คำนวณข้อมูลสำหรับแสดงในตารางรายละเอียด
 const getTableDescription = computed(() => {
+  const area = areaNameMap[selectedVersion.value];
+  const time = timePeriodMap[selectedTimePeriod.value];
+  
   if (selectedVersion.value === 'combined') {
-    return `รวมทุกพื้นที่ (${areaNameMap[selectedVersion.value]})`;
-  } else if (selectedGroup.value === 'all') {
-    return `ทุกกลุ่มใน ${areaNameMap[selectedVersion.value]}`;
+    return `รวมทุกพื้นที่ (${area} - ${time})`;
   } else {
-    return `กลุ่ม ${individualGroup.value} ใน ${areaNameMap[selectedVersion.value]}`;
+    return `ทุกกลุ่มใน ${area} - ${time}`;
   }
 });
 

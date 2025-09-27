@@ -321,7 +321,7 @@ const confirmPasswordError = ref('')
 
 // Mock database for validation
 const mockUsers = [
-  { email: 'user@example.com', phone: '0811577922' },
+  { email: 'user01@email.com', phone: '0811577922' },
 ]
 
 // Computed properties

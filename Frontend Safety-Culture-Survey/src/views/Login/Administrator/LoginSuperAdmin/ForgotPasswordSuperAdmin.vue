@@ -167,14 +167,19 @@
       <div v-if="currentStep === 'reset'" class="space-y-6 relative z-10">
         <form @submit.prevent="handlePasswordReset">
           <!-- New Password -->
-          <div class="space-y-2">
+          <div class="space-y-2 mb-2">
             <label class="block text-sm font-semibold text-gray-700">รหัสผ่านใหม่</label>
             <div class="relative group">
               <input
                 v-model="newPassword"
                 :type="showNewPassword ? 'text' : 'password'"
+                @input="checkPasswordMatch"
                 placeholder="ระบุรหัสผ่านใหม่"
-                class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 pl-12 pr-12 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-purple-100 focus:border-purple-500 group-hover:border-gray-300"
+                :class="[
+                  'w-full border-2 rounded-xl px-4 py-3 pl-12 pr-12 transition-all duration-300',
+                  'focus:outline-none focus:ring-4 focus:ring-purple-100 focus:border-purple-500 group-hover:border-gray-300',
+                  passwordError ? 'border-red-300 bg-red-50' : 'border-gray-200'
+                ]"
                 required
               />
               <div class="absolute inset-y-0 left-0 flex items-center pl-4">
@@ -195,18 +200,24 @@
           </div>
 
           <!-- Confirm Password -->
-          <div class="space-y-2">
+          <div class="space-y-2 mb-4">
             <label class="block text-sm font-semibold text-gray-700">ยืนยันรหัสผ่าน</label>
             <div class="relative group">
               <input
                 v-model="confirmPassword"
                 :type="showConfirmPassword ? 'text' : 'password'"
+                @input="checkPasswordMatch"
                 placeholder="ยืนยันรหัสผ่านใหม่"
-                class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 pl-12 pr-12 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-purple-100 focus:border-purple-500 group-hover:border-gray-300"
+                :class="[
+                  'w-full border-2 rounded-xl px-4 py-3 pl-12 pr-12 transition-all duration-300',
+                  'focus:outline-none focus:ring-4 focus:ring-purple-100 focus:border-purple-500 group-hover:border-gray-300',
+                  passwordMatchError ? 'border-red-300 bg-red-50' : 
+                  (confirmPassword && newPassword === confirmPassword ? 'border-green-300 bg-green-50' : 'border-gray-200')
+                ]"
                 required
               />
               <div class="absolute inset-y-0 left-0 flex items-center pl-4">
-                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg :class="confirmPassword && newPassword === confirmPassword ? 'text-green-500' : 'text-gray-400'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
               </div>
@@ -220,11 +231,27 @@
                 </svg>
               </button>
             </div>
+            
+            <!-- Password Match Status -->
+            <div v-if="confirmPassword" class="flex items-center gap-2">
+              <div v-if="newPassword === confirmPassword" class="flex items-center gap-1 text-green-600 text-sm">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                </svg>
+                รหัสผ่านตรงกัน
+              </div>
+              <div v-else class="flex items-center gap-1 text-red-600 text-sm">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                </svg>
+                รหัสผ่านไม่ตรงกัน
+              </div>
+            </div>
           </div>
 
+          <!-- Error Messages -->
           <p v-if="passwordError" class="text-red-500 text-sm">{{ passwordError }}</p>
-
-
+          <p v-if="passwordMatchError" class="text-red-500 text-sm">{{ passwordMatchError }}</p>
 
           <button
             type="submit"
@@ -317,23 +344,20 @@ const confirmPassword = ref('')
 const showNewPassword = ref(false)
 const showConfirmPassword = ref(false)
 const passwordError = ref('')
+const passwordMatchError = ref('')
 
 // Mock database - เฉพาะ SuperAdmin
 const mockSuperAdminDatabase = [
   { email: 'superadmin01@gmail.com', phone: '0845678901', pin: '123456', role: 'superadmin' },
-  { email: 'superadmin02@gmail.com', phone: '0856789012', pin: '654321', role: 'superadmin' },
-  { email: 'superadmin03@gmail.com', phone: '0867890123', pin: '111222', role: 'superadmin' },
-  { email: 'superadmin04@gmail.com', phone: '0878901234', pin: '999888', role: 'superadmin' },
 ]
 
 // Computed properties
 const isPasswordValid = computed(() => {
-  return newPassword.value.length >= 12 &&
-         /[A-Z]/.test(newPassword.value) &&
-         /[a-z]/.test(newPassword.value) &&
-         /[0-9]/.test(newPassword.value) &&
-         /[!@#$%^&*(),.?\":{}|<>]/.test(newPassword.value) &&
-         newPassword.value === confirmPassword.value
+  // ทำให้ง่ายขึ้น - เช็คเฉพาะว่ามีรหัสผ่านและตรงกันหรือไม่
+  return newPassword.value.length >= 6 &&
+         newPassword.value === confirmPassword.value &&
+         newPassword.value.trim() !== '' &&
+         confirmPassword.value.trim() !== ''
 })
 
 // Methods
@@ -357,7 +381,7 @@ const getDescription = () => {
     case 'otp':
       return 'กรุณากรอกรหัส OTP ที่ส่งไปยังเบอร์โทรของท่าน'
     case 'reset':
-      return 'กรุณาตั้งรหัสผ่านใหม่ (ข้อกำหนดเข้มงวดสำหรับผู้ดูแลสูงสุด)'
+      return 'กรุณาตั้งรหัสผ่านใหม่ (ความยาวอย่างน้อย 6 ตัวอักษร)'
     default:
       return 'ตั้งรหัสผ่านใหม่เรียบร้อย'
   }
@@ -407,6 +431,16 @@ const clearPhoneError = () => {
 
 const clearPinError = () => {
   pinError.value = ''
+}
+
+const checkPasswordMatch = () => {
+  passwordMatchError.value = ''
+  passwordError.value = ''
+  
+  // ถ้าทั้งสองช่องมีข้อมูลแล้วแต่ไม่ตรงกัน
+  if (newPassword.value && confirmPassword.value && newPassword.value !== confirmPassword.value) {
+    passwordMatchError.value = 'รหัสผ่านไม่ตรงกัน กรุณาตรวจสอบใหม่อีกครั้ง'
+  }
 }
 
 const validateEmail = () => {
@@ -503,16 +537,37 @@ const handleOtpResend = () => {
   console.log('New OTP for SuperAdmin:', generatedOtp.value) // For testing purposes
 }
 
-const handlePasswordReset = async () => {
-  passwordError.value = ''
-  
+const validatePasswordRequirements = () => {
   if (!newPassword.value) {
     passwordError.value = 'กรุณากรอกรหัสผ่านใหม่'
+    return false
+  }
+  
+  if (newPassword.value.length < 6) {
+    passwordError.value = 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร'
+    return false
+  }
+  
+  return true
+}
+
+const handlePasswordReset = async () => {
+  passwordError.value = ''
+  passwordMatchError.value = ''
+  
+  // ตรวจสอบความต้องการพื้นฐาน
+  if (!validatePasswordRequirements()) {
     return
   }
   
-  if (!isPasswordValid.value) {
-    passwordError.value = 'รหัสผ่านไม่ตรงตามข้อกำหนดความปลอดภัยสูง'
+  if (!confirmPassword.value) {
+    passwordError.value = 'กรุณายืนยันรหัสผ่าน'
+    return
+  }
+  
+  // ตรวจสอบว่ารหัสผ่านตรงกันหรือไม่
+  if (newPassword.value !== confirmPassword.value) {
+    passwordMatchError.value = 'รหัสผ่านใหม่และการยืนยันรหัสผ่านไม่ตรงกัน'
     return
   }
   
@@ -528,10 +583,10 @@ const handlePasswordReset = async () => {
     isLoading.value = false
   }
 }
-
 const goToLogin = () => {
-  router.push('/login-superadministrator')
+  router.push('/login-all')
 }
+
 </script>
 
 <style scoped>

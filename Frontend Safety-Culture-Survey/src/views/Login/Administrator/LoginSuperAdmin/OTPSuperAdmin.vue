@@ -1,33 +1,6 @@
 <!-- OTPSuperAdmin.vue - สำหรับ Super Administrator -->
 <template>
   <div class="space-y-6">
-    <div class="text-center mb-6">
-      <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full mb-4">
-        <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.031 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
-        </svg>
-      </div>
-      <h2 class="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
-        Super Admin Access
-      </h2>
-      <p class="text-gray-600">กรุณากรอกรหัส OTP พิเศษเพื่อเข้าสู่ระบบผู้ดูแลสูงสุด</p>
-    </div>
-
-    <!-- Security Notice -->
-    <div class="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-4 mb-6">
-      <div class="flex items-start gap-3">
-        <svg class="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-        </svg>
-        <div>
-          <h4 class="font-semibold text-purple-800 mb-1">การเข้าถึงระดับสูงสุด</h4>
-          <p class="text-sm text-purple-700">
-            คุณกำลังเข้าสู่ระบบผู้ดูแลสูงสุด ซึ่งมีสิทธิ์เข้าถึงและแก้ไขข้อมูลทั้งหมดในระบบ
-          </p>
-        </div>
-      </div>
-    </div>
-
     <form @submit.prevent="handleOtpVerification">
       <!-- OTP Input -->
       <div class="space-y-2">
@@ -114,36 +87,6 @@
              class="absolute inset-0 bg-gradient-to-r from-purple-400 via-pink-400 to-purple-500 opacity-0 hover:opacity-20 transition-opacity duration-300"></div>
       </button>
     </form>
-
-    <!-- Enhanced Help Text -->
-    <div class="text-center pt-4 border-t border-gray-100">
-      <div class="flex items-center justify-center gap-2 text-xs text-gray-500 mb-2">
-        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-        </svg>
-        <span>รหัส OTP สำหรับ Super Admin มีความปลอดภัยสูงและหมดอายุเร็วกว่าปกติ</span>
-      </div>
-      <p class="text-xs text-gray-500">
-        หากมีปัญหาในการเข้าสู่ระบบ กรุณาติดต่อฝ่ายเทคนิค
-      </p>
-    </div>
-
-    <!-- Additional Security Info -->
-    <div class="bg-gray-50 rounded-lg p-3 mt-4">
-      <div class="flex items-start gap-2">
-        <svg class="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-        </svg>
-        <div class="text-xs text-gray-600">
-          <p class="font-medium mb-1">ข้อมูลการรักษาความปลอดภัย:</p>
-          <ul class="space-y-1 text-gray-500">
-            <li>• การเข้าถึงนี้ถูกบันทึกและตรวจสอบ</li>
-            <li>• รหัส OTP หมดอายุใน 3 นาที</li>
-            <li>• ใช้งานได้เพียงครั้งเดียว</li>
-          </ul>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
