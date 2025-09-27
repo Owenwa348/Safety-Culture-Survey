@@ -12,7 +12,7 @@
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h2 class="text-2xl font-bold text-gray-900">จัดการ Super Admin</h2>
+              <h2 class="text-2xl font-bold text-gray-900">จัดการรายชื่อ Super Admin</h2>
               <p class="text-sm text-gray-600 mt-1">จัดการสิทธิ์และสถานะของผู้ดูแลระบบระดับสูง</p>
             </div>
 
@@ -28,7 +28,7 @@
                 <input
                   v-model="search"
                   type="text"
-                  placeholder="ค้นหาชื่อหรืออีเมล..."
+                  placeholder="ค้นหาอีเมล..."
                   class="pl-10 pr-4 py-2.5 w-64 border border-gray-300 rounded-lg text-sm 
                          focus:outline-none focus:ring-2 focus:ring-purple-500 
                          focus:border-transparent transition-colors"
@@ -61,7 +61,7 @@
               <thead class="bg-gray-50">
                 <tr>
                   <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    ข้อมูลผู้ดูแล
+                    อีเมล
                   </th>
                   <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     สิทธิ์
@@ -79,82 +79,69 @@
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
                 <tr v-for="admin in filteredAdmins" :key="admin.id" class="hover:bg-gray-50 transition-colors">
-                  <!-- Admin Info -->
+                  <!-- Admin Email -->
                   <td class="px-6 py-4">
                     <div class="flex items-center">
                       <div class="flex-shrink-0 h-10 w-10">
-                        <div 
-                          :class="admin.role === 'SuperAdmin' ? 'bg-purple-100' : 'bg-blue-100'"
-                          class="h-10 w-10 rounded-full flex items-center justify-center"
-                        >
-                          <span 
-                            :class="admin.role === 'SuperAdmin' ? 'text-purple-700' : 'text-blue-700'"
-                            class="text-sm font-medium"
-                          >
-                            {{ admin.name.charAt(0).toUpperCase() }}
+                        <div class="bg-purple-100 h-10 w-10 rounded-full flex items-center justify-center">
+                          <span class="text-purple-700 text-sm font-medium">
+                            {{ admin.email.charAt(0).toUpperCase() }}
                           </span>
                         </div>
                       </div>
                       <div class="ml-4">
-                        <div class="text-sm font-medium text-gray-900">{{ admin.name }}</div>
-                        <div class="text-sm text-gray-500">{{ admin.email }}</div>
+                        <div class="text-sm font-medium text-gray-900">{{ admin.email }}</div>
                       </div>
                     </div>
                   </td>
                   
-                  <!-- Role (Editable for SuperAdmin) -->
+                  <!-- Role (Fixed as SuperAdmin) -->
                   <td class="px-6 py-4">
-                    <select 
-                      v-model="admin.role" 
-                      @change="changeRole(admin, admin.role)" 
-                      class="text-sm border border-gray-300 rounded-md px-3 py-1.5 focus:outline-none 
-                             focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
-                    >
-                      <option value="SuperAdmin">SuperAdmin</option>
-                      <option value="Admin">Admin</option>
-                    </select>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
+                      Super Admin
+                    </span>
                   </td>
                   
                   <!-- Status -->
                   <td class="px-6 py-4">
                     <span 
-                      :class="admin.active 
-                        ? 'bg-green-100 text-green-800 border-green-200' 
-                        : 'bg-red-100 text-red-800 border-red-200'"
+                      :class="getStatusClass(admin.status)"
                       class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border"
                     >
                       <span 
-                        :class="admin.active ? 'bg-green-400' : 'bg-red-400'"
+                        :class="getStatusDotClass(admin.status)"
                         class="w-1.5 h-1.5 rounded-full mr-1.5"
                       ></span>
-                      {{ admin.active ? 'เปิดใช้งาน' : 'ปิดใช้งาน' }}
+                      {{ getStatusText(admin.status) }}
                     </span>
                   </td>
 
-                  <!-- Join Date -->
+                  <!-- Last Login -->
                   <td class="px-6 py-4">
-                    <div class="text-sm text-gray-900">{{ formatDate(admin.created_at) }}</div>
-                    <div class="text-xs text-gray-500">{{ formatTime(admin.created_at) }}</div>
+                    <div class="text-sm text-gray-900">
+                      {{ admin.status === 'active' && admin.lastLogin ? formatDateTime(admin.lastLogin) : '-' }}
+                    </div>
                   </td>
                   
                   <!-- Actions -->
                   <td class="px-6 py-4">
-                    <div class="flex items-center space-x-3">
+                    <div class="flex items-center space-x-3" v-if="admin.status === 'pending'">
                       <button 
-                        @click="viewDetails(admin)"
-                        class="text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:underline transition-colors"
+                        @click="removeAdmin(admin)" 
+                        class="text-sm font-medium text-red-600 hover:text-red-800 hover:underline transition-colors"
                       >
-                        ดูรายละเอียด
+                        ลบ
                       </button>
-                      <span class="text-gray-300">|</span>
+                    </div>
+                    <div class="flex items-center space-x-3" v-else>
                       <button 
                         @click="toggleActive(admin)" 
-                        :class="admin.active 
+                        :class="admin.status === 'active' 
                           ? 'text-yellow-600 hover:text-yellow-800' 
                           : 'text-green-600 hover:text-green-800'"
                         class="text-sm font-medium hover:underline transition-colors"
                       >
-                        {{ admin.active ? 'ปิดบัญชี' : 'เปิดบัญชี' }}
+                        {{ admin.status === 'active' ? 'ปิดบัญชี' : 'เปิดบัญชี' }}
                       </button>
                       <span class="text-gray-300">|</span>
                       <button 
@@ -177,49 +164,11 @@
               </svg>
               <h3 class="mt-2 text-sm font-medium text-gray-900">ไม่พบผู้ดูแล</h3>
               <p class="mt-1 text-sm text-gray-500">ไม่มีผู้ดูแลที่ตรงกับการค้นหา</p>
+              <div class="mt-4 text-xs text-red-500">
+                Debug: admins.length = {{ admins.length }}, filteredAdmins.length = {{ filteredAdmins.length }}
+              </div>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Detail Modal -->
-    <div v-if="showDetailModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-        <div class="px-6 py-4 border-b border-gray-200">
-          <h3 class="text-lg font-semibold text-gray-900">รายละเอียดผู้ดูแล</h3>
-        </div>
-        <div class="px-6 py-4" v-if="selectedAdmin">
-          <div class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700">ชื่อ</label>
-              <p class="text-sm text-gray-900">{{ selectedAdmin.name }}</p>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700">อีเมล</label>
-              <p class="text-sm text-gray-900">{{ selectedAdmin.email }}</p>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700">สิทธิ์</label>
-              <p class="text-sm text-gray-900">{{ selectedAdmin.role }}</p>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700">สถานะ</label>
-              <p class="text-sm text-gray-900">{{ selectedAdmin.active ? 'เปิดใช้งาน' : 'ปิดใช้งาน' }}</p>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700">วันที่เข้าสู่ระบบล่าสุด</label>
-              <p class="text-sm text-gray-900">{{ formatDate(selectedAdmin.created_at) }}</p>
-            </div>
-          </div>
-        </div>
-        <div class="px-6 py-4 border-t border-gray-200 text-right">
-          <button 
-            @click="showDetailModal = false"
-            class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 transition-colors"
-          >
-            ปิด
-          </button>
         </div>
       </div>
     </div>
@@ -229,27 +178,50 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
-import AddSuperAdminForm from './AddSuperAdminForm.vue'; // ✅ เอา comment ออก
+import AddSuperAdminForm from './AddSuperAdminForm.vue'; 
 import NavbarDashboard from '../../../../components/NavbarDashboard.vue';
 
 const showForm = ref(false);
-const showDetailModal = ref(false);
-const admins = ref([]); // ✅ ให้ default เป็น empty array
+const admins = ref([]);
 const search = ref('');
-const roleFilter = ref('all');
-const selectedAdmin = ref(null);
 
-// Fetch all admins (SuperAdmin can see both SuperAdmin and Admin)
+// ข้อมูลตัวอย่าง
+const sampleAdmins = [
+  {
+    id: 1,
+    email: 'somchai.w@company.com',
+    role: 'SuperAdmin',
+    status: 'active',
+    created_at: '2024-01-15T08:30:00Z',
+    lastLogin: '2024-09-23T14:35:22Z'
+  },
+  {
+    id: 2,
+    email: 'supawadee.j@company.com',
+    role: 'SuperAdmin',
+    status: 'pending',
+    created_at: '2024-02-20T14:15:00Z',
+    lastLogin: null
+  },
+  {
+    id: 3,
+    email: 'admin.disabled@company.com',
+    role: 'SuperAdmin',
+    status: 'inactive',
+    created_at: '2024-01-10T10:20:00Z',
+    lastLogin: null
+  }
+];
+
+// Fetch all admins
 async function fetchAdmins() {
   try {
     const { data } = await axios.get('/api/admin');
-    // ✅ ตรวจสอบว่า data เป็น array หรือไม่
-    admins.value = Array.isArray(data) ? data : [];
+    admins.value = Array.isArray(data) ? data : sampleAdmins;
   } catch (error) {
     console.error('Failed to fetch admins:', error);
-    // ✅ กรณี error ให้ set เป็น empty array
-    admins.value = [];
-    alert('ไม่สามารถโหลดข้อมูลผู้ดูแลได้');
+    admins.value = sampleAdmins;
+    console.log('Using sample data instead');
   }
 }
 
@@ -258,123 +230,115 @@ function handleAdminAdded() {
   showForm.value = false;
 }
 
-onMounted(fetchAdmins);
-
-async function changeRole(admin, newRole) {
-  try {
-    await axios.patch(`/api/admin/${admin.id}/role`, { role: newRole });
-    admin.role = newRole;
-    // Show success message
-    const Toast = Swal.mixin({
-      toast: true,
-      position: 'top-end',
-      showConfirmButton: false,
-      timer: 3000,
-      timerProgressBar: true,
-    });
-    Toast.fire({
-      icon: 'success',
-      title: 'เปลี่ยนสิทธิ์สำเร็จ'
-    });
-  } catch (error) {
-    console.error('Failed to change role:', error);
-    alert('เปลี่ยนสิทธิ์ล้มเหลว');
-    // Revert the change
-    admin.role = admin.role === 'SuperAdmin' ? 'Admin' : 'SuperAdmin';
-  }
-}
+// ใช้ข้อมูลตัวอย่างทันทีและไม่เรียก API ในการ demo
+onMounted(() => {
+  admins.value = [...sampleAdmins];
+  console.log('Loaded sample admins:', admins.value);
+});
 
 async function toggleActive(admin) {
   try {
-    await axios.patch(`/api/admin/${admin.id}/status`, { active: !admin.active });
-    admin.active = !admin.active;
+    const newStatus = admin.status === 'active' ? 'inactive' : 'active';
+    await axios.patch(`/api/admin/${admin.id}/status`, { status: newStatus });
+    admin.status = newStatus;
+    // ถ้าเปิดใช้งาน ให้ใส่เวลาล่าสุด
+    if (newStatus === 'active') {
+      admin.lastLogin = new Date().toISOString();
+    }
   } catch (error) {
     console.error('Failed to toggle status:', error);
-    alert('อัปเดตสถานะล้มเหลว');
+    // สำหรับ demo จะแสดงผลการเปลี่ยนแปลงทันที
+    admin.status = admin.status === 'active' ? 'inactive' : 'active';
+    // ถ้าเปิดใช้งาน ให้ใส่เวลาล่าสุด
+    if (admin.status === 'active') {
+      admin.lastLogin = new Date().toISOString();
+    }
+    alert('อัปเดตสถานะสำเร็จ (Demo Mode)');
   }
 }
 
 async function removeAdmin(admin) {
-  if (!confirm(`ต้องการลบ ${admin.name}?\n\nการดำเนินการนี้ไม่สามารถยกเลิกได้`)) return;
+  if (!confirm(`ต้องการลบ ${admin.email}?\n\nการดำเนินการนี้ไม่สามารถยกเลิกได้`)) return;
   
   try {
     await axios.delete(`/api/admin/${admin.id}`);
     admins.value = admins.value.filter(a => a.id !== admin.id);
   } catch (error) {
     console.error('Failed to remove admin:', error);
-    alert('ลบไม่สำเร็จ');
+    // สำหรับ demo จะลบออกจาก array ทันที
+    admins.value = admins.value.filter(a => a.id !== admin.id);
+    alert('ลบสำเร็จ (Demo Mode)');
   }
 }
 
-function viewDetails(admin) {
-  selectedAdmin.value = admin;
-  showDetailModal.value = true;
+function getStatusClass(status) {
+  switch (status) {
+    case 'active':
+      return 'bg-green-100 text-green-800 border-green-200';
+    case 'inactive':
+      return 'bg-red-100 text-red-800 border-red-200';
+    case 'pending':
+      return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+    default:
+      return 'bg-gray-100 text-gray-800 border-gray-200';
+  }
 }
 
-function formatDate(dateString) {
+function getStatusDotClass(status) {
+  switch (status) {
+    case 'active':
+      return 'bg-green-400';
+    case 'inactive':
+      return 'bg-red-400';
+    case 'pending':
+      return 'bg-yellow-400';
+    default:
+      return 'bg-gray-400';
+  }
+}
+
+function getStatusText(status) {
+  switch (status) {
+    case 'active':
+      return 'เปิดใช้งาน';
+    case 'inactive':
+      return 'ปิดใช้งาน';
+    case 'pending':
+      return 'ยังไม่ยืนยันตัวตน';
+    default:
+      return 'ไม่ทราบสถานะ';
+  }
+}
+
+function formatDateTime(dateString) {
   if (!dateString) return '-';
   const date = new Date(dateString);
-  return date.toLocaleDateString('th-TH', {
+  return date.toLocaleString('th-TH', {
     year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-}
-
-function formatTime(dateString) {
-  if (!dateString) return '-';
-  const date = new Date(dateString);
-  return date.toLocaleTimeString('th-TH', {
+    month: '2-digit',
+    day: '2-digit',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
+    second: '2-digit'
   });
 }
-
-// Computed properties for statistics
-const superAdminCount = computed(() => {
-  return Array.isArray(admins.value) ? admins.value.filter(admin => admin.role === 'SuperAdmin').length : 0;
-});
-
-const adminCount = computed(() => {
-  return Array.isArray(admins.value) ? admins.value.filter(admin => admin.role === 'Admin').length : 0;
-});
-
-const activeCount = computed(() => {
-  return Array.isArray(admins.value) ? admins.value.filter(admin => admin.active).length : 0;
-});
-
-const inactiveCount = computed(() => {
-  return Array.isArray(admins.value) ? admins.value.filter(admin => !admin.active).length : 0;
-});
 
 const filteredAdmins = computed(() => {
-  // ✅ ตรวจสอบให้แน่ใจว่า admins.value เป็น array
   if (!Array.isArray(admins.value)) {
     return [];
   }
 
-  let filtered = [...admins.value]; // ✅ สร้าง copy ของ array
-
-  // Filter by role
-  if (roleFilter.value !== 'all') {
-    filtered = filtered.filter(admin => admin.role === roleFilter.value);
-  }
+  let filtered = [...admins.value];
 
   // Filter by search keyword
   const keyword = search.value.toLowerCase();
   if (keyword) {
     filtered = filtered.filter(admin =>
-      admin.name.toLowerCase().includes(keyword) ||
       admin.email.toLowerCase().includes(keyword)
     );
   }
 
-  // Sort by role (SuperAdmin first) then by name
-  return filtered.sort((a, b) => {
-    if (a.role !== b.role) {
-      return a.role === 'SuperAdmin' ? -1 : 1;
-    }
-    return a.name.localeCompare(b.name);
-  });
+  // Sort by email
+  return filtered.sort((a, b) => a.email.localeCompare(b.email));
 });
 </script>

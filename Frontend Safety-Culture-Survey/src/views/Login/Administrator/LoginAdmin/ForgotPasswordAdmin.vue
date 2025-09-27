@@ -1,4 +1,4 @@
-<!-- ForgotPasswordAdministrator -->
+<!-- ForgotPasswordAdmin -->
 <template>
   <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
     <div class="w-full max-w-md bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-8 border border-white/20 relative overflow-hidden">
@@ -11,7 +11,7 @@
       <div class="text-center mb-8 relative z-10">
         <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg">
           <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a4 4 0 000 8m0 0V9a5 5 0 015 5v1M15 15H9a5 5 0 01-5-5V9"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
           </svg>
         </div>
         <h1 class="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-2">
@@ -20,6 +20,12 @@
         <p class="text-gray-500 text-sm">
           {{ getDescription() }}
         </p>
+        <div class="inline-flex items-center gap-2 mt-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+          <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+          </svg>
+          ผู้ดูแลระบบ
+        </div>
       </div>
 
       <!-- Step 1: Email and Phone Input -->
@@ -32,7 +38,7 @@
               <input
                 v-model="email"
                 type="email"
-                placeholder="example@company.com"
+                placeholder="admin@company.com"
                 :class="[
                   'w-full border-2 rounded-xl px-4 py-3 pl-12 transition-all duration-300',
                   'focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500',
@@ -88,7 +94,7 @@
               'w-full py-3 px-6 rounded-xl font-semibold text-lg transition-all duration-300 transform mt-6',
               'focus:outline-none focus:ring-4 focus:ring-blue-100 relative overflow-hidden',
               email && phoneNumber && !isLoading
-                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:scale-[1.02] hover:shadow-xl' 
+                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:scale-[1.02] hover:shadow-xl' 
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             ]"
           >
@@ -124,7 +130,7 @@
       <div v-if="currentStep === 'reset'" class="space-y-6 relative z-10">
         <form @submit.prevent="handlePasswordReset">
           <!-- New Password -->
-          <div class="space-y-2">
+          <div class="space-y-2 mb-2">
             <label class="block text-sm font-semibold text-gray-700">รหัสผ่านใหม่</label>
             <div class="relative group">
               <input
@@ -152,7 +158,7 @@
           </div>
 
           <!-- Confirm Password -->
-          <div class="space-y-2">
+          <div class="space-y-2 ">
             <label class="block text-sm font-semibold text-gray-700">ยืนยันรหัสผ่าน</label>
             <div class="relative group">
               <input
@@ -181,45 +187,14 @@
 
           <p v-if="passwordError" class="text-red-500 text-sm">{{ passwordError }}</p>
 
-          <!-- Password Requirements -->
-          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
-            <h4 class="text-sm font-semibold text-blue-800 mb-2">ข้อกำหนดรหัสผ่าน:</h4>
-            <ul class="text-xs text-blue-700 space-y-1">
-              <li class="flex items-center gap-2">
-                <svg class="w-3 h-3" :class="newPassword.length >= 8 ? 'text-green-500' : 'text-gray-400'" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                </svg>
-                มีความยาวอย่างน้อย 8 ตัวอักษร
-              </li>
-              <li class="flex items-center gap-2">
-                <svg class="w-3 h-3" :class="/[A-Z]/.test(newPassword) ? 'text-green-500' : 'text-gray-400'" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                </svg>
-                มีตัวอักษรพิมพ์ใหญ่อย่างน้อย 1 ตัว
-              </li>
-              <li class="flex items-center gap-2">
-                <svg class="w-3 h-3" :class="/[a-z]/.test(newPassword) ? 'text-green-500' : 'text-gray-400'" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                </svg>
-                มีตัวอักษรพิมพ์เล็กอย่างน้อย 1 ตัว
-              </li>
-              <li class="flex items-center gap-2">
-                <svg class="w-3 h-3" :class="/[0-9]/.test(newPassword) ? 'text-green-500' : 'text-gray-400'" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                </svg>
-                มีตัวเลขอย่างน้อย 1 ตัว
-              </li>
-            </ul>
-          </div>
-
           <button
             type="submit"
-            :disabled="!isPasswordValid || isLoading"
+            :disabled="!newPassword || !confirmPassword || isLoading"
             :class="[
               'w-full py-3 px-6 rounded-xl font-semibold text-lg transition-all duration-300 transform mt-6',
-              'focus:outline-none focus:ring-4 focus:ring-green-100',
-              isPasswordValid && !isLoading
-                ? 'bg-gradient-to-r from-green-600 to-green-700 text-white hover:scale-[1.02] hover:shadow-xl' 
+              'focus:outline-none focus:ring-4 focus:ring-blue-100',
+              newPassword && confirmPassword && !isLoading
+                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:scale-[1.02] hover:shadow-xl' 
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             ]"
           >
@@ -236,8 +211,8 @@
 
       <!-- Success Message -->
       <div v-if="currentStep === 'success'" class="text-center space-y-6 relative z-10">
-        <div class="w-20 h-20 bg-green-100 rounded-full mx-auto flex items-center justify-center">
-          <svg class="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="w-20 h-20 bg-blue-100 rounded-full mx-auto flex items-center justify-center">
+          <svg class="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
           </svg>
         </div>
@@ -256,7 +231,7 @@
       <!-- Back to Login Link -->
       <div v-if="currentStep !== 'success'" class="text-center pt-6 border-t border-gray-100 relative z-10">
         <router-link
-          to="/login-administrator"
+          to="/login-all"
           class="text-blue-600 hover:text-blue-700 font-medium hover:underline transition-all duration-200 text-sm"
         >
           ← กลับไปหน้าเข้าสู่ระบบ
@@ -267,9 +242,9 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import OTPAdministrator from './OTPAdministrator.vue'
+import OTPAdministrator from './OTPAdmin.vue'
 
 const router = useRouter()
 
@@ -296,22 +271,10 @@ const showNewPassword = ref(false)
 const showConfirmPassword = ref(false)
 const passwordError = ref('')
 
-// Mock database
-const mockDatabase = [
+// Mock database - เฉพาะ Admin
+const mockAdminDatabase = [
   { email: 'admin01@gmail.com', phone: '0811577922', role: 'admin' },
-  { email: 'admin02@gmail.com', phone: '0812345678', role: 'admin' },
-  { email: 'superadmin01@gmail.com', phone: '0845678901', role: 'superadmin' },
-  { email: 'superadmin02@gmail.com', phone: '0856789012', role: 'superadmin' },
 ]
-
-// Computed properties
-const isPasswordValid = computed(() => {
-  return newPassword.value.length >= 8 &&
-         /[A-Z]/.test(newPassword.value) &&
-         /[a-z]/.test(newPassword.value) &&
-         /[0-9]/.test(newPassword.value) &&
-         newPassword.value === confirmPassword.value
-})
 
 // Methods
 const getTitle = () => {
@@ -411,19 +374,19 @@ const handleEmailSubmit = async () => {
     await new Promise(resolve => setTimeout(resolve, 2000))
     
     const cleanedPhone = phoneNumber.value.replace(/\D/g, '')
-    const user = mockDatabase.find(u => 
+    const admin = mockAdminDatabase.find(u => 
       u.email.toLowerCase() === email.value.toLowerCase() && 
       u.phone === cleanedPhone
     )
     
-    if (!user) {
-      emailError.value = 'ไม่พบข้อมูลผู้ใช้ในระบบ กรุณาตรวจสอบอีเมลและเบอร์โทร'
+    if (!admin) {
+      emailError.value = 'ไม่พบข้อมูลผู้ดูแลระบบในระบบ กรุณาตรวจสอบอีเมลและเบอร์โทร'
       return
     }
     
     // Generate OTP
     generatedOtp.value = Math.floor(100000 + Math.random() * 900000).toString()
-    console.log('Generated OTP:', generatedOtp.value) // For testing purposes
+    console.log('Generated OTP for Admin:', generatedOtp.value) // For testing purposes
     
     currentStep.value = 'otp'
     
@@ -449,7 +412,7 @@ const handleOtpVerified = async (otpCode) => {
 
 const handleOtpResend = () => {
   generatedOtp.value = Math.floor(100000 + Math.random() * 900000).toString()
-  console.log('New OTP:', generatedOtp.value) // For testing purposes
+  console.log('New OTP for Admin:', generatedOtp.value) // For testing purposes
 }
 
 const handlePasswordReset = async () => {
@@ -460,8 +423,13 @@ const handlePasswordReset = async () => {
     return
   }
   
-  if (!isPasswordValid.value) {
-    passwordError.value = 'รหัสผ่านไม่ตรงตามข้อกำหนด'
+  if (!confirmPassword.value) {
+    passwordError.value = 'กรุณายืนยันรหัสผ่าน'
+    return
+  }
+  
+  if (newPassword.value !== confirmPassword.value) {
+    passwordError.value = 'รหัสผ่านไม่ตรงกัน'
     return
   }
   
@@ -479,7 +447,7 @@ const handlePasswordReset = async () => {
 }
 
 const goToLogin = () => {
-  router.push('/login-administrator')
+  router.push('/login-all')
 }
 </script>
 

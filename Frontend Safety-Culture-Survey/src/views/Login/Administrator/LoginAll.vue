@@ -1,23 +1,70 @@
-<!-- LoginAdministrator -->
+<!-- LoginAll.vue - Combined Admin & SuperAdmin Login -->
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50">
     <div class="w-full max-w-md bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-8 border border-white/20 relative overflow-hidden">
       
       <!-- Background decoration -->
-      <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-200/30 to-purple-200/30 rounded-full -translate-y-16 translate-x-16"></div>
-      <div class="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-indigo-200/30 to-blue-200/30 rounded-full translate-y-12 -translate-x-12"></div>
+      <div :class="[
+        'absolute top-0 right-0 w-32 h-32 rounded-full -translate-y-16 translate-x-16 transition-all duration-500',
+        loginType === 'admin' 
+          ? 'bg-gradient-to-br from-green-200/30 to-emerald-200/30' 
+          : 'bg-gradient-to-br from-purple-200/30 to-blue-200/30'
+      ]"></div>
+      <div :class="[
+        'absolute bottom-0 left-0 w-24 h-24 rounded-full translate-y-12 -translate-x-12 transition-all duration-500',
+        loginType === 'admin' 
+          ? 'bg-gradient-to-tr from-teal-200/30 to-green-200/30' 
+          : 'bg-gradient-to-tr from-indigo-200/30 to-purple-200/30'
+      ]"></div>
       
       <!-- Header -->
       <div class="text-center mb-8 relative z-10">
-        <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg">
-          <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+        <div :class="[
+          'w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg transition-all duration-500',
+          loginType === 'admin' 
+            ? 'bg-gradient-to-r from-green-500 to-emerald-600' 
+            : 'bg-gradient-to-r from-purple-500 to-indigo-600'
+        ]">
+          <svg v-if="loginType === 'admin'" class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+          </svg>
+          <svg v-else class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.818-4.954A9.953 9.953 0 0112 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10c0-1.466-.316-2.855-.882-4.104m-6.925.956c1.676-.73 3.31-1.852 4.805-3.351M7.5 14.5l2 2L14 12"></path>
           </svg>
         </div>
+
+        <!-- Login Type Toggle -->
+        <div class="flex bg-gray-100 rounded-xl p-1 mb-4 max-w-xs mx-auto">
+          <button
+            @click="loginType = 'admin'"
+            :class="[
+              'flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-300',
+              loginType === 'admin' 
+                ? 'bg-white text-green-600 shadow-sm' 
+                : 'text-gray-600 hover:text-gray-800'
+            ]"
+          >
+            Admin
+          </button>
+          <button
+            @click="loginType = 'superadmin'"
+            :class="[
+              'flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-300',
+              loginType === 'superadmin' 
+                ? 'bg-white text-purple-600 shadow-sm' 
+                : 'text-gray-600 hover:text-gray-800'
+            ]"
+          >
+            SuperAdmin
+          </button>
+        </div>
+
         <h1 class="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-2">
-          เข้าสู่ระบบ
+          เข้าสู่ระบบ {{ loginType === 'admin' ? 'Admin' : 'SuperAdmin' }}
         </h1>
-        <p class="text-gray-500 text-sm">สำหรับบุคลากรภายใน</p>
+        <p class="text-gray-500 text-sm">
+          {{ loginType === 'admin' ? 'สำหรับผู้ดูแลระบบ' : 'สำหรับผู้ดูแลระบบระดับสูง' }}
+        </p>
       </div>
 
       <!-- Error Alert -->
@@ -39,14 +86,16 @@
             <input
               v-model="email"
               type="email"
-              placeholder="example@company.com"
+              :placeholder="loginType === 'admin' ? 'admin@company.com' : 'superadmin@company.com'"
               :class="[
                 'w-full border-2 rounded-xl px-4 py-3 pl-12 transition-all duration-300',
-                'focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500',
-                'group-hover:border-gray-300',
+                'focus:outline-none focus:ring-4 group-hover:border-gray-300',
+                loginType === 'admin' 
+                  ? 'focus:ring-green-100 focus:border-green-500'
+                  : 'focus:ring-purple-100 focus:border-purple-500',
                 emailStatus === 'invalid' ? 'border-red-300 bg-red-50' : 
                 emailStatus === 'no-password' ? 'border-amber-300 bg-amber-50' : 
-                emailStatus === 'valid' ? 'border-green-300 bg-green-50' : 'border-gray-200'
+                emailStatus === 'valid' ? (loginType === 'admin' ? 'border-green-300 bg-green-50' : 'border-purple-300 bg-purple-50') : 'border-gray-200'
               ]"
               @input="resetEmailStatus"
               required
@@ -61,7 +110,10 @@
             
             <!-- Status icon -->
             <div v-if="emailStatus" class="absolute inset-y-0 right-0 flex items-center pr-4">
-              <svg v-if="emailStatus === 'valid'" class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+              <svg v-if="emailStatus === 'valid'" :class="[
+                'w-5 h-5',
+                loginType === 'admin' ? 'text-green-500' : 'text-purple-500'
+              ]" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
               </svg>
               <svg v-else-if="emailStatus === 'no-password'" class="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
@@ -102,7 +154,14 @@
               :type="showPassword ? 'text' : 'password'"
               placeholder="ระบุรหัสผ่าน"
               :disabled="emailStatus !== 'valid'"
-              class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 pl-12 pr-12 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 group-hover:border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              :class="[
+                'w-full border-2 border-gray-200 rounded-xl px-4 py-3 pl-12 pr-12 transition-all duration-300',
+                'focus:outline-none focus:ring-4 group-hover:border-gray-300',
+                'disabled:opacity-50 disabled:cursor-not-allowed',
+                loginType === 'admin' 
+                  ? 'focus:ring-green-100 focus:border-green-500'
+                  : 'focus:ring-purple-100 focus:border-purple-500'
+              ]"
               required
             />
             <div class="absolute inset-y-0 left-0 flex items-center pl-4">
@@ -138,9 +197,14 @@
           :disabled="!email || isLoading"
           :class="[
             'w-full py-3 px-6 rounded-xl font-semibold text-lg transition-all duration-300 transform mb-4',
-            'focus:outline-none focus:ring-4 focus:ring-blue-100 relative overflow-hidden',
+            'focus:outline-none relative overflow-hidden',
+            loginType === 'admin' 
+              ? 'focus:ring-4 focus:ring-green-100'
+              : 'focus:ring-4 focus:ring-purple-100',
             (email && !isLoading)
-              ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:scale-[1.02] hover:shadow-xl hover:from-indigo-700 hover:to-purple-700' 
+              ? (loginType === 'admin' 
+                  ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:scale-[1.02] hover:shadow-xl hover:from-emerald-700 hover:to-teal-700'
+                  : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:scale-[1.02] hover:shadow-xl hover:from-indigo-700 hover:to-purple-700')
               : 'bg-gray-300 text-gray-500 cursor-not-allowed'
           ]"
         >
@@ -153,7 +217,7 @@
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            {{ isLoading ? 'กำลังตรวจสอบ...' : 'ตรวจสอบอีเมล' }}
+            {{ isLoading ? 'กำลังตรวจสอب...' : 'ตรวจสอบอีเมล' }}
           </span>
         </button>
 
@@ -164,22 +228,27 @@
           :disabled="!canSubmit || isLoading"
           :class="[
             'w-full py-3 px-6 rounded-xl font-semibold text-lg transition-all duration-300 transform',
-            'focus:outline-none focus:ring-4 focus:ring-blue-100 relative overflow-hidden',
+            'focus:outline-none relative overflow-hidden',
+            loginType === 'admin' 
+              ? 'focus:ring-4 focus:ring-green-100'
+              : 'focus:ring-4 focus:ring-purple-100',
             (canSubmit && !isLoading)
-              ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:scale-[1.02] hover:shadow-xl hover:from-blue-700 hover:to-indigo-700' 
+              ? (loginType === 'admin' 
+                  ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:scale-[1.02] hover:shadow-xl hover:from-green-700 hover:to-emerald-700'
+                  : 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:scale-[1.02] hover:shadow-xl hover:from-purple-700 hover:to-indigo-700')
               : 'bg-gray-300 text-gray-500 cursor-not-allowed'
           ]"
         >
           <span class="flex items-center justify-center gap-2">
             <svg v-if="!isLoading" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                    d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+                    d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013 3v1"></path>
             </svg>
             <svg v-else class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            {{ isLoading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ' }}
+            {{ isLoading ? 'กำลังเข้าสู่ระบบ...' : `เข้าสู่ระบบ ${loginType === 'admin' ? 'Admin' : 'SuperAdmin'}` }}
           </span>
           
           <!-- Button shine effect -->
@@ -191,32 +260,48 @@
           <p class="text-sm text-center">
             <span class="text-gray-500">ยังไม่มีรหัสผ่าน? </span>
             <router-link
-              :to="`/setpasswordownerandsafety?email=${encodeURIComponent(email)}`"
-              class="text-blue-600 hover:text-blue-700 font-medium hover:underline transition-all duration-200 relative"
+              :to="`/set-password-${loginType}?email=${encodeURIComponent(email)}`"
+              :class="[
+                'font-medium hover:underline transition-all duration-200 relative',
+                loginType === 'admin' 
+                  ? 'text-green-600 hover:text-green-700'
+                  : 'text-purple-600 hover:text-purple-700'
+              ]"
             >
               ตั้งรหัสผ่านที่นี่
-              <span class="absolute inset-x-0 bottom-0 h-px bg-blue-600 transform scale-x-0 transition-transform duration-200 hover:scale-x-100"></span>
+              <span :class="[
+                'absolute inset-x-0 bottom-0 h-px transform scale-x-0 transition-transform duration-200 hover:scale-x-100',
+                loginType === 'admin' ? 'bg-green-600' : 'bg-purple-600'
+              ]"></span>
             </router-link>
           </p>
         </div>
         
         <!-- Forgot Password Link -->
-        <div class="text-center pt-4 border-t border-gray-100 mt-4">
+        <div v-if="emailStatus === 'valid'" class="text-center pt-4 border-t border-gray-100 mt-4">
           <router-link
-            to="/forgot-password-administrator"
-            class="text-blue-600 hover:text-blue-700 font-medium hover:underline transition-all duration-200 text-sm"
+            :to="`/forgot-password-${loginType}`"
+            :class="[
+              'font-medium hover:underline transition-all duration-200 text-sm',
+              loginType === 'admin' 
+                ? 'text-green-600 hover:text-green-700'
+                : 'text-purple-600 hover:text-purple-700'
+            ]"
           >
             ลืมรหัสผ่าน?
           </router-link>
         </div>
         
-        <div class="text-center">
-          <router-link
-            to="/"
-            class="text-blue-600 hover:text-blue-700 font-medium hover:underline transition-all duration-200 text-sm"
-          >
-            กลับไปหน้าเข้าผู้ประเมิน
-          </router-link>
+        <!-- Navigation Links -->
+        <div class="text-center space-y-2 pt-4">
+          <div>
+            <router-link
+              to="/"
+              class="text-gray-600 hover:text-gray-700 font-medium hover:underline transition-all duration-200 text-sm"
+            >
+              กลับไปหน้าเข้าผู้ประเมิน
+            </router-link>
+          </div>
         </div>
       </form>
     </div>
@@ -224,15 +309,13 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
-// เพิ่ม import สำหรับ auth composable (ปรับตามโครงสร้างโปรเจคของคุณ)
-// import { useAuth } from '@/composables/useAuth'
 
 const router = useRouter()
-// const { login } = useAuth() // uncomment เมื่อมี auth composable
 
 // Reactive data
+const loginType = ref('admin') // 'admin' or 'superadmin'
 const email = ref('')
 const password = ref('')
 const showPassword = ref(false)
@@ -241,20 +324,33 @@ const emailMessage = ref('')
 const errorMessage = ref('')
 const isLoading = ref(false)
 
-// Mock database - ในการใช้งานจริงควรเรียก API
-const mockDatabase = [
-  { email: 'superadmin01@gmail.com', hasPassword: true, password: '123456', role: 'superadmin' }, //ผู้ดูแลระบบ
-  { email: 'admin01@gmail.com', hasPassword: true, password: '123456', role: 'admin' }, //Admin
-  { email: 'admin02@gmail.com', hasPassword: false, role: 'admin' }, //Admin
+// Mock databases
+const mockAdminDatabase = [
+  { email: 'admin01@gmail.com', hasPassword: true, password: '123456', role: 'admin' },
+  { email: 'admin02@gmail.com', hasPassword: false, role: 'admin' },
+]
+
+const mockSuperAdminDatabase = [
+  { email: 'superadmin01@gmail.com', hasPassword: true, password: '123456', role: 'superadmin' },
+  { email: 'superadmin02@gmail.com', hasPassword: false, role: 'superadmin' },
 ]
 
 // Computed properties
+const currentDatabase = computed(() => {
+  return loginType.value === 'admin' ? mockAdminDatabase : mockSuperAdminDatabase
+})
+
 const showPasswordField = computed(() => {
   return emailStatus.value === 'valid'
 })
 
 const canSubmit = computed(() => {
   return emailStatus.value === 'valid' && email.value && password.value && !isLoading.value
+})
+
+// Watch for login type changes
+watch(loginType, () => {
+  resetEmailStatus()
 })
 
 // Methods
@@ -272,12 +368,14 @@ const checkEmail = async () => {
     await new Promise(resolve => setTimeout(resolve, 800))
     
     // จำลองการตรวจสอบอีเมลในระบบ
-    const user = mockDatabase.find(u => u.email.toLowerCase() === email.value.toLowerCase())
+    const user = currentDatabase.value.find(u => u.email.toLowerCase() === email.value.toLowerCase())
     
     if (!user) {
       // อีเมลไม่มีในระบบ
       emailStatus.value = 'invalid'
-      emailMessage.value = 'อีเมลของท่านไม่มีในระบบ'
+      emailMessage.value = loginType.value === 'admin' 
+        ? 'อีเมลของท่านไม่มีในระบบ Admin'
+        : 'อีเมลของท่านไม่มีสิทธิ์ SuperAdmin'
     } else if (!user.hasPassword) {
       // มีอีเมลแต่ยังไม่ได้ตั้งรหัสผ่าน
       emailStatus.value = 'no-password'
@@ -317,15 +415,9 @@ const handleLogin = async () => {
     await new Promise(resolve => setTimeout(resolve, 1000))
     
     // ตรวจสอบรหัสผ่าน
-    const user = mockDatabase.find(u => u.email.toLowerCase() === email.value.toLowerCase())
+    const user = currentDatabase.value.find(u => u.email.toLowerCase() === email.value.toLowerCase())
     
     if (user && user.hasPassword && user.password === password.value) {
-      // ถ้ามี auth composable ให้ uncomment บรรทัดข้างล่าง
-      // await login('internal', {
-      //   email: email.value,
-      //   role: user.role
-      // })
-      
       // จำลองการ login สำเร็จ (เก็บข้อมูลใน localStorage ชั่วคราว)
       localStorage.setItem('user', JSON.stringify({
         email: email.value,
@@ -335,16 +427,11 @@ const handleLogin = async () => {
       
       console.log('เข้าสู่ระบบสำเร็จ:', email.value, 'Role:', user.role)
       
-      // Role-based routing
-      switch (user.role) {
-        case 'superadmin':
-          router.push('/caretaker-user-management')
-          break
-        case 'admin':
-          router.push('/dashboard')
-          break
-        default:
-          router.push('/dashboard') // fallback
+      // นำไปยัง Dashboard ที่เหมาะสม
+      if (loginType.value === 'admin') {
+        router.push('/dashboard')
+      } else {
+        router.push('/settings')
       }
     } else {
       // รหัสผ่านไม่ถูกต้อง

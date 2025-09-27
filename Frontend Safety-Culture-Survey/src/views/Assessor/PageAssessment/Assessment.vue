@@ -1,112 +1,259 @@
 <template>
-  <div class="min-h-screen bg-gray-50 p-6 pt-3 text-gray-800">
-    <!-- Title Section -->
-    <div class="mb-6 border-b pb-4">
-      <div
-        class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4"
-      >
-        <div>
-          <h3 class="text-2xl font-bold leading-snug">
-            {{ currentIndex + 1 }}. {{ questions[currentIndex].th }}
-          </h3>
-          <p class="text-lg text-gray-600 mt-1">
-            {{ questions[currentIndex].en }}
-          </p>
-        </div>
-        <div class="text-sm font-medium text-gray-600 self-start lg:self-end">
-          คำถามที่
-          <span class="text-green-600 font-semibold">{{ currentIndex + 1 }}</span> จาก
-          <span class="font-semibold">{{ questions.length }}</span>
+  <div class="min-h-screen bg-gray-100">
+    <!-- Header Section -->
+    <div class="bg-white shadow border-b sticky top-0 z-10">
+      <div class="max-w-6xl mx-auto px-4 py-4">
+        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+          <div class="flex-1">
+            <div class="flex items-center gap-3 mb-2">
+              <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                {{ currentIndex + 1 }}
+              </div>
+              <span class="text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                หมวดหมู่ : {{ questions[currentIndex].category }}
+              </span>
+            </div>
+            <h1 class="text-2xl lg:text-3xl font-bold text-gray-800 mb-2">
+              {{ questions[currentIndex].th }}
+            </h1>
+            <p class="text-lg text-gray-600">
+              {{ questions[currentIndex].en }}
+            </p>
+          </div>
+          <div class="flex flex-col items-end gap-2">
+            <div class="text-sm font-medium text-gray-500">
+              ความคืบหน้า
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="text-2xl font-bold text-blue-600">{{ currentIndex + 1 }}</div>
+              <div class="text-gray-400">/</div>
+              <div class="text-xl text-gray-600">{{ questions.length }}</div>
+            </div>
+            <div class="w-32 bg-gray-200 rounded-full h-2 mt-1">
+              <div 
+                class="bg-blue-500 h-2 rounded-full transition-all duration-300 ease-out"
+                :style="{ width: ((currentIndex + 1) / questions.length) * 100 + '%' }"
+              ></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Table Header -->
-    <div
-      class="grid grid-cols-12 bg-gray-100 font-semibold text-sm p-4 rounded-t-lg border"
-    >
-      <div class="col-span-3 text-center">
-        <div class="grid grid-cols-2">
-          <div class="border-r">ปัจจุบัน</div>
-          <div>สิ่งที่คาดหวังในอนาคต</div>
+    <!-- Main Content -->
+    <div class="max-w-6xl mx-auto px-4 py-6">
+      <!-- Assessment Card -->
+      <div class="bg-white rounded-lg shadow border overflow-hidden">
+        <!-- Table Header -->
+        <div class="bg-gray-50 px-6 py-4 border-b">
+          <div class="grid grid-cols-12 gap-4 items-center">
+            <div class="col-span-3">
+              <div class="grid grid-cols-2 gap-4">
+                <div class="text-center">
+                  <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                  </div>
+                  <div class="text-sm font-medium text-gray-700">ปัจจุบัน</div>
+                </div>
+                <div class="text-center">
+                  <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                    </svg>
+                  </div>
+                  <div class="text-sm font-medium text-gray-700">คาดหวังอนาคต</div>
+                </div>
+              </div>
+            </div>
+            <div class="col-span-2 text-center">
+              <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
+                </svg>
+              </div>
+              <div class="text-sm font-medium text-gray-700">ระดับคะแนน</div>
+            </div>
+            <div class="col-span-7 text-center">
+              <div class="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+              </div>
+              <div class="text-sm font-medium text-gray-700">คำอธิบายระดับการประเมิน</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Assessment Options -->
+        <form class="divide-y divide-gray-200">
+          <div
+            v-for="(level, index) in questions[currentIndex].levels"
+            :key="index"
+            class="px-6 py-4 hover:bg-gray-50 transition-colors duration-200"
+            :class="{
+              'bg-blue-50 border-l-4 border-blue-500': 
+                answers[currentIndex].level === (index + 1) || answers[currentIndex].futureLevel === (index + 1)
+            }"
+          >
+            <div class="grid grid-cols-12 gap-4 items-start">
+              <!-- Radio Buttons -->
+              <div class="col-span-3">
+                <div class="grid grid-cols-2 gap-4">
+                  <!-- Current Level -->
+                  <div class="flex justify-center">
+                    <label class="relative cursor-pointer">
+                      <input
+                        type="radio"
+                        :name="'current-level-' + currentIndex"
+                        :value="index + 1"
+                        v-model="answers[currentIndex].level"
+                        class="sr-only"
+                      />
+                      <div class="w-5 h-5 rounded-full border-2 border-blue-300 flex items-center justify-center transition-all duration-200 hover:border-blue-500"
+                           :class="{
+                             'bg-blue-500 border-blue-500': answers[currentIndex].level === (index + 1),
+                             'bg-white': answers[currentIndex].level !== (index + 1)
+                           }">
+                        <div v-if="answers[currentIndex].level === (index + 1)" 
+                             class="w-2 h-2 bg-white rounded-full"></div>
+                      </div>
+                    </label>
+                  </div>
+                  
+                  <!-- Future Level -->
+                  <div class="flex justify-center">
+                    <label class="relative cursor-pointer">
+                      <input
+                        type="radio"
+                        :name="'future-level-' + currentIndex"
+                        :value="index + 1"
+                        v-model="answers[currentIndex].futureLevel"
+                        class="sr-only"
+                      />
+                      <div class="w-5 h-5 rounded-full border-2 border-green-300 flex items-center justify-center transition-all duration-200 hover:border-green-500"
+                           :class="{
+                             'bg-green-500 border-green-500': answers[currentIndex].futureLevel === (index + 1),
+                             'bg-white': answers[currentIndex].futureLevel !== (index + 1)
+                           }">
+                        <div v-if="answers[currentIndex].futureLevel === (index + 1)" 
+                             class="w-2 h-2 bg-white rounded-full"></div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Level Number -->
+              <div class="col-span-2 flex justify-center">
+                <div class="w-10 h-10 bg-indigo-500 rounded-lg flex items-center justify-center">
+                  <span class="text-white font-bold text-lg">{{ index + 1 }}</span>
+                </div>
+              </div>
+
+              <!-- Level Description -->
+              <div class="col-span-7">
+                <div class="bg-gray-50 p-4 rounded-lg border">
+                  <p class="text-gray-800 font-medium mb-2">
+                    {{ level.th }}
+                  </p>
+                  <p class="text-gray-600 italic text-sm">
+                    {{ level.en }}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <!-- Comment Section -->
+      <div class="mt-6 bg-white rounded-lg shadow border overflow-hidden">
+        <div class="bg-red-50 px-6 py-4 border-b border-red-200">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+              <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V4a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2h-1l-4 4z"/>
+              </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-800">ความคิดเห็นกับข้อคำถามนี้</h3>
+            <span class="text-sm text-red-600 font-medium">*บังคับ</span>
+          </div>
+        </div>
+        <div class="p-6">
+          <textarea
+            v-model="answers[currentIndex].comment"
+            rows="4"
+            class="w-full p-4 border-2 border-red-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent resize-vertical transition-all duration-200 placeholder-gray-400"
+            :class="{
+              'border-red-400 bg-red-50': answers[currentIndex].comment === ''
+            }"
+            placeholder="กรุณากรอกความคิดเห็นของคุณเกี่ยวกับข้อคำถามนี้... (จำเป็นต้องกรอก)"
+            required
+          ></textarea>
         </div>
       </div>
-      <div class="col-span-2 text-center">ระดับคะแนน</div>
-      <div class="col-span-7 text-center">ความหมายของคะแนนประเมิน</div>
-    </div>
 
-    <!-- Radio Choices -->
-    <form class="space-y-4 border border-t-0 rounded-b-lg bg-white mb-6">
-      <div
-        v-for="(level, n) in questions[currentIndex].levels"
-        :key="n"
-        class="grid grid-cols-12 items-start gap-4 px-4 py-3 border-t"
-      >
-        <!-- ตัวเลือก: ปัจจุบัน และ อนาคต -->
-        <div class="col-span-3 grid grid-cols-2 gap-2 place-items-center">
-          <!-- ปัจจุบัน -->
-          <input
-            type="radio"
-            :id="'current-level' + n"
-            name="current-level"
-            :value="n + 1"
-            class="w-5 h-5 text-blue-500 focus:ring-blue-400"
-            v-model="answers[currentIndex].level"
-          />
-          <!-- อนาคต -->
-          <input
-            type="radio"
-            :id="'future-level' + n"
-            name="future-level"
-            :value="n + 1"
-            class="w-5 h-5 text-green-500 focus:ring-green-400"
-            v-model="answers[currentIndex].futureLevel"
-          />
+      <!-- Navigation Buttons -->
+      <div class="mt-6 flex justify-between items-center">
+        <button
+          class="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 px-6 py-3 rounded-lg shadow border transition-colors duration-200"
+          @click="goBackOrHome"
+          type="button"
+        >
+          <svg v-if="currentIndex === 0" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+          </svg>
+          <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+          <span class="font-medium">{{ currentIndex === 0 ? 'กลับไปหน้าหลัก' : 'ก่อนหน้า' }}</span>
+        </button>
+
+        <div class="flex items-center gap-2">
+          <div
+            v-for="(q, idx) in questions"
+            :key="idx"
+            class="w-3 h-3 rounded-full transition-all duration-300"
+            :class="{
+              'bg-blue-500': idx === currentIndex,
+              'bg-green-400': answers[idx].level && answers[idx].futureLevel && answers[idx].comment.trim() !== '' && idx !== currentIndex,
+              'bg-gray-300': (!answers[idx].level || !answers[idx].futureLevel || answers[idx].comment.trim() === '') && idx !== currentIndex
+            }"
+          ></div>
         </div>
 
-        <!-- คะแนน -->
-        <div class="col-span-2 text-center pt-2 text-lg font-bold text-gray-700">
-          {{ n + 1 }}
-        </div>
+        <button
+          class="flex items-center gap-2 px-6 py-3 rounded-lg shadow font-medium transition-colors duration-200 disabled:opacity-50"
+          :class="currentIndex === questions.length - 1 
+            ? 'bg-green-500 hover:bg-green-600 text-white' 
+            : 'bg-blue-500 hover:bg-blue-600 text-white'"
+          @click="goNext"
+          type="button"
+          :disabled="loading"
+        >
+          <span>{{ currentIndex === questions.length - 1 ? "ส่งแบบประเมิน" : "ถัดไป" }}</span>
+          <svg v-if="!loading" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          </svg>
+          <svg v-else class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+        </button>
+      </div>
 
-        <!-- ความหมาย -->
-        <div class="col-span-7 space-y-1 text-sm leading-snug">
-          <p class="text-gray-800 font-medium">{{ level.th }}</p>
-          <p class="text-gray-500 italic">{{ level.en }}</p>
+      <!-- Validation Alert -->
+      <div v-if="showValidationAlert" 
+           class="fixed top-4 right-4 bg-red-500 text-white px-4 py-3 rounded-lg shadow-lg z-50 transition-opacity duration-300">
+        <div class="flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+          </svg>
+          <span class="text-sm">กรุณาเลือกทั้งคะแนนปัจจุบันและอนาคต และกรอกความคิดเห็นก่อนดำเนินการต่อ</span>
         </div>
       </div>
-    </form>
-
-    <!-- Comment Box -->
-    <div class="mb-8">
-      <label class="block text-lg font-semibold text-gray-800 mb-2">
-        แสดงความคิดเห็นเพิ่มเติม
-      </label>
-      <textarea
-        v-model="answers[currentIndex].comment"
-        rows="4"
-        class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7ae2cf] focus:border-transparent resize-vertical"
-        placeholder="กรุณากรอกข้อความที่ต้องการสอบถาม..."
-      ></textarea>
-    </div>
-
-    <!-- Buttons -->
-    <div class="mt-8 flex justify-between">
-      <button
-        class="bg-pink-500 text-white px-6 py-2 rounded hover:bg-pink-600 shadow disabled:opacity-50"
-        @click="goBack"
-        :disabled="currentIndex === 0"
-        type="button"
-      >
-        ก่อนหน้า
-      </button>
-      <button
-        class="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600 shadow"
-        @click="goNext"
-        type="button"
-      >
-        {{ currentIndex === questions.length - 1 ? "ส่งแบบประเมิน" : "ถัดไป" }}
-      </button>
     </div>
   </div>
 </template>
@@ -122,6 +269,7 @@ const email = sessionStorage.getItem("userEmail") || "unknown@example.com";
 
 const currentIndex = ref(0);
 const loading = ref(false);
+const showValidationAlert = ref(false);
 
 const answers = ref(
   questions.map(() => ({
@@ -131,7 +279,7 @@ const answers = ref(
   }))
 );
 
-// ✅ เช็กว่าเคยประเมินหรือยัง
+// เช็คว่าเคยประเมินหรือยัง
 onMounted(async () => {
   const token = localStorage.getItem("access_token");
   if (!token) {
@@ -156,14 +304,25 @@ onMounted(async () => {
   }
 });
 
+function goBackOrHome() {
+  if (currentIndex.value === 0) {
+    router.push("/home");
+  } else {
+    currentIndex.value--;
+  }
+}
+
 function goBack() {
   if (currentIndex.value > 0) currentIndex.value--;
 }
 
 async function goNext() {
   const currentAnswer = answers.value[currentIndex.value];
-  if (currentAnswer.level === null || currentAnswer.futureLevel === null) {
-    alert("กรุณาเลือกทั้งคะแนนปัจจุบันและอนาคตก่อนดำเนินการต่อ");
+  if (currentAnswer.level === null || currentAnswer.futureLevel === null || currentAnswer.comment.trim() === '') {
+    showValidationAlert.value = true;
+    setTimeout(() => {
+      showValidationAlert.value = false;
+    }, 3000);
     return;
   }
 
@@ -192,7 +351,7 @@ async function goNext() {
       );
 
       alert("ส่งแบบประเมินเรียบร้อยแล้ว ขอบคุณค่ะ");
-      router.push("/");
+      router.push("/home");
     } catch (error) {
       console.error("ส่งข้อมูลล้มเหลว", error);
       alert("เกิดข้อผิดพลาดในการส่งข้อมูล");
@@ -202,4 +361,3 @@ async function goNext() {
   }
 }
 </script>
-

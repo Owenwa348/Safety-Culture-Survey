@@ -1,11 +1,10 @@
-<!-- EvaluatorRegistration -->
 <template>
   <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
     <div class="w-full max-w-2xl bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
       <div class="text-center mb-8">
         <div class="w-20 h-20 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full mx-auto mb-4 flex items-center justify-center">
           <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
           </svg>
         </div>
         <h1 class="text-3xl font-bold text-gray-800">ลงทะเบียนผู้ใช้งาน</h1>
@@ -23,23 +22,6 @@
           </h3>
           
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- ชื่อผู้ใช้ -->
-            <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-2">ชื่อผู้ใช้ <span class="text-red-500">*</span></label>
-              <input 
-                type="text" 
-                v-model="form.username"
-                @input="validateUsername"
-                class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 transition-all focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300" 
-                placeholder="ชื่อผู้ใช้ของคุณ (ภาษาอังกฤษเท่านั้น)"
-                maxlength="20"
-                required
-              />
-              <div v-if="usernameError" class="mt-2 text-red-500 text-sm">
-                {{ usernameError }}
-              </div>
-            </div>
-
             <!-- ชื่อ - นามสกุล -->
             <div>
               <label class="block text-sm font-semibold text-gray-700 mb-2">ชื่อ - นามสกุล <span class="text-red-500">*</span></label>
@@ -53,6 +35,18 @@
               />
             </div>
 
+            <!-- บริษัท/องค์กร -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">บริษัท/องค์กร <span class="text-red-500">*</span></label>
+              <input 
+                type="text" 
+                v-model="form.company"
+                class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 transition-all focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300" 
+                placeholder="กรุณากรอกชื่อบริษัท/องค์กร"
+                required
+              />
+            </div>
+
             <!-- อีเมล -->
             <div>
               <label class="block text-sm font-semibold text-gray-700 mb-2">อีเมล <span class="text-red-500">*</span></label>
@@ -61,7 +55,7 @@
                 v-model="form.email"
                 @blur="validateEmail"
                 class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 transition-all focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300" 
-                placeholder="example@email.com"
+                placeholder="example@company.com"
                 required
               />
               <div v-if="emailError" class="mt-2 text-red-500 text-sm">
@@ -331,7 +325,7 @@
           </span>
           <span v-else>
             <svg class="inline-block w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
             </svg>
             ลงทะเบียนผู้ใช้งาน
           </span>
@@ -386,55 +380,21 @@
           </div>
         </div>
       </div>
-
-      <!-- Duplicate Username Modal -->
-      <div v-if="showDuplicateModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl max-w-md w-full p-8 shadow-2xl transform transition-all">
-          <div class="text-center">
-            <!-- Warning Icon -->
-            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-yellow-100 mb-6">
-              <svg class="h-8 w-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-              </svg>
-            </div>
-            
-            <!-- Warning Message -->
-            <h3 class="text-2xl font-bold text-gray-900 mb-4">ชื่อผู้ใช้ซ้ำ</h3>
-            <div class="text-gray-600 space-y-3 mb-6">
-              <p class="text-base">
-                ชื่อผู้ใช้ "{{ form.username }}" มีการใช้งานแล้ว
-              </p>
-              <p class="text-base">
-                กรุณาเลือกชื่อผู้ใช้อื่น
-              </p>
-            </div>
-            
-            <!-- Action Button -->
-            <div class="space-y-3">
-              <button 
-                @click="closeDuplicateModal"
-                class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white py-3 px-6 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg"
-              >
-                ตกลง
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </template>
 
 <script>
 export default {
-  name: 'EnhancedUserRegistrationForm',
+  name: 'CompanyRegistrationForm',
   data() {
     return {
       form: {
-        username: '',
         fullName: '',
         email: '',
         phone: '',
+        company: '',
+        customCompany: '',
         position: '',
         department: '',
         customDepartment: '',
@@ -448,7 +408,6 @@ export default {
       showConfirmPassword: false,
       isLoading: false,
       emailError: '',
-      usernameError: '',
       phoneError: '',
       passwordChecks: {
         length: false,
@@ -456,16 +415,7 @@ export default {
         lowercase: false,
         number: false
       },
-      showSuccessModal: false,
-      showDuplicateModal: false,
-      // Mock database of existing usernames
-      existingUsernames: [
-        'admin',
-        'user123', 
-        'testuser',
-        'john_doe',
-        'manager'
-      ]
+      showSuccessModal: false
     }
   },
   computed: {
@@ -490,16 +440,13 @@ export default {
     },
     isFormValid() {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      const usernameRegex = /^[a-zA-Z0-9_]+$/
       
       return (
-        this.form.username.trim() !== '' &&
-        usernameRegex.test(this.form.username) &&
-        this.form.username.length >= 3 &&
         this.form.fullName.trim() !== '' &&
         emailRegex.test(this.form.email) &&
         this.form.phone.length === 10 &&
         this.form.phone.startsWith('0') &&
+        this.form.company !== '' &&
         this.form.position !== '' &&
         this.form.department !== '' &&
         (this.form.department !== 'other' || this.form.customDepartment.trim() !== '') &&
@@ -509,12 +456,14 @@ export default {
         this.passwordsMatch &&
         this.form.acceptTerms &&
         !this.emailError &&
-        !this.usernameError &&
         !this.phoneError
       )
     }
   },
   methods: {
+    handleCompanyChange() {
+      // No longer needed since it's a text input
+    },
     handleDepartmentChange() {
       if (this.form.department !== 'other') {
         this.form.customDepartment = ''
@@ -528,23 +477,6 @@ export default {
         uppercase: /[A-Z]/.test(password),
         lowercase: /[a-z]/.test(password),
         number: /[0-9]/.test(password)
-      }
-    },
-    validateUsername() {
-      // Allow only English letters, numbers, and underscores
-      this.form.username = this.form.username.replace(/[^a-zA-Z0-9_]/g, '')
-      
-      // Check username requirements
-      if (this.form.username.length > 0) {
-        if (this.form.username.length < 3) {
-          this.usernameError = 'ชื่อผู้ใช้ต้องมีอย่างน้อย 3 ตัวอักษร'
-        } else if (this.form.username.length > 20) {
-          this.usernameError = 'ชื่อผู้ใช้ต้องไม่เกิน 20 ตัวอักษร'
-        } else {
-          this.usernameError = ''
-        }
-      } else {
-        this.usernameError = ''
       }
     },
     validatePhone() {
@@ -576,27 +508,13 @@ export default {
         this.emailError = ''
       }
     },
-    checkDuplicateUsername() {
-      // Check if the entered username already exists in the system
-      return this.existingUsernames.includes(this.form.username.toLowerCase())
-    },
-    closeDuplicateModal() {
-      this.showDuplicateModal = false
-      // Focus back to username field
-      this.$nextTick(() => {
-        const usernameInput = document.querySelector('input[type="text"]')
-        if (usernameInput) {
-          usernameInput.focus()
-          usernameInput.select()
-        }
-      })
-    },
     resetForm() {
       this.form = {
-        username: '',
         fullName: '',
         email: '',
         phone: '',
+        company: '',
+        customCompany: '',
         position: '',
         department: '',
         customDepartment: '',
@@ -609,7 +527,6 @@ export default {
       
       // Reset all validation states
       this.emailError = ''
-      this.usernameError = ''
       this.phoneError = ''
       this.passwordChecks = {
         length: false,
@@ -634,21 +551,15 @@ export default {
         return
       }
 
-      // Check for duplicate username first
-      if (this.checkDuplicateUsername()) {
-        this.showDuplicateModal = true
-        return
-      }
-
       this.isLoading = true
 
       try {
         // สร้างข้อมูลสำหรับบันทึก
         const registrationData = {
-          username: this.form.username,
           fullName: this.form.fullName,
           email: this.form.email,
           phone: this.form.phone,
+          company: this.form.company,
           position: this.form.position,
           department: this.form.department === 'other' ? this.form.customDepartment : this.form.department,
           workGroup: this.form.workGroup,
@@ -702,3 +613,7 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+/* Additional custom styles if needed */
+</style>
