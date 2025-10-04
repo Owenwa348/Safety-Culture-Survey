@@ -1,87 +1,99 @@
 <template>
-  <div class="bg-white border border-gray-200 rounded-lg shadow-sm">
-    <!-- Header -->
-    <div class="border-b border-gray-100 px-6 py-4">
-      <h3 class="text-xl font-semibold text-gray-900">ผลการประเมินบริษัท Verte Group ใน ปี 2025</h3>
-      <p class="text-sm text-gray-600 mt-1">การวิเคราะห์ผลการประเมิน บริษัท Verte Group ตามตำแหน่งและพื้นที่</p>
-    </div>
-
-    <div class="px-6 py-4 bg-gray-50 border-b border-gray-100">
-      <div class="flex flex-wrap items-center gap-6">
-        <!-- พื้นที่ -->
-        <div class="flex items-center space-x-3">
-          <label class="text-sm font-medium text-gray-700">เลือกพื้นที่:</label>
-          <select 
-            v-model="selectedVersion" 
-            class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-          >
-            <option value="combined">Verte Group</option>
-            <option value="v1">Verte Smart Solution</option>
-            <option value="v2">Verte Security</option>
-          </select>
+  <div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
+    <div class="max-w-7xl mx-auto">
+      <!-- Header Card -->
+      <div class="bg-white rounded-xl shadow-md mb-6 overflow-hidden">
+        <div class="bg-gradient-to-r  px-8 py-6">
+          <h1 class="text-2xl font-bold mb-2">ผลการประเมินบริษัท Verte Group ประจำปี 2025</h1>
+          <p>การวิเคราะห์ผลการประเมินตามตำแหน่งและพื้นที่การดำเนินงาน</p>
         </div>
+        
+        <!-- Filters -->
+        <div class="px-8 py-5 bg-gray-50 border-b">
+          <div class="flex flex-wrap items-center gap-6">
+            <div class="flex items-center space-x-3">
+              <label class="text-sm font-semibold text-gray-700">พื้นที่:</label>
+              <select 
+                v-model="selectedVersion" 
+                class="px-4 py-2.5 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"
+              >
+                <option value="combined">Verte Group</option>
+                <option value="v1">Verte Smart Solution</option>
+                <option value="v2">Verte Security</option>
+              </select>
+            </div>
 
-        <!-- ช่วงเวลา -->
-        <div class="flex items-center space-x-3">
-          <label class="text-sm font-medium text-gray-700">ช่วงเวลา:</label>
-          <select 
-            v-model="selectedTimePeriod" 
-            class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-          >
-            <option value="all">ทั้งหมด</option>
-            <option value="current">ปัจจุบัน (Q1-Q2)</option>
-            <option value="future">อนาคต (Q3-Q4)</option>
-          </select>
+            <div class="flex items-center space-x-3">
+              <label class="text-sm font-semibold text-gray-700">ช่วงเวลา:</label>
+              <select 
+                v-model="selectedTimePeriod" 
+                class="px-4 py-2.5 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"
+              >
+                <option value="all">เปรียบเทียบ (ปัจจุบัน กับ อนาคต)</option>
+                <option value="current">ปัจจุบัน </option>
+                <option value="future">อนาคต </option>
+              </select>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Chart -->
-    <div class="px-6 py-6">
-      <div class="h-96">
-        <Bar :data="chartData" :options="chartOptions" />
+      <!-- Chart Card -->
+      <div class="bg-white rounded-xl shadow-md mb-6 overflow-hidden">
+        <div class="px-8 py-5 border-b bg-gradient-to-r from-gray-50 to-white">
+          <h2 class="text-lg font-bold text-gray-800 flex items-center">
+            <span class="w-1 h-6 bg-blue-600 rounded-full mr-3"></span>
+            กราฟแสดงผลการประเมิน
+          </h2>
+          <p class="text-sm text-gray-600 mt-1 ml-7">เปรียบเทียบคะแนนเฉลี่ยในแต่ละหมวดหมู่</p>
+        </div>
+        
+        <div class="px-8 py-8">
+          <div class="h-[450px]">
+            <Bar :data="chartData" :options="chartOptions" />
+          </div>
+        </div>
       </div>
-    </div>
 
-    <!-- Table -->
-    <div class="px-6 pb-6">
-      <div class="border border-gray-200 rounded-lg overflow-hidden">
-        <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
-          <h4 class="text-sm font-semibold text-gray-900">ตารางข้อมูลรายละเอียด</h4>
-          <p class="text-xs text-gray-600 mt-1">
-            แสดงคะแนนเฉลี่ย: {{ getTableDescription }}
-          </p>
+      <!-- Table Card -->
+      <div class="bg-white rounded-xl shadow-md overflow-hidden">
+        <div class="px-8 py-5 border-b bg-gradient-to-r from-gray-50 to-white">
+          <h2 class="text-lg font-bold text-gray-800 flex items-center">
+            <span class="w-1 h-6 bg-blue-600 rounded-full mr-3"></span>
+            ตารางข้อมูลรายละเอียด
+          </h2>
+          <p class="text-sm text-gray-600 mt-1 ml-7">{{ getTableDescription }}</p>
         </div>
         
         <div class="overflow-x-auto">
-          <table class="min-w-full">
-            <thead class="bg-gray-50">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
               <tr>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  กลุ่ม/ตำแหน่ง
+                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider sticky left-0 bg-gray-50 z-10">
+                  กลุ่ม / ตำแหน่ง
                 </th>
                 <th 
                   v-for="(label, index) in chartLabels" 
                   :key="index" 
-                  class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  class="px-4 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider"
                   :title="label"
                 >
-                  <div class="truncate max-w-20">
+                  <div class="truncate">
                     {{ getShortLabel(label, index) }}
                   </div>
                 </th>
               </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
+            <tbody class="bg-white divide-y divide-gray-100">
               <tr 
                 v-for="(dataset, index) in chartData.datasets" 
                 :key="index" 
-                class="hover:bg-gray-50 transition-colors duration-150"
+                class="hover:bg-blue-50 transition-colors duration-200"
               >
-                <td class="px-4 py-3 text-sm font-medium text-gray-900">
+                <td class="px-6 py-4 text-sm font-semibold text-gray-800 sticky left-0 bg-white z-10 border-r border-gray-100">
                   <div class="flex items-center">
                     <div 
-                      class="w-3 h-3 rounded-full mr-2 flex-shrink-0" 
+                      class="w-4 h-4 rounded mr-3 flex-shrink-0 shadow-sm" 
                       :style="{ backgroundColor: dataset.backgroundColor }"
                     ></div>
                     <span class="truncate">{{ dataset.label }}</span>
@@ -90,39 +102,39 @@
                 <td 
                   v-for="(score, scoreIndex) in dataset.data" 
                   :key="scoreIndex" 
-                  class="px-3 py-3 text-sm text-center"
+                  class="px-4 py-4 text-sm text-center font-semibold"
                   :class="getScoreClass(score)"
                 >
-                  <span class="font-medium">{{ formatScore(score) }}</span>
+                  {{ formatScore(score) }}
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
         
-        <!-- Summary Statistics -->
-        <div class="bg-gray-50 px-4 py-3 border-t border-gray-200">
-          <div class="flex flex-wrap items-center justify-between text-xs text-gray-600">
-            <div class="flex items-center space-x-4">
-              <span>จำนวนกลุ่ม: <strong>{{ chartData.datasets.length }}</strong></span>
-              <span>จำนวนหมวดหมู่: <strong>{{ chartLabels.length }}</strong></span>
+        <!-- Footer Summary -->
+        <div class="px-8 py-5 bg-gradient-to-r from-gray-50 to-blue-50 border-t">
+          <div class="flex flex-wrap items-center justify-between text-sm">
+            <div class="flex items-center space-x-6 text-gray-700">
+              <span class="font-semibold">จำนวนกลุ่ม: <span class="text-blue-600">{{ chartData.datasets.length }}</span></span>
+              <span class="font-semibold">จำนวนหมวดหมู่: <span class="text-blue-600">{{ chartLabels.length }}</span></span>
             </div>
-            <div class="flex items-center space-x-4 mt-2 sm:mt-0">
-              <div class="flex items-center space-x-1">
-                <div class="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span>ดีเยี่ยม (≥4.5)</span>
+            <div class="flex items-center gap-4 mt-3 sm:mt-0">
+              <div class="flex items-center space-x-2">
+                <div class="w-3 h-3 bg-green-500 rounded shadow-sm"></div>
+                <span class="text-gray-700 font-medium">ดีเยี่ยม ≥ 4.5</span>
               </div>
-              <div class="flex items-center space-x-1">
-                <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span>ดี (4.0-4.49)</span>
+              <div class="flex items-center space-x-2">
+                <div class="w-3 h-3 bg-blue-500 rounded shadow-sm"></div>
+                <span class="text-gray-700 font-medium">ดี 4.0 - 4.49</span>
               </div>
-              <div class="flex items-center space-x-1">
-                <div class="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                <span>ปานกลาง (3.5-3.99)</span>
+              <div class="flex items-center space-x-2">
+                <div class="w-3 h-3 bg-yellow-500 rounded shadow-sm"></div>
+                <span class="text-gray-700 font-medium">ปานกลาง 3.5 - 3.99</span>
               </div>
-              <div class="flex items-center space-x-1">
-                <div class="w-2 h-2 bg-red-500 rounded-full"></div>
-                <span>ต้องพัฒนา (&lt;3.5)</span>
+              <div class="flex items-center space-x-2">
+                <div class="w-3 h-3 bg-red-500 rounded shadow-sm"></div>
+                <span class="text-gray-700 font-medium">ต้องพัฒนา &lt; 3.5</span>
               </div>
             </div>
           </div>
@@ -158,7 +170,7 @@ const chartLabels = [
   'AVG',
 ];
 
-// ข้อมูลปัจจุบัน (Q1-Q2)
+// ข้อมูลปัจจุบัน 
 const currentData = {
   'ผู้บริหารระดับสูง / ผู้จัดการส่วน': {
     v1: [4.40, 4.30, 4.10, 3.90, 4.40, 4.00, 3.90, 4.14],
@@ -169,16 +181,16 @@ const currentData = {
     v2: [4.17, 4.24, 4.14, 4.14, 4.58, 4.13, 3.98, 4.15]
   },
   'พนักงาน': {
-    v1: [4.08, 3.95, 4.06, 4.07, 4.30, 4.05, 3.85, 4.05],
-    v2: [4.18, 4.07, 4.22, 4.21, 4.38, 4.17, 3.94, 4.11]
+    v1: [2.08, 1.95, 3.06, 3.07, 2.30, 1.05, 0.85, 3.05],
+    v2: [2.18, 3.07, 1.22, 1.21, 1.38, 1.17, 2.94, 2.11]
   },
   'ผู้รับเหมาประจำ': {
-    v1: [3.90, 3.80, 3.70, 3.60, 4.00, 3.70, 3.50, 3.73],
-    v2: [4.05, 3.95, 4.00, 4.00, 4.20, 4.00, 3.80, 3.99]
+    v1: [1.90, 1.80, 1.70, 2.60, 2.00, 2.70, 3.50, 3.73],
+    v2: [2.05, 2.95, 2.00, 1.00, 1.20, 1.00, 2.80, 2.99]
   }
 };
 
-// ข้อมูลอนาคต (Q3-Q4) - เพิ่มขึ้นเล็กน้อย
+// ข้อมูลอนาคต - เพิ่มขึ้นเล็กน้อย
 const futureData = {
   'ผู้บริหารระดับสูง / ผู้จัดการส่วน': {
     v1: [4.52, 4.45, 4.28, 4.15, 4.55, 4.18, 4.08, 4.31],
@@ -246,9 +258,9 @@ const getDataForTimePeriod = (timePeriod) => {
 
 const chartData = computed(() => {
   const datasets = [];
-  const rawData = getDataForTimePeriod(selectedTimePeriod.value);
 
   if (selectedVersion.value === "combined") {
+    // กรณีเลือก Verte Group (รวมทั้งหมด)
     if (selectedTimePeriod.value === 'all') {
       // แสดงทั้ง current และ future
       const currentCombined = getDataForTimePeriod('current');
@@ -292,6 +304,7 @@ const chartData = computed(() => {
       });
     } else {
       // แสดงเฉพาะช่วงเวลาที่เลือก
+      const rawData = getDataForTimePeriod(selectedTimePeriod.value);
       const totalGroups = Object.keys(rawData).length;
       const data = chartLabels.map((_, i) => {
         let sum = 0;
@@ -311,17 +324,46 @@ const chartData = computed(() => {
       });
     }
   } else {
-    // แสดงแต่ละกลุ่ม
-    for (const group in rawData) {
-      const v1 = rawData[group].v1;
-      const v2 = rawData[group].v2;
-      const data = selectedVersion.value === 'v1' ? v1 : v2;
+    // กรณีเลือกพื้นที่เฉพาะ (Verte Smart Solution หรือ Verte Security)
+    if (selectedTimePeriod.value === 'all') {
+      // เปรียบเทียบระหว่าง ปัจจุบัน และ อนาคต
+      const currentRawData = getDataForTimePeriod('current');
+      const futureRawData = getDataForTimePeriod('future');
 
-      datasets.push({
-        label: `${group} (${areaNameMap[selectedVersion.value]} - ${timePeriodMap[selectedTimePeriod.value]})`,
-        backgroundColor: colors[group],
-        data,
-      });
+      // ข้อมูลอนาคต - แสดงทุกกลุ่มก่อน (แถวบน) - ใช้สีเข้มเต็ม
+      for (const group in futureRawData) {
+        const data = selectedVersion.value === 'v1' ? futureRawData[group].v1 : futureRawData[group].v2;
+        datasets.push({
+          label: `${group} (อนาคต)`,
+          backgroundColor: colors[group],
+          borderWidth: 0,
+          data,
+        });
+      }
+
+      // ข้อมูลปัจจุบัน - แสดงทุกกลุ่มทีหลัง (แถวล่าง) - ใช้สีอ่อนลง
+      for (const group in currentRawData) {
+        const data = selectedVersion.value === 'v1' ? currentRawData[group].v1 : currentRawData[group].v2;
+        const lightColor = colors[group] + 'B3'; // เพิ่ม opacity 70%
+        datasets.push({
+          label: `${group} (ปัจจุบัน)`,
+          backgroundColor: lightColor,
+          borderWidth: 1,
+          borderColor: colors[group],
+          data,
+        });
+      }
+    } else {
+      // แสดงเฉพาะช่วงเวลาที่เลือก - แสดงทุกกลุ่ม
+      const rawData = getDataForTimePeriod(selectedTimePeriod.value);
+      for (const group in rawData) {
+        const data = selectedVersion.value === 'v1' ? rawData[group].v1 : rawData[group].v2;
+        datasets.push({
+          label: `${group} (${areaNameMap[selectedVersion.value]} - ${timePeriodMap[selectedTimePeriod.value]})`,
+          backgroundColor: colors[group],
+          data,
+        });
+      }
     }
   }
 
@@ -373,14 +415,21 @@ const chartOptions = {
     legend: { 
       position: 'top',
       labels: {
-        font: { size: 12, weight: '500' },
-        padding: 16,
+        font: { size: 13, weight: '600' },
+        padding: 20,
         usePointStyle: true,
+        pointStyle: 'circle',
+        boxWidth: 10,
+        boxHeight: 10,
       }
     },
     tooltip: {
-      backgroundColor: 'rgba(0, 0, 0, 0.8)',
-      cornerRadius: 4,
+      backgroundColor: 'rgba(0, 0, 0, 0.85)',
+      titleFont: { size: 14, weight: 'bold' },
+      bodyFont: { size: 13 },
+      padding: 12,
+      cornerRadius: 8,
+      displayColors: true,
       callbacks: {
         label: context => `${context.dataset.label}: ${context.parsed.y.toFixed(2)}`
       }
@@ -394,19 +443,26 @@ const chartOptions = {
       title: { 
         display: true, 
         text: 'คะแนนเฉลี่ย',
-        font: { size: 13, weight: '500' }
+        font: { size: 14, weight: '600' },
+        color: '#374151'
       },
       ticks: {
         stepSize: 0.2,
         callback: val => val.toFixed(1),
+        font: { size: 12 },
+        color: '#6b7280'
       },
-      grid: { color: 'rgba(0, 0, 0, 0.05)' }
+      grid: { 
+        color: 'rgba(0, 0, 0, 0.06)',
+        drawBorder: false
+      }
     },
     x: {
       ticks: {
         maxRotation: 45,
-        minRotation: 20,
-        font: { size: 11 }
+        minRotation: 30,
+        font: { size: 11, weight: '500' },
+        color: '#6b7280'
       },
       grid: { display: false }
     }
@@ -414,31 +470,50 @@ const chartOptions = {
   elements: {
     bar: {
       borderSkipped: false,
-      borderRadius: 2
+      borderRadius: 4
     }
   }
 };
 </script>
 
 <style scoped>
+select {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+select:hover {
+  border-color: #60a5fa;
+}
+
 select:focus {
   outline: none;
 }
 
 .overflow-x-auto::-webkit-scrollbar {
-  height: 6px;
+  height: 8px;
 }
 
 .overflow-x-auto::-webkit-scrollbar-track {
-  background: #f9fafb;
+  background: #f3f4f6;
+  border-radius: 4px;
 }
 
 .overflow-x-auto::-webkit-scrollbar-thumb {
   background: #d1d5db;
-  border-radius: 3px;
+  border-radius: 4px;
 }
 
 .overflow-x-auto::-webkit-scrollbar-thumb:hover {
   background: #9ca3af;
+}
+
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
 }
 </style>
