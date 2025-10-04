@@ -1,3 +1,4 @@
+// basedata.js
 const fullLabels = [
   "A: Comms with workforce", "B: Commitment level of w/f", "C: Rewards of good HSE",
   "D: Who causes accidents", "E: Profit & HSE", "F: Contractor management",
@@ -6,6 +7,7 @@ const fullLabels = [
   "M: Hazard reporting", "N: What after accident", "O: Who checks HSE day-day",
   "P: How HSE meetings feel", "Q: Audits & reviews", "R: Benchmarking"
 ];
+
 
 const baseData = {
   "ผู้บริหารระดับสูง": {

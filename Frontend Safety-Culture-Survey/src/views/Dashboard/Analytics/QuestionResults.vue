@@ -1,3 +1,5 @@
+<!-- QuestionResults.vue -->
+
 <script setup>
 import { ref, computed } from "vue";
 import StackedBar from "../Showgraph/StackedBar.vue";
@@ -6,7 +8,7 @@ import { baseData, fullLabels } from './basedata.js';
 
 const selectedGroup = ref("All");
 const selectedArea = ref("both");
-const selectedTimeframe = ref("current");
+const selectedTimeframe = ref("compare");
 
 // ตัวเลือกสำหรับกลุ่ม
 const groupOptions = [
@@ -19,250 +21,331 @@ const groupOptions = [
 
 // ตัวเลือกสำหรับพื้นที่
 const areaOptions = [
-  { value: "both", label: "ทั้งสองพื้นที่ (V1+V2)" },
-  { value: "v1", label: "Verte Security เท่านั้น" },
-  { value: "v2", label: "Verte Smart Solution เท่านั้น" }
+  { value: "both", label: "Verte Group" },
+  { value: "v1", label: "Verte Security" },
+  { value: "v2", label: "Verte Smart Solution" }
 ];
 
 // ตัวเลือกสำหรับช่วงเวลา
 const timeframeOptions = [
+  { value: "compare", label: "เปรียบเทียบ (ปัจจุบัน vs อนาคต)" },
   { value: "current", label: "ปัจจุบัน" },
-  { value: "future", label: "คาดในอนาคต" }
+  { value: "future", label: "คาดในอนาคต" },
 ];
 
 // คำนวณว่าต้องแสดงข้อมูลแบบไหน
 const shouldShowCombined = computed(() => selectedArea.value === "both");
 const shouldShowV1Only = computed(() => selectedArea.value === "v1");
 const shouldShowV2Only = computed(() => selectedArea.value === "v2");
+const isCompareMode = computed(() => selectedTimeframe.value === "compare");
 
-// ฟังก์ชันช่วยในการรวมข้อมูลจากทุกกลุ่ม
-const combineDataFromAllGroups = (version, timeframe) => {
+// ฟังก์ชันช่วยในการดึงข้อมูลจากกลุ่มที่เลือก
+const getDataFromGroup = (version, timeframe) => {
   if (selectedGroup.value === "All") {
-    // ถ้าเลือก "All" ให้ใช้ข้อมูลจาก baseData["All"] ที่รวมไว้แล้ว
     return baseData["All"][version]?.[timeframe] || [];
   } else {
-    // ถ้าเลือกกลุ่มเฉพาะ ให้ใช้ข้อมูลของกลุ่มนั้น
     return baseData[selectedGroup.value]?.[version]?.[timeframe] || [];
   }
 };
 
-// ข้อมูลสำหรับแสดงแบบรวม V1+V2
+// ฟังก์ชันสำหรับนับจำนวนคะแนนแต่ละระดับ (1-5) ในแต่ละข้อ
+const countScoresPerQuestion = (dataArray) => {
+  const result = [];
+  const numQuestions = fullLabels.length;
+  
+  for (let q = 0; q < numQuestions; q++) {
+    const scores = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    
+    dataArray.forEach(row => {
+      const score = row[q];
+      if (score >= 1 && score <= 5) {
+        scores[score]++;
+      }
+    });
+    
+    result.push(scores);
+  }
+  
+  return result;
+};
+
+// ฟังก์ชันสำหรับสร้าง label ของกลุ่ม
+const getGroupLabel = () => {
+  const option = groupOptions.find(opt => opt.value === selectedGroup.value);
+  return option ? option.label : selectedGroup.value;
+};
+
+// ข้อมูลสำหรับแสดงแบบรวม V1+V2 (โหมดเดี่ยว)
 const stackedBarCombinedData = computed(() => {
-  const v1Data = combineDataFromAllGroups('v1', selectedTimeframe.value);
-  const v2Data = combineDataFromAllGroups('v2', selectedTimeframe.value);
+  if (isCompareMode.value) return null;
+  
+  const v1Data = getDataFromGroup('v1', selectedTimeframe.value);
+  const v2Data = getDataFromGroup('v2', selectedTimeframe.value);
+  
+  const combinedData = [...v1Data, ...v2Data];
+  const scoreCounts = countScoresPerQuestion(combinedData);
 
-  // รวมข้อมูล V1 + V2
-  const combinedData = v1Data.map((row, i) =>
-    row.map((val, j) => val + (v2Data[i]?.[j] || 0))
-  );
+  return {
+    labels: fullLabels,
+    datasets: [{
+      label: `${getGroupLabel()} - Verte Group`,
+      scoreCounts: scoreCounts
+    }]
+  };
+});
+
+// ข้อมูลสำหรับแสดงแบบรวม V1+V2 (โหมดเปรียบเทียบ)
+const stackedBarCombinedCompareData = computed(() => {
+  if (!isCompareMode.value) return null;
+  
+  const v1Current = getDataFromGroup('v1', 'current');
+  const v2Current = getDataFromGroup('v2', 'current');
+  const v1Future = getDataFromGroup('v1', 'future');
+  const v2Future = getDataFromGroup('v2', 'future');
+
+  const combinedCurrent = [...v1Current, ...v2Current];
+  const combinedFuture = [...v1Future, ...v2Future];
+  
+  const currentScores = countScoresPerQuestion(combinedCurrent);
+  const futureScores = countScoresPerQuestion(combinedFuture);
 
   return {
     labels: fullLabels,
     datasets: [
       {
-        label: `${selectedGroup.value === "All" ? "รวมทั้งหมด" : selectedGroup.value} - V1+V2 (${selectedTimeframe.value === "current" ? "ปัจจุบัน" : "คาดในอนาคต"})`,
-        data: combinedData
+        label: `${getGroupLabel()} - Verte Group (ปัจจุบัน)`,
+        scoreCounts: currentScores
+      },
+      {
+        label: `${getGroupLabel()} - Verte Group (อนาคต)`,
+        scoreCounts: futureScores
       }
     ]
   };
 });
 
-// ข้อมูลสำหรับ V1 เท่านั้น
+// ข้อมูลสำหรับ V1 เท่านั้น (โหมดเดี่ยว)
 const stackedBarV1Data = computed(() => {
-  const v1Data = combineDataFromAllGroups('v1', selectedTimeframe.value);
+  if (isCompareMode.value) return null;
+  
+  const v1Data = getDataFromGroup('v1', selectedTimeframe.value);
+  const scoreCounts = countScoresPerQuestion(v1Data);
+  
+  return {
+    labels: fullLabels,
+    datasets: [{
+      label: `${getGroupLabel()} - Verte Security`,
+      scoreCounts: scoreCounts
+    }]
+  };
+});
+
+// ข้อมูลสำหรับ V1 เท่านั้น (โหมดเปรียบเทียบ)
+const stackedBarV1CompareData = computed(() => {
+  if (!isCompareMode.value) return null;
+  
+  const v1Current = getDataFromGroup('v1', 'current');
+  const v1Future = getDataFromGroup('v1', 'future');
+  
+  const currentScores = countScoresPerQuestion(v1Current);
+  const futureScores = countScoresPerQuestion(v1Future);
   
   return {
     labels: fullLabels,
     datasets: [
       {
-        label: `${selectedGroup.value === "All" ? "รวมทั้งหมด" : selectedGroup.value} - Verte Security (${selectedTimeframe.value === "current" ? "ปัจจุบัน" : "คาดในอนาคต"})`,
-        data: v1Data
+        label: `${getGroupLabel()} - Verte Security (ปัจจุบัน)`,
+        scoreCounts: currentScores
+      },
+      {
+        label: `${getGroupLabel()} - Verte Security (อนาคต)`,
+        scoreCounts: futureScores
       }
     ]
   };
 });
 
-// ข้อมูลสำหรับ V2 เท่านั้น
+// ข้อมูลสำหรับ V2 เท่านั้น (โหมดเดี่ยว)
 const stackedBarV2Data = computed(() => {
-  const v2Data = combineDataFromAllGroups('v2', selectedTimeframe.value);
+  if (isCompareMode.value) return null;
+  
+  const v2Data = getDataFromGroup('v2', selectedTimeframe.value);
+  const scoreCounts = countScoresPerQuestion(v2Data);
+  
+  return {
+    labels: fullLabels,
+    datasets: [{
+      label: `${getGroupLabel()} - Verte Smart Solution`,
+      scoreCounts: scoreCounts
+    }]
+  };
+});
+
+// ข้อมูลสำหรับ V2 เท่านั้น (โหมดเปรียบเทียบ)
+const stackedBarV2CompareData = computed(() => {
+  if (!isCompareMode.value) return null;
+  
+  const v2Current = getDataFromGroup('v2', 'current');
+  const v2Future = getDataFromGroup('v2', 'future');
+  
+  const currentScores = countScoresPerQuestion(v2Current);
+  const futureScores = countScoresPerQuestion(v2Future);
   
   return {
     labels: fullLabels,
     datasets: [
       {
-        label: `${selectedGroup.value === "All" ? "รวมทั้งหมด" : selectedGroup.value} - Verte Smart Solution (${selectedTimeframe.value === "current" ? "ปัจจุบัน" : "คาดในอนาคต"})`,
-        data: v2Data
+        label: `${getGroupLabel()} - Verte Smart Solution (ปัจจุบัน)`,
+        scoreCounts: currentScores
+      },
+      {
+        label: `${getGroupLabel()} - Verte Smart Solution (อนาคต)`,
+        scoreCounts: futureScores
       }
     ]
   };
 });
-
-// ฟังก์ชันสำหรับรีเซ็ตค่าเมื่อเลือกกลุ่มใหม่
-const onGroupChange = () => {
-  // สามารถเพิ่มโลจิกเพิ่มเติมได้ถ้าต้องการ
-};
-
-// ฟังก์ชันสำหรับจัดการการเปลี่ยนพื้นที่
-const onAreaChange = () => {
-  // สามารถเพิ่มโลจิกเพิ่มเติมได้ถ้าต้องการ
-};
 </script>
 
 <template>
-  <div class="flex min-h-screen bg-gradient-to-b from-gray-50 to-gray-200">
+  <div class="flex min-h-screen bg-gray-50">
     <!-- Sidebar -->
     <NavbarDashboard />
 
     <!-- Main Content -->
     <main class="flex-1 ml-60 p-6">
-      <h1 class="text-3xl font-bold text-center mb-10 text-gray-800">
-        ผลประเมินตามข้อคำถาม
-      </h1>
+      <!-- Header -->
+      <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">ผลประเมินตามข้อคำถาม</h1>
+        <p class="text-sm text-gray-600 mt-1">วิเคราะห์และเปรียบเทียบผลคะแนนในแต่ละข้อคำถาม</p>
+      </div>
 
       <!-- Filters -->
-      <div class="flex flex-wrap justify-center gap-6 mb-10">
-        <!-- เลือกกลุ่ม -->
-        <div class="flex flex-col min-w-[200px]">
-          <label class="text-sm font-medium text-gray-700 mb-2">เลือกกลุ่ม</label>
-          <select
-            v-model="selectedGroup"
-            @change="onGroupChange"
-            class="px-4 py-2 rounded-xl bg-white shadow-sm border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-          >
-            <option
-              v-for="option in groupOptions"
-              :key="option.value"
-              :value="option.value"
+      <div class="bg-white rounded-lg shadow p-5 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- เลือกกลุ่ม -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              เลือกกลุ่มผู้ตอบ
+            </label>
+            <select
+              v-model="selectedGroup"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              {{ option.label }}
-            </option>
-          </select>
-        </div>
+              <option v-for="option in groupOptions" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
+            </select>
+          </div>
 
-        <!-- เลือกพื้นที่ -->
-        <div class="flex flex-col min-w-[220px]">
-          <label class="text-sm font-medium text-gray-700 mb-2">เลือกพื้นที่</label>
-          <select
-            v-model="selectedArea"
-            @change="onAreaChange"
-            class="px-4 py-2 rounded-xl bg-white shadow-sm border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
-          >
-            <option
-              v-for="option in areaOptions"
-              :key="option.value"
-              :value="option.value"
+          <!-- เลือกพื้นที่ -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              เลือกพื้นที่
+            </label>
+            <select
+              v-model="selectedArea"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              {{ option.label }}
-            </option>
-          </select>
-        </div>
+              <option v-for="option in areaOptions" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
+            </select>
+          </div>
 
-        <!-- เลือกช่วงเวลา -->
-        <div class="flex flex-col min-w-[150px]">
-          <label class="text-sm font-medium text-gray-700 mb-2">ช่วงเวลา</label>
-          <select
-            v-model="selectedTimeframe"
-            class="px-4 py-2 rounded-xl bg-white shadow-sm border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200"
-          >
-            <option
-              v-for="option in timeframeOptions"
-              :key="option.value"
-              :value="option.value"
+          <!-- เลือกช่วงเวลา -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              ช่วงเวลา
+            </label>
+            <select
+              v-model="selectedTimeframe"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              {{ option.label }}
-            </option>
-          </select>
+              <option v-for="option in timeframeOptions" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
+            </select>
+          </div>
+        </div>
+        
+        <!-- Summary Info -->
+        <div class="mt-4 pt-4 border-t border-gray-200 text-sm text-gray-600">
+          <span class="font-medium">กำลังแสดง:</span>
+          <span class="ml-2">{{ getGroupLabel() }}</span>
+          <span class="mx-2">•</span>
+          <span>{{ areaOptions.find(opt => opt.value === selectedArea)?.label }}</span>
+          <span class="mx-2">•</span>
+          <span>{{ timeframeOptions.find(opt => opt.value === selectedTimeframe)?.label }}</span>
         </div>
       </div>
 
       <!-- แสดงข้อมูลรวม V1+V2 -->
-      <div
-        v-if="shouldShowCombined"
-        class="bg-white rounded-2xl shadow-xl p-6 mb-8"
-      >
-        <div class="flex items-center justify-between mb-6">
-          <h2 class="text-2xl font-semibold text-blue-600">
-          {{ selectedGroup === "All" ? "รวมทั้งหมด" : selectedGroup }} - ทั้งสองพื้นที่ (V1+V2)
-          </h2>
-          <div class="flex items-center space-x-2 text-sm text-gray-600">
-            <span class="px-3 py-1 bg-blue-100 rounded-full">
-              {{ selectedTimeframe === "current" ? "ปัจจุบัน" : "คาดในอนาคต" }}
-            </span>
-          </div>
+      <div v-if="shouldShowCombined" class="bg-white rounded-lg shadow p-5">
+        <div class="mb-4 pb-3 border-b border-gray-200">
+          <h2 class="text-lg font-bold text-gray-800">{{ getGroupLabel() }}</h2>
+          <p class="text-sm text-gray-600 mt-1">Verte Group (Security + Smart Solution)</p>
         </div>
-        <div class="overflow-x-auto">
-          <div class="min-w-[800px] h-[600px]">
-            <StackedBar :chart-data="stackedBarCombinedData" />
-          </div>
+        <div class="w-full" style="height: 600px;">
+          <StackedBar 
+            v-if="!isCompareMode" 
+            :chart-data="stackedBarCombinedData" 
+          />
+          <StackedBar 
+            v-else 
+            :chart-data="stackedBarCombinedCompareData" 
+          />
         </div>
       </div>
 
       <!-- แสดงข้อมูล V1 เท่านั้น -->
-      <div 
-        v-if="shouldShowV1Only"
-        class="bg-white rounded-2xl shadow-xl p-6 mb-8"
-      >
-        <div class="flex items-center justify-between mb-6">
-          <h2 class="text-2xl font-semibold text-green-600">
-           {{ selectedGroup === "All" ? "รวมทั้งหมด" : selectedGroup }} - Verte Security
-          </h2>
-          <div class="flex items-center space-x-2 text-sm text-gray-600">
-            <span class="px-3 py-1 bg-green-100 rounded-full">
-              {{ selectedTimeframe === "current" ? "ปัจจุบัน" : "คาดในอนาคต" }}
-            </span>
-          </div>
+      <div v-if="shouldShowV1Only" class="bg-white rounded-lg shadow p-5">
+        <div class="mb-4 pb-3 border-b border-gray-200">
+          <h2 class="text-lg font-bold text-gray-800">{{ getGroupLabel() }}</h2>
+          <p class="text-sm text-gray-600 mt-1">Verte Security</p>
         </div>
-        <div class="overflow-x-auto">
-          <div class="min-w-[800px] h-[600px]">
-            <StackedBar :chart-data="stackedBarV1Data" />
-          </div>
+        <div class="w-full" style="height: 600px;">
+          <StackedBar 
+            v-if="!isCompareMode" 
+            :chart-data="stackedBarV1Data" 
+          />
+          <StackedBar 
+            v-else 
+            :chart-data="stackedBarV1CompareData" 
+          />
         </div>
       </div>
 
       <!-- แสดงข้อมูล V2 เท่านั้น -->
-      <div 
-        v-if="shouldShowV2Only"
-        class="bg-white rounded-2xl shadow-xl p-6 mb-8"
-      >
-        <div class="flex items-center justify-between mb-6">
-          <h2 class="text-2xl font-semibold text-purple-600">
-           {{ selectedGroup === "All" ? "รวมทั้งหมด" : selectedGroup }} - Verte Smart Solution
-          </h2>
-          <div class="flex items-center space-x-2 text-sm text-gray-600">
-            <span class="px-3 py-1 bg-purple-100 rounded-full">
-              {{ selectedTimeframe === "current" ? "ปัจจุบัน" : "คาดในอนาคต" }}
-            </span>
-          </div>
+      <div v-if="shouldShowV2Only" class="bg-white rounded-lg shadow p-5">
+        <div class="mb-4 pb-3 border-b border-gray-200">
+          <h2 class="text-lg font-bold text-gray-800">{{ getGroupLabel() }}</h2>
+          <p class="text-sm text-gray-600 mt-1">Verte Smart Solution</p>
         </div>
-        <div class="overflow-x-auto">
-          <div class="min-w-[800px] h-[600px]">
-            <StackedBar :chart-data="stackedBarV2Data" />
-          </div>
+        <div class="w-full" style="height: 600px;">
+          <StackedBar 
+            v-if="!isCompareMode" 
+            :chart-data="stackedBarV2Data" 
+          />
+          <StackedBar 
+            v-else 
+            :chart-data="stackedBarV2CompareData" 
+          />
         </div>
       </div>
 
       <!-- แสดงข้อความเมื่อไม่มีข้อมูล -->
-      <div v-if="!shouldShowCombined && !shouldShowV1Only && !shouldShowV2Only" class="text-center py-12">
-        <div class="text-gray-500 text-lg">ไม่มีข้อมูลสำหรับการเลือกปัจจุบัน</div>
+      <div v-if="!shouldShowCombined && !shouldShowV1Only && !shouldShowV2Only" 
+           class="bg-white rounded-lg shadow p-12 text-center">
+        <p class="text-gray-400">ไม่พบข้อมูลสำหรับการเลือกปัจจุบัน</p>
+        <p class="text-gray-400 text-sm mt-2">กรุณาเลือกตัวกรองอื่น</p>
       </div>
     </main>
   </div>
 </template>
 
 <style scoped>
-/* เพิ่ม style สำหรับ transition ที่นุ่มนวล */
-.transition-all {
-  transition: all 0.2s ease-in-out;
-}
-
-/* สำหรับ hover effect บน select */
-select:hover {
-  border-color: #9CA3AF;
-}
-
-/* เพิ่มเงาให้กับ card เมื่อ hover */
-.bg-white:hover {
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
-  transition: box-shadow 0.3s ease-in-out;
+select {
+  transition: all 0.2s ease;
 }
 </style>

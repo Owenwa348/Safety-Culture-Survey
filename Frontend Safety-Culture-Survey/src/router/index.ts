@@ -27,6 +27,7 @@ import UserList from '../views/Dashboard/Users/UserList.vue'
 import PositionResults from '../views/Dashboard/Analytics/PositionResults.vue'
 import QuestionResults from '../views/Dashboard/Analytics/QuestionResults.vue'
 import OpinionResults from '../views/Dashboard/Analytics/OpinionResults.vue'
+import WorkGroupEvaluationResults from '../views/Dashboard/Analytics/WorkGroupEvaluationResults.vue'
 
 //=============================Dashboard Superadmin =============================
 import ExcelUploadView from '../views/Dashboard/SettingsDashboard/Uploadlistfile/ExcelUploadView.vue'
@@ -129,6 +130,11 @@ const routes = [
     path: '/opinion-results',
     name: 'OpinionResults',
     component: OpinionResults
+  },
+  {
+    path : '/workgroup-evaluation-results',
+    name : 'WorkGroupEvaluationResults',
+    component : WorkGroupEvaluationResults
   },
   {
     path: '/user-list',

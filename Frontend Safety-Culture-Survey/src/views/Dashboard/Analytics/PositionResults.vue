@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import BetChart from "../Showgraph/BetChart.vue";
 import NavbarDashboard from '../../../components/NavbarDashboard.vue';
 
@@ -7,8 +7,8 @@ const selectedGroup = ref("all");
 const selectedUnits = ref([]);
 const selectedPeriod = ref("both");
 const selectedVersion = ref("both");
+const versionOptions = ref([]);
 
-// ฟังก์ชันช่วย
 const shouldInclude = (version) => {
   return selectedVersion.value === version || selectedVersion.value === "both";
 };
@@ -17,8 +17,24 @@ const shouldIncludePeriod = (period) => {
   return selectedPeriod.value === period || selectedPeriod.value === "both";
 };
 
+const fetchVersionOptions = async () => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve([
+        { id: 'both', name: 'Verte Group' },
+        { id: 'v1', name: 'Verte Smart Solution' },
+        { id: 'v2', name: 'Verte Security' }
+      ]);
+    }, 100);
+  });
+};
+
+onMounted(async () => {
+  versionOptions.value = await fetchVersionOptions();
+});
+
 const baseData = {
-contractor: {
+  contractor: {
     labels: ["CEO", "REP", "COO", "CFO", "SSE", "PSE", "CME"],
     v1: {
       current: [
@@ -48,7 +64,7 @@ contractor: {
         [4, 5, 2, 1, 3, 5, 4, 2, 1, 3, 4, 5, 2, 1, 3, 5, 4, 2],
         [3, 2, 4, 5, 1, 2, 3, 4, 5, 1, 3, 2, 4, 5, 1, 2, 3, 4],
         [5, 1, 2, 4, 3, 1, 5, 2, 4, 3, 5, 1, 2, 4, 3, 1, 5, 2],
-        [4, 3, 5, 1, 2, 3, 4, 5, 1, 2, 4, 3, 5, 1, 2, 3, 4, 5]
+        [4, 3, 5, 1, 2, 3, 4, 5, 1, 2, 4, 3, 5, 1, 2, 4, 3, 5]
       ],
       future: [
         [2, 4, 3, 5, 1, 4, 2, 3, 5, 1, 2, 4, 3, 5, 1, 4, 2, 3],
@@ -192,11 +208,28 @@ contractor: {
   },
 };
 
+// สีที่ชัดเจนและแยกแยะง่าย
 const colorScheme = {
-  senior: { current: "#dc2626", future: "#ef4444" },
-  manager: { current: "#7c3aed", future: "#a855f7" },
-  employee: { current: "#1e40af", future: "#3b82f6" },
-  contractor: { current: "#065f46", future: "#10b981" }
+  contractor: { 
+    current: "#16a34a",  // เขียวเข้ม
+    future: "#86efac"    // เขียวอ่อน
+  },
+  employee: { 
+    current: "#2563eb",  // น้ำเงินเข้ม
+    future: "#93c5fd"    // น้ำเงินอ่อน
+  },
+  manager: { 
+    current: "#9333ea",  // ม่วงเข้ม
+    future: "#c084fc"    // ม่วงอ่อน
+  },
+  senior: { 
+    current: "#dc2626",  // แดงเข้ม
+    future: "#fca5a5"    // แดงอ่อน
+  },
+  all: {
+    current: "#1e40af",  // น้ำเงินเข้ม
+    future: "#93c5fd"    // น้ำเงินอ่อน
+  }
 };
 
 const groupNames = {
@@ -265,34 +298,38 @@ const chartData = computed(() => {
     });
   };
 
+  const colors = isAll ? colorScheme.all : colorScheme[selectedGroup.value];
+  
   if (selectedVersion.value === "both") {
     if (shouldIncludePeriod("current")) {
       datasets.push({
-        label: "V1+V2 (ปัจจุบัน)",
-        backgroundColor: isAll ? "#1e40af" : "#6366f1", // Indigo
+        label: "ปัจจุบัน",
+        backgroundColor: colors.current,
         data: getAverages(["v1", "v2"], "current")
       });
     }
     if (shouldIncludePeriod("future")) {
       datasets.push({
-        label: "V1+V2 (อนาคต)",
-        backgroundColor: isAll ? "#3b82f6" : "#93c5fd", // Blue
+        label: "อนาคต",
+        backgroundColor: colors.future,
         data: getAverages(["v1", "v2"], "future")
       });
     }
   } else {
     const version = selectedVersion.value;
+    const versionName = versionOptions.value.find(v => v.id === version)?.name || version.toUpperCase();
+    
     if (shouldIncludePeriod("current")) {
       datasets.push({
-        label: `${version.toUpperCase()} (ปัจจุบัน)`,
-        backgroundColor: isAll ? "#1e40af" : colorScheme[selectedGroup.value]?.[version === "v1" ? "current" : "future"],
+        label: `${versionName} - ปัจจุบัน`,
+        backgroundColor: colors.current,
         data: getAverages([version], "current")
       });
     }
     if (shouldIncludePeriod("future")) {
       datasets.push({
-        label: `${version.toUpperCase()} (อนาคต)`,
-        backgroundColor: isAll ? "#3b82f6" : colorScheme[selectedGroup.value]?.[version === "v1" ? "current" : "future"],
+        label: `${versionName} - อนาคต`,
+        backgroundColor: colors.future,
         data: getAverages([version], "future")
       });
     }
@@ -300,7 +337,6 @@ const chartData = computed(() => {
 
   return { labels, datasets };
 });
-
 
 const dataSummary = computed(() => {
   const groupLabel = groupNames[selectedGroup.value];
@@ -317,7 +353,6 @@ const dataSummary = computed(() => {
 
   if (selectedGroup.value === "all") {
     total = Object.values(baseData).reduce((sum, group) => {
-      const labels = group.labels;
       let count = 0;
       if (shouldInclude("v1")) {
         if (shouldIncludePeriod("current")) count += group.v1.current.length;
@@ -347,87 +382,157 @@ const dataSummary = computed(() => {
 });
 </script>
 
-
 <template>
   <div class="min-h-screen bg-gray-50 flex">
     <!-- Sidebar -->
     <NavbarDashboard/>
 
     <!-- Main Content -->
-    <main class="flex-1 ml-60 p-6 md:p-10 max-w-7xl">
+    <main class="flex-1 ml-60 p-8 max-w-7xl">
       <!-- Header -->
-      <header class="text-center mb-10">
-        <h1 class="text-4xl font-bold text-gray-800">ผลการประเมินแยกตามสายงาน</h1>
+      <header class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">ผลการประเมินแยกตามสายงาน</h1>
+        <p class="text-gray-600 mt-2">แสดงค่าเฉลี่ยคะแนนการประเมินตามตำแหน่งและพื้นที่</p>
       </header>
 
-      <!-- Filter -->
-      <div class="bg-white rounded-2xl p-8 mb-10 shadow-xl border border-gray-200">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div class="flex flex-col gap-2">
-            <label class="text-sm font-medium text-gray-700">เลือกตำแหน่ง</label>
-            <select v-model="selectedGroup" @change="handleGroupChange"
-              class="px-4 py-2 border border-gray-300 rounded-lg">
+      <!-- Filter Section -->
+      <div class="bg-white rounded-lg p-6 mb-8 shadow-sm border border-gray-200">
+        <!-- Main Filters -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">ตำแหน่ง</label>
+            <select 
+              v-model="selectedGroup" 
+              @change="handleGroupChange"
+              class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
               <option value="all">รวมทั้งหมด</option>
-              <option value="contractor">ผู้รับเหมา</option>
-              <option value="employee">พนักงาน</option>
-              <option value="manager">ผู้จัดการแผนก / ผู้จัดการ / พนักงานอาวุโส</option>
               <option value="senior">ผู้บริหารระดับสูง / ผู้จัดการส่วน</option>
+              <option value="manager">ผู้จัดการแผนก / ผู้จัดการ / พนักงานอาวุโส</option>
+              <option value="employee">พนักงาน</option>
+              <option value="contractor">ผู้รับเหมา</option>
             </select>
           </div>
 
-          <div class="flex flex-col gap-2">
-            <label class="text-sm font-medium text-gray-700">เลือกพื้นที่</label>
-            <select v-model="selectedVersion" class="px-4 py-2 border border-gray-300 rounded-lg">
-              <option value="both">verte group</option>
-              <option value="v1">verte smart solution</option>
-              <option value="v2">verte security</option>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">พื้นที่</label>
+            <select 
+              v-model="selectedVersion" 
+              class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option v-for="option in versionOptions" :key="option.id" :value="option.id">
+                {{ option.name }}
+              </option>
             </select>
           </div>
 
-          <div class="flex flex-col gap-2">
-            <label class="text-sm font-medium text-gray-700">ช่วงเวลา</label>
-            <select v-model="selectedPeriod" class="px-4 py-2 border border-gray-300 rounded-lg">
-              <option value="both">ปัจจุบันและอนาคต</option>
-              <option value="current">เฉพาะปัจจุบัน</option>
-              <option value="future">เฉพาะอนาคต</option>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">ช่วงเวลา</label>
+            <select 
+              v-model="selectedPeriod" 
+              class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="both">เปรียบเทียบ (ปัจจุบัน กับ อนาคต)</option>
+              <option value="current">ปัจจุบัน</option>
+              <option value="future">อนาคต</option>
             </select>
           </div>
         </div>
 
-        <div class="flex justify-between items-center bg-gray-100 p-4 rounded-lg mb-6">
-          <span class="text-lg font-semibold">{{ dataSummary.group }}</span>
-          <span class="text-sm text-gray-700">จำนวน: {{ dataSummary.total }} รายการ</span>
+        <!-- Summary Info -->
+        <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <div class="flex items-center gap-3">
+            <div 
+              class="w-4 h-4 rounded"
+              :style="{ backgroundColor: selectedGroup === 'all' ? colorScheme.all.current : colorScheme[selectedGroup]?.current }"
+            ></div>
+            <span class="font-medium text-gray-900">{{ dataSummary.group }}</span>
+          </div>
+          <span class="text-sm text-gray-600">
+            จำนวนข้อมูล: <span class="font-semibold text-gray-900">{{ dataSummary.total }}</span> รายการ
+          </span>
         </div>
 
-        <div v-if="selectedGroup !== 'all' && availableUnits.length > 0" class="border-t pt-6">
-          <div class="flex justify-between items-center mb-4">
-            <label class="text-sm font-medium text-gray-700">เลือกฝ่ายย่อย</label>
-            <button @click="clearAllUnits" class="bg-blue-500 text-white px-4 py-2 rounded-md text-sm">
+        <!-- Unit Selection -->
+        <div v-if="selectedGroup !== 'all' && availableUnits.length > 0" class="mt-6 pt-6 border-t border-gray-200">
+          <div class="flex items-center justify-between mb-3">
+            <label class="text-sm font-medium text-gray-700">เลือกสายงาน</label>
+            <button 
+              @click="clearAllUnits" 
+              class="px-4 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+            >
               ล้างทั้งหมด
             </button>
           </div>
-          <div
-            class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 max-h-52 overflow-y-auto bg-gray-50 p-4 rounded-lg border">
-            <label v-for="unit in availableUnits" :key="unit"
-              class="flex items-center gap-2 bg-white px-3 py-2 rounded border">
-              <input type="checkbox" :value="unit" v-model="selectedUnits" class="accent-blue-600">
-              <span class="text-sm">{{ unit }}</span>
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2">
+            <label 
+              v-for="unit in availableUnits" 
+              :key="unit"
+              class="flex items-center gap-2 p-2.5 bg-gray-50 rounded border border-gray-200 hover:border-blue-400 hover:bg-blue-50 cursor-pointer transition-colors"
+            >
+              <input 
+                type="checkbox" 
+                :value="unit" 
+                v-model="selectedUnits" 
+                class="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+              >
+              <span class="text-sm text-gray-700">{{ unit }}</span>
             </label>
+          </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="mt-6 pt-6 border-t border-gray-200">
+          <h3 class="text-sm font-medium text-gray-700 mb-3">สัญลักษณ์กราฟ</h3>
+          <div class="flex flex-wrap gap-6">
+            <div class="flex items-center gap-2">
+              <div 
+                class="w-8 h-4 rounded"
+                :style="{ backgroundColor: selectedGroup === 'all' ? colorScheme.all.current : colorScheme[selectedGroup]?.current }"
+              ></div>
+              <span class="text-sm text-gray-700">ปัจจุบัน</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div 
+                class="w-8 h-4 rounded"
+                :style="{ backgroundColor: selectedGroup === 'all' ? colorScheme.all.future : colorScheme[selectedGroup]?.future }"
+              ></div>
+              <span class="text-sm text-gray-700">อนาคต</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Chart -->
-      <div class="flex flex-col gap-10">
-        <div class="bg-white rounded-2xl shadow-xl border overflow-hidden">
-          <div class="px-8 py-6 bg-gray-100 border-b">
-            <h2 class="text-xl font-semibold text-gray-800">แผนภูมิแท่ง</h2>
-          </div>
-          <div class="p-8">
-            <BetChart :chart-data="chartData" />
-          </div>
+      <!-- Chart Section -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+          <h2 class="text-lg font-semibold text-gray-900">กราฟแสดงผลการประเมิน</h2>
+          <p class="text-sm text-gray-600 mt-1">ค่าเฉลี่ยคะแนนการประเมินแยกตามสายงาน (คะแนนเต็ม 5)</p>
+        </div>
+        <div class="p-6">
+          <BetChart :chart-data="chartData" />
         </div>
       </div>
     </main>
   </div>
 </template>
+
+<style scoped>
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+}
+
+input[type="checkbox"] {
+  cursor: pointer;
+}
+
+input[type="checkbox"]:checked {
+  background-color: #2563eb;
+  border-color: #2563eb;
+}
+</style>
