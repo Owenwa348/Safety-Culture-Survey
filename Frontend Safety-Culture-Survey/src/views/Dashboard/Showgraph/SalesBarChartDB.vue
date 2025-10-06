@@ -1,9 +1,10 @@
+<!-- SalesBarChartDB.vue -->
 <template>
   <div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
     <div class="max-w-7xl mx-auto">
       <!-- Header Card -->
       <div class="bg-white rounded-xl shadow-md mb-6 overflow-hidden">
-        <div class="bg-gradient-to-r  px-8 py-6">
+        <div class="bg-gradient-to-r px-8 py-6">
           <h1 class="text-2xl font-bold mb-2">ผลการประเมินบริษัท Verte Group ประจำปี 2025</h1>
           <p>การวิเคราะห์ผลการประเมินตามตำแหน่งและพื้นที่การดำเนินงาน</p>
         </div>
@@ -30,8 +31,8 @@
                 class="px-4 py-2.5 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"
               >
                 <option value="all">เปรียบเทียบ (ปัจจุบัน กับ อนาคต)</option>
-                <option value="current">ปัจจุบัน </option>
-                <option value="future">อนาคต </option>
+                <option value="current">ปัจจุบัน</option>
+                <option value="future">อนาคต</option>
               </select>
             </div>
           </div>
@@ -173,40 +174,40 @@ const chartLabels = [
 // ข้อมูลปัจจุบัน 
 const currentData = {
   'ผู้บริหารระดับสูง / ผู้จัดการส่วน': {
-    v1: [4.40, 4.30, 4.10, 3.90, 4.40, 4.00, 3.90, 4.14],
-    v2: [4.48, 4.36, 4.24, 4.10, 4.60, 4.28, 4.10, 4.28]
+    v1: [3.85, 3.72, 3.58, 3.45, 3.92, 3.68, 3.55, 3.68],
+    v2: [3.95, 3.88, 3.75, 3.62, 4.05, 3.85, 3.68, 3.83]
   },
   'ผู้จัดการแผนก / ผู้จัดการ / พนักงานอาวุโส': {
-    v1: [4.05, 4.00, 3.90, 3.80, 4.40, 3.95, 3.70, 3.97],
-    v2: [4.17, 4.24, 4.14, 4.14, 4.58, 4.13, 3.98, 4.15]
+    v1: [3.65, 3.55, 3.42, 3.35, 3.88, 3.58, 3.38, 3.54],
+    v2: [3.78, 3.72, 3.62, 3.55, 4.02, 3.75, 3.52, 3.71]
   },
   'พนักงาน': {
-    v1: [2.08, 1.95, 3.06, 3.07, 2.30, 1.05, 0.85, 3.05],
-    v2: [2.18, 3.07, 1.22, 1.21, 1.38, 1.17, 2.94, 2.11]
+    v1: [3.85, 3.68, 2.52, 3.45, 2.95, 3.72, 3.58, 2.68],
+    v2: [2.98, 2.85, 2.68, 2.58, 3.08, 2.88, 2.72, 2.82]
   },
   'ผู้รับเหมาประจำ': {
-    v1: [1.90, 1.80, 1.70, 2.60, 2.00, 2.70, 3.50, 3.73],
-    v2: [2.05, 2.95, 2.00, 1.00, 1.20, 1.00, 2.80, 2.99]
+    v1: [3.55, 3.42, 2.28, 3.18, 2.68, 3.48, 3.35, 2.42],
+    v2: [2.72, 2.58, 2.45, 2.32, 2.82, 2.65, 2.48, 2.57]
   }
 };
 
-// ข้อมูลอนาคต - เพิ่มขึ้นเล็กน้อย
+// ข้อมูลอนาคต - เพิ่มขึ้นอย่างชัดเจน
 const futureData = {
   'ผู้บริหารระดับสูง / ผู้จัดการส่วน': {
-    v1: [4.52, 4.45, 4.28, 4.15, 4.55, 4.18, 4.08, 4.31],
-    v2: [4.65, 4.52, 4.41, 4.28, 4.75, 4.45, 4.28, 4.48]
+    v1: [4.62, 4.55, 4.45, 4.38, 4.72, 4.58, 4.42, 4.53],
+    v2: [4.75, 4.68, 4.58, 4.48, 4.85, 4.72, 4.55, 4.66]
   },
   'ผู้จัดการแผนก / ผู้จัดการ / พนักงานอาวุโส': {
-    v1: [4.22, 4.18, 4.08, 3.98, 4.58, 4.12, 3.88, 4.15],
-    v2: [4.35, 4.42, 4.32, 4.32, 4.75, 4.31, 4.16, 4.33]
+    v1: [4.48, 4.38, 4.28, 4.18, 4.62, 4.45, 4.28, 4.38],
+    v2: [4.58, 4.52, 4.42, 4.35, 4.72, 4.58, 4.42, 4.51]
   },
   'พนักงาน': {
-    v1: [4.25, 4.12, 4.24, 4.25, 4.48, 4.23, 4.03, 4.23],
-    v2: [4.36, 4.25, 4.40, 4.39, 4.56, 4.35, 4.12, 4.35]
+    v1: [4.22, 4.12, 4.02, 3.95, 4.38, 4.18, 4.05, 4.13],
+    v2: [4.38, 4.28, 4.18, 4.08, 4.52, 4.35, 4.18, 4.28]
   },
   'ผู้รับเหมาประจำ': {
-    v1: [4.08, 3.98, 3.88, 3.78, 4.18, 3.88, 3.68, 3.92],
-    v2: [4.23, 4.13, 4.18, 4.18, 4.38, 4.18, 3.98, 4.18]
+    v1: [3.95, 3.85, 3.72, 3.65, 4.08, 3.92, 3.78, 3.85],
+    v2: [4.12, 4.02, 3.92, 3.82, 4.25, 4.08, 3.95, 4.02]
   }
 };
 
@@ -233,8 +234,9 @@ const colors = {
   'พนักงาน': '#dc2626',
   'ผู้รับเหมาประจำ': '#f97316',
   'all_current': '#7c3aed',
-  'all_future': '#059669',
-  'all_combined': '#1e40af'
+  'all_future': '#10b981',
+  'all_combined': '#1e40af',
+  'future_single': '#f59e0b'  // สีสำหรับกราฟอนาคตเมื่อเลือกแค่ช่วงเวลาเดียว
 };
 
 // ฟังก์ชันสำหรับคำนวณข้อมูลตามช่วงเวลา
@@ -317,53 +319,78 @@ const chartData = computed(() => {
         return sum / totalGroups;
       });
 
+      // เลือกสีตามช่วงเวลา
+      const barColor = selectedTimePeriod.value === 'future' ? colors.future_single : colors.all_combined;
+
       datasets.push({
         label: `รวมทุกกลุ่ม (${areaNameMap[selectedVersion.value]} - ${timePeriodMap[selectedTimePeriod.value]})`,
-        backgroundColor: colors.all_combined,
+        backgroundColor: barColor,
         data,
       });
     }
   } else {
     // กรณีเลือกพื้นที่เฉพาะ (Verte Smart Solution หรือ Verte Security)
     if (selectedTimePeriod.value === 'all') {
-      // เปรียบเทียบระหว่าง ปัจจุบัน และ อนาคต
+      // เปรียบเทียบระหว่าง ปัจจุบัน และ อนาคต - แสดงเฉพาะค่าเฉลี่ยรวมของทั้ง 4 ตำแหน่ง
       const currentRawData = getDataForTimePeriod('current');
       const futureRawData = getDataForTimePeriod('future');
+      
+      const totalGroups = Object.keys(currentRawData).length;
 
-      // ข้อมูลอนาคต - แสดงทุกกลุ่มก่อน (แถวบน) - ใช้สีเข้มเต็ม
-      for (const group in futureRawData) {
-        const data = selectedVersion.value === 'v1' ? futureRawData[group].v1 : futureRawData[group].v2;
-        datasets.push({
-          label: `${group} (อนาคต)`,
-          backgroundColor: colors[group],
-          borderWidth: 0,
-          data,
-        });
-      }
+      // คำนวณค่าเฉลี่ยรวมของทั้ง 4 ตำแหน่งสำหรับปัจจุบัน
+      const currentDataPoints = chartLabels.map((_, i) => {
+        let sum = 0;
+        for (const group in currentRawData) {
+          const value = selectedVersion.value === 'v1' ? currentRawData[group].v1[i] : currentRawData[group].v2[i];
+          sum += value;
+        }
+        return sum / totalGroups;
+      });
 
-      // ข้อมูลปัจจุบัน - แสดงทุกกลุ่มทีหลัง (แถวล่าง) - ใช้สีอ่อนลง
-      for (const group in currentRawData) {
-        const data = selectedVersion.value === 'v1' ? currentRawData[group].v1 : currentRawData[group].v2;
-        const lightColor = colors[group] + 'B3'; // เพิ่ม opacity 70%
-        datasets.push({
-          label: `${group} (ปัจจุบัน)`,
-          backgroundColor: lightColor,
-          borderWidth: 1,
-          borderColor: colors[group],
-          data,
-        });
-      }
+      // คำนวณค่าเฉลี่ยรวมของทั้ง 4 ตำแหน่งสำหรับอนาคต
+      const futureDataPoints = chartLabels.map((_, i) => {
+        let sum = 0;
+        for (const group in futureRawData) {
+          const value = selectedVersion.value === 'v1' ? futureRawData[group].v1[i] : futureRawData[group].v2[i];
+          sum += value;
+        }
+        return sum / totalGroups;
+      });
+
+      // แสดงเฉพาะ 2 กราฟ: ปัจจุบัน และ อนาคต
+      datasets.push({
+        label: `ปัจจุบัน (${areaNameMap[selectedVersion.value]})`,
+        backgroundColor: colors.all_current,
+        data: currentDataPoints,
+      });
+
+      datasets.push({
+        label: `อนาคต (${areaNameMap[selectedVersion.value]})`,
+        backgroundColor: colors.all_future,
+        data: futureDataPoints,
+      });
     } else {
-      // แสดงเฉพาะช่วงเวลาที่เลือก - แสดงทุกกลุ่ม
+      // แสดงเฉพาะช่วงเวลาที่เลือก - แสดงค่าเฉลี่ยรวมของทั้ง 4 ตำแหน่ง
       const rawData = getDataForTimePeriod(selectedTimePeriod.value);
-      for (const group in rawData) {
-        const data = selectedVersion.value === 'v1' ? rawData[group].v1 : rawData[group].v2;
-        datasets.push({
-          label: `${group} (${areaNameMap[selectedVersion.value]} - ${timePeriodMap[selectedTimePeriod.value]})`,
-          backgroundColor: colors[group],
-          data,
-        });
-      }
+      const totalGroups = Object.keys(rawData).length;
+      
+      const dataPoints = chartLabels.map((_, i) => {
+        let sum = 0;
+        for (const group in rawData) {
+          const value = selectedVersion.value === 'v1' ? rawData[group].v1[i] : rawData[group].v2[i];
+          sum += value;
+        }
+        return sum / totalGroups;
+      });
+
+      // เลือกสีตามช่วงเวลา
+      const barColor = selectedTimePeriod.value === 'future' ? colors.future_single : colors.all_combined;
+
+      datasets.push({
+        label: `รวมทุกตำแหน่ง (${areaNameMap[selectedVersion.value]} - ${timePeriodMap[selectedTimePeriod.value]})`,
+        backgroundColor: barColor,
+        data: dataPoints,
+      });
     }
   }
 
@@ -438,8 +465,8 @@ const chartOptions = {
   },
   scales: {
     y: {
-      suggestedMin: 3.4,
-      suggestedMax: 4.8,
+      suggestedMin: 2.0,
+      suggestedMax: 5.0,
       title: { 
         display: true, 
         text: 'คะแนนเฉลี่ย',
@@ -447,7 +474,7 @@ const chartOptions = {
         color: '#374151'
       },
       ticks: {
-        stepSize: 0.2,
+        stepSize: 0.5,
         callback: val => val.toFixed(1),
         font: { size: 12 },
         color: '#6b7280'

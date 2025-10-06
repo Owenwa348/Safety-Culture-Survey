@@ -15,6 +15,10 @@
         <SalesBarChart />
       </div>
 
+      <div class="bg-white rounded-xl shadow-sm border p-6">
+        <HorizontalBarChart />
+      </div>
+
       <!-- Stacked Bar Chart -->
       <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border p-6">
         <StackedBarChart />
@@ -29,7 +33,8 @@ import { ref, onMounted, computed } from 'vue'
 import PieChart from './Showgraph/PieChartDB.vue'
 import SalesBarChart from './Showgraph/SalesBarChartDB.vue'
 import StackedBarChart from './Showgraph/StackedBarChartDB.vue'
-import NavbarDashboard from '../../components/NavbarDashboard.vue';
+import HorizontalBarChart from './Showgraph/HorizontalBarChart.vue'
+import NavbarDashboard from '../../components/NavBarDashboard.vue';
 
 // เก็บข้อมูลผู้ใช้ทั้งหมด
 const allUsers = ref([])

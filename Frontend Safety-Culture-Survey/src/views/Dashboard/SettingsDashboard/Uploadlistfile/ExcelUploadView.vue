@@ -214,12 +214,11 @@ const handleUpload = async () => {
   error.value = ''
 
   try {
-    const response = await axios.post('http://localhost:3000/excel-upload/upload', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-      timeout: 30000, // 30 seconds timeout
-    })
+    const response = await axios.post(
+    'http://localhost:5000/excel-upload/upload',
+    formData,
+    { headers: { 'Content-Type': 'multipart/form-data' } }
+  )
     
     message.value = response.data.message || 'อัปโหลดไฟล์สำเร็จ!'
     

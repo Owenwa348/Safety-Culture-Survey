@@ -47,13 +47,49 @@ onMounted(async () => {
 
 // Available Units based on selected department
 const availableUnits = computed(() => {
-  if (selectedDepartment.value === "all") return [];
+  if (selectedDepartment.value === "all") {
+    // รวมสายงานจากทุกตำแหน่ง โดยไม่ซ้ำกัน
+    const allUnits = new Set();
+    Object.keys(unitsByDepartment).forEach(dept => {
+      unitsByDepartment[dept].forEach(unit => {
+        allUnits.add(JSON.stringify(unit));
+      });
+    });
+    return Array.from(allUnits).map(u => JSON.parse(u));
+  }
   return unitsByDepartment[selectedDepartment.value] || [];
 });
 
 // Available Work Groups based on selected unit
 const availableWorkGroups = computed(() => {
-  if (selectedDepartment.value === "all" || selectedUnit.value === "all") {
+  if (selectedDepartment.value === "all" && selectedUnit.value === "all") {
+    return workGroups;
+  }
+  
+  if (selectedDepartment.value === "all" && selectedUnit.value !== "all") {
+    // เมื่อเลือกตำแหน่งรวมทั้งหมด และเลือกสายงานเฉพาะ
+    const availableGroups = [{ id: 'all', name: 'ทั้งหมด' }];
+    const groupSet = new Set();
+    
+    Object.keys(evaluationData).forEach(deptKey => {
+      const dept = evaluationData[deptKey];
+      if (dept[selectedUnit.value]) {
+        Object.keys(dept[selectedUnit.value]).forEach(groupKey => {
+          groupSet.add(groupKey);
+        });
+      }
+    });
+    
+    workGroups.forEach(group => {
+      if (group.id !== 'all' && groupSet.has(group.id)) {
+        availableGroups.push(group);
+      }
+    });
+    
+    return availableGroups;
+  }
+  
+  if (selectedUnit.value === "all") {
     return workGroups;
   }
   
@@ -115,57 +151,151 @@ const chartData = computed(() => {
   const datasets = [];
   let labels = [];
 
-  // กรณีเลือก "รวมทั้งหมด" - แสดงตามตำแหน่ง
+  // กรณีเลือก "รวมทั้งหมด" ที่ตำแหน่ง
   if (selectedDepartment.value === "all") {
-    const departmentList = departments.filter(d => d.id !== 'all');
-    labels = departmentList.map(d => d.name);
-    
-    const getDepartmentAverages = (period) => {
-      return departmentList.map(dept => {
-        const scores = [];
-        const deptData = evaluationData[dept.id];
+    // ถ้าเลือกสายงานเฉพาะ
+    if (selectedUnit.value !== "all") {
+      // ถ้าเลือกกลุ่มงาน "ทั้งหมด"
+      if (selectedGroups.value.includes('all')) {
+        const departmentList = departments.filter(d => d.id !== 'all');
+        labels = departmentList.map(d => d.name);
         
-        if (!deptData) return 0;
-        
-        Object.keys(deptData).forEach(unitKey => {
-          Object.keys(deptData[unitKey]).forEach(groupKey => {
-            const groupData = deptData[unitKey][groupKey];
+        const getDepartmentAverages = (period) => {
+          return departmentList.map(dept => {
+            const scores = [];
+            const deptData = evaluationData[dept.id];
             
-            if (groupData) {
-              if (shouldInclude("v1") && groupData.v1?.[period]) {
-                scores.push(...groupData.v1[period]);
+            if (!deptData || !deptData[selectedUnit.value]) return 0;
+            
+            Object.keys(deptData[selectedUnit.value]).forEach(groupKey => {
+              const groupData = deptData[selectedUnit.value][groupKey];
+              
+              if (groupData) {
+                if (shouldInclude("v1") && groupData.v1?.[period]) {
+                  scores.push(...groupData.v1[period]);
+                }
+                if (shouldInclude("v2") && groupData.v2?.[period]) {
+                  scores.push(...groupData.v2[period]);
+                }
               }
-              if (shouldInclude("v2") && groupData.v2?.[period]) {
-                scores.push(...groupData.v2[period]);
-              }
-            }
+            });
+            
+            return calculateAverage(scores);
           });
-        });
+        };
         
-        return calculateAverage(scores);
-      });
-    };
-    
-    if (shouldIncludePeriod("current")) {
-      datasets.push({
-        label: "ปัจจุบัน",
-        backgroundColor: "#1e40af",
-        data: getDepartmentAverages("current")
-      });
-    }
-    
-    if (shouldIncludePeriod("future")) {
-      datasets.push({
-        label: "อนาคต",
-        backgroundColor: "#3b82f6",
-        data: getDepartmentAverages("future")
-      });
+        if (shouldIncludePeriod("current")) {
+          datasets.push({
+            label: "ปัจจุบัน",
+            backgroundColor: "#1e40af",
+            data: getDepartmentAverages("current")
+          });
+        }
+        
+        if (shouldIncludePeriod("future")) {
+          datasets.push({
+            label: "อนาคต",
+            backgroundColor: "#3b82f6",
+            data: getDepartmentAverages("future")
+          });
+        }
+      } else {
+        // เลือกกลุ่มงานเฉพาะ
+        const departmentList = departments.filter(d => d.id !== 'all');
+        labels = departmentList.map(d => d.name);
+        
+        const getDepartmentAverages = (period) => {
+          return departmentList.map(dept => {
+            const scores = [];
+            const deptData = evaluationData[dept.id];
+            
+            if (!deptData || !deptData[selectedUnit.value]) return 0;
+            
+            selectedGroups.value.forEach(groupKey => {
+              const groupData = deptData[selectedUnit.value][groupKey];
+              
+              if (groupData) {
+                if (shouldInclude("v1") && groupData.v1?.[period]) {
+                  scores.push(...groupData.v1[period]);
+                }
+                if (shouldInclude("v2") && groupData.v2?.[period]) {
+                  scores.push(...groupData.v2[period]);
+                }
+              }
+            });
+            
+            return calculateAverage(scores);
+          });
+        };
+        
+        if (shouldIncludePeriod("current")) {
+          datasets.push({
+            label: "ปัจจุบัน",
+            backgroundColor: "#1e40af",
+            data: getDepartmentAverages("current")
+          });
+        }
+        
+        if (shouldIncludePeriod("future")) {
+          datasets.push({
+            label: "อนาคต",
+            backgroundColor: "#3b82f6",
+            data: getDepartmentAverages("future")
+          });
+        }
+      }
+    } else {
+      // เลือกสายงาน "ทั้งหมด"
+      const departmentList = departments.filter(d => d.id !== 'all');
+      labels = departmentList.map(d => d.name);
+      
+      const getDepartmentAverages = (period) => {
+        return departmentList.map(dept => {
+          const scores = [];
+          const deptData = evaluationData[dept.id];
+          
+          if (!deptData) return 0;
+          
+          Object.keys(deptData).forEach(unitKey => {
+            Object.keys(deptData[unitKey]).forEach(groupKey => {
+              const groupData = deptData[unitKey][groupKey];
+              
+              if (groupData) {
+                if (shouldInclude("v1") && groupData.v1?.[period]) {
+                  scores.push(...groupData.v1[period]);
+                }
+                if (shouldInclude("v2") && groupData.v2?.[period]) {
+                  scores.push(...groupData.v2[period]);
+                }
+              }
+            });
+          });
+          
+          return calculateAverage(scores);
+        });
+      };
+      
+      if (shouldIncludePeriod("current")) {
+        datasets.push({
+          label: "ปัจจุบัน",
+          backgroundColor: "#1e40af",
+          data: getDepartmentAverages("current")
+        });
+      }
+      
+      if (shouldIncludePeriod("future")) {
+        datasets.push({
+          label: "อนาคต",
+          backgroundColor: "#3b82f6",
+          data: getDepartmentAverages("future")
+        });
+      }
     }
     
     return { labels, datasets };
   }
 
-  // กรณีเลือกสายงาน "ทั้งหมด" - แสดงทุกสายงาน
+  // กรณีเลือกตำแหน่งเฉพาะ และเลือกสายงาน "ทั้งหมด"
   if (selectedUnit.value === "all") {
     const units = unitsByDepartment[selectedDepartment.value] || [];
     labels = units.map(u => u.id);
@@ -216,7 +346,7 @@ const chartData = computed(() => {
     return { labels, datasets };
   }
 
-  // กรณีเลือกกลุ่มงาน "ทั้งหมด" - แสดงทุกกลุ่มงาน
+  // กรณีเลือกกลุ่มงาน "ทั้งหมด"
   if (selectedGroups.value.includes('all')) {
     const unit = evaluationData[selectedDepartment.value]?.[selectedUnit.value];
     if (!unit) return { labels: [], datasets: [] };
@@ -308,8 +438,13 @@ const dataSummary = computed(() => {
   
   let unitName = "ทั้งหมด";
   if (selectedUnit.value !== "all") {
-    const unit = unitsByDepartment[selectedDepartment.value]?.find(u => u.id === selectedUnit.value);
-    unitName = unit?.name || selectedUnit.value;
+    if (selectedDepartment.value === "all") {
+      const unit = availableUnits.value.find(u => u.id === selectedUnit.value);
+      unitName = unit?.name || selectedUnit.value;
+    } else {
+      const unit = unitsByDepartment[selectedDepartment.value]?.find(u => u.id === selectedUnit.value);
+      unitName = unit?.name || selectedUnit.value;
+    }
   }
   
   let groupNames = "";
@@ -325,21 +460,45 @@ const dataSummary = computed(() => {
   let total = 0;
 
   if (selectedDepartment.value === "all") {
-    Object.keys(evaluationData).forEach(deptKey => {
-      Object.keys(evaluationData[deptKey]).forEach(unitKey => {
-        Object.keys(evaluationData[deptKey][unitKey]).forEach(groupKey => {
-          const group = evaluationData[deptKey][unitKey][groupKey];
-          if (shouldInclude("v1")) {
-            if (shouldIncludePeriod("current") && group.v1?.current) total += group.v1.current.length;
-            if (shouldIncludePeriod("future") && group.v1?.future) total += group.v1.future.length;
-          }
-          if (shouldInclude("v2")) {
-            if (shouldIncludePeriod("current") && group.v2?.current) total += group.v2.current.length;
-            if (shouldIncludePeriod("future") && group.v2?.future) total += group.v2.future.length;
-          }
+    if (selectedUnit.value === "all") {
+      // รวมทุกตำแหน่ง ทุกสายงาน
+      Object.keys(evaluationData).forEach(deptKey => {
+        Object.keys(evaluationData[deptKey]).forEach(unitKey => {
+          Object.keys(evaluationData[deptKey][unitKey]).forEach(groupKey => {
+            const group = evaluationData[deptKey][unitKey][groupKey];
+            if (shouldInclude("v1")) {
+              if (shouldIncludePeriod("current") && group.v1?.current) total += group.v1.current.length;
+              if (shouldIncludePeriod("future") && group.v1?.future) total += group.v1.future.length;
+            }
+            if (shouldInclude("v2")) {
+              if (shouldIncludePeriod("current") && group.v2?.current) total += group.v2.current.length;
+              if (shouldIncludePeriod("future") && group.v2?.future) total += group.v2.future.length;
+            }
+          });
         });
       });
-    });
+    } else {
+      // รวมทุกตำแหน่ง แต่เลือกสายงานเฉพาะ
+      Object.keys(evaluationData).forEach(deptKey => {
+        const unit = evaluationData[deptKey][selectedUnit.value];
+        if (unit) {
+          const groupsToCount = selectedGroups.value.includes('all') ? Object.keys(unit) : selectedGroups.value;
+          groupsToCount.forEach(groupKey => {
+            const group = unit[groupKey];
+            if (group) {
+              if (shouldInclude("v1")) {
+                if (shouldIncludePeriod("current") && group.v1?.current) total += group.v1.current.length;
+                if (shouldIncludePeriod("future") && group.v1?.future) total += group.v1.future.length;
+              }
+              if (shouldInclude("v2")) {
+                if (shouldIncludePeriod("current") && group.v2?.current) total += group.v2.current.length;
+                if (shouldIncludePeriod("future") && group.v2?.future) total += group.v2.future.length;
+              }
+            }
+          });
+        }
+      });
+    }
   } else if (selectedUnit.value === "all") {
     const units = unitsByDepartment[selectedDepartment.value] || [];
     units.forEach(unitObj => {
@@ -452,8 +611,7 @@ const dataSummary = computed(() => {
                 <div class="relative">
                   <select 
                     v-model="selectedUnit"
-                    :disabled="selectedDepartment === 'all'"
-                    class="w-full px-4 py-2.5 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed text-sm appearance-none"
+                    class="w-full px-4 py-2.5 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors text-sm appearance-none"
                   >
                     <option value="all">ทั้งหมด</option>
                     <option v-for="unit in availableUnits" :key="unit.id" :value="unit.id">
@@ -482,16 +640,14 @@ const dataSummary = computed(() => {
                   class="relative flex items-center px-4 py-3 border rounded-md cursor-pointer transition-all"
                   :class="{ 
                     'border-blue-500 bg-blue-50': selectedGroups.includes(group.id),
-                    'border-gray-300 bg-white hover:border-gray-400': !selectedGroups.includes(group.id),
-                    'opacity-50 cursor-not-allowed': selectedDepartment === 'all' || selectedUnit === 'all'
+                    'border-gray-300 bg-white hover:border-gray-400': !selectedGroups.includes(group.id)
                   }"
                 >
                   <input
                     type="checkbox"
                     :checked="selectedGroups.includes(group.id)"
                     @change="handleGroupChange(group.id)"
-                    :disabled="selectedDepartment === 'all' || selectedUnit === 'all'"
-                    class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed"
+                    class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                   />
                   <span class="ml-3 text-sm text-gray-800">{{ group.name }}</span>
                   <svg v-if="selectedGroups.includes(group.id)" class="w-4 h-4 text-blue-600 ml-auto" fill="currentColor" viewBox="0 0 20 20">
@@ -499,12 +655,6 @@ const dataSummary = computed(() => {
                   </svg>
                 </label>
               </div>
-              <p v-if="selectedDepartment === 'all' || selectedUnit === 'all'" class="text-xs text-amber-600 mt-2 flex items-center">
-                <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-                </svg>
-                กรุณาเลือกตำแหน่งและสายงานก่อนเพื่อเลือกกลุ่มงาน
-              </p>
             </div>
 
             <!-- Row 3: พื้นที่, ช่วงเวลา -->

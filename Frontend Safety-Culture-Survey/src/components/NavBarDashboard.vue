@@ -38,12 +38,6 @@
 
           <div v-show="isAssessmentMenuOpen" class="mt-1 ml-4 space-y-1">
             <router-link 
-              to="/puestion-results"
-              class="block text-sm text-gray-300 hover:text-white hover:bg-[#7AE2CF] px-4 py-2 rounded-lg transition-colors"
-            >
-              ผลประเมินแยกตามสายงาน
-            </router-link>
-            <router-link 
               to="/workgroup-evaluation-results"
               class="block text-sm text-gray-300 hover:text-white hover:bg-[#7AE2CF] px-4 py-2 rounded-lg transition-colors"
             >
