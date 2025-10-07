@@ -2,7 +2,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from "vue";
 import BetChart from "../Showgraph/BetChart.vue";
-import NavbarDashboard from '../../../components/NavbarDashboard.vue';
+import NavbarDashboard from '../../../components/NavBarDashboard.vue';
 import { 
   departments, 
   unitsByDepartment, 
@@ -155,20 +155,24 @@ const chartData = computed(() => {
   if (selectedDepartment.value === "all") {
     // ถ้าเลือกสายงานเฉพาะ
     if (selectedUnit.value !== "all") {
-      // ถ้าเลือกกลุ่มงาน "ทั้งหมด"
+      // **แก้ไขส่วนนี้: ให้แสดงกราฟเป็นกลุ่มงาน**
+      // ถ้าเลือกกลุ่มงาน "ทั้งหมด" ให้แสดงทุกกลุ่มงาน
       if (selectedGroups.value.includes('all')) {
-        const departmentList = departments.filter(d => d.id !== 'all');
-        labels = departmentList.map(d => d.name);
+        // labels เป็นชื่อกลุ่มงาน
+        const availableGroupsList = workGroups.filter(g => g.id !== 'all');
+        labels = availableGroupsList.map(g => g.name);
         
-        const getDepartmentAverages = (period) => {
-          return departmentList.map(dept => {
+        const getWorkGroupAverages = (period) => {
+          return availableGroupsList.map(group => {
             const scores = [];
-            const deptData = evaluationData[dept.id];
             
-            if (!deptData || !deptData[selectedUnit.value]) return 0;
-            
-            Object.keys(deptData[selectedUnit.value]).forEach(groupKey => {
-              const groupData = deptData[selectedUnit.value][groupKey];
+            // วนลูปทุกตำแหน่งเพื่อเก็บคะแนนของกลุ่มงานนี้
+            Object.keys(evaluationData).forEach(deptKey => {
+              const deptData = evaluationData[deptKey];
+              
+              if (!deptData || !deptData[selectedUnit.value]) return;
+              
+              const groupData = deptData[selectedUnit.value][group.id];
               
               if (groupData) {
                 if (shouldInclude("v1") && groupData.v1?.[period]) {
@@ -188,7 +192,7 @@ const chartData = computed(() => {
           datasets.push({
             label: "ปัจจุบัน",
             backgroundColor: "#1e40af",
-            data: getDepartmentAverages("current")
+            data: getWorkGroupAverages("current")
           });
         }
         
@@ -196,23 +200,27 @@ const chartData = computed(() => {
           datasets.push({
             label: "อนาคต",
             backgroundColor: "#3b82f6",
-            data: getDepartmentAverages("future")
+            data: getWorkGroupAverages("future")
           });
         }
       } else {
-        // เลือกกลุ่มงานเฉพาะ
-        const departmentList = departments.filter(d => d.id !== 'all');
-        labels = departmentList.map(d => d.name);
+        // เลือกกลุ่มงานเฉพาะ - แสดงกราฟเป็นกลุ่มงานที่เลือก
+        labels = selectedGroups.value.map(groupId => {
+          const group = workGroups.find(g => g.id === groupId);
+          return group ? group.name : groupId;
+        });
         
-        const getDepartmentAverages = (period) => {
-          return departmentList.map(dept => {
+        const getSelectedGroupsAverages = (period) => {
+          return selectedGroups.value.map(groupId => {
             const scores = [];
-            const deptData = evaluationData[dept.id];
             
-            if (!deptData || !deptData[selectedUnit.value]) return 0;
-            
-            selectedGroups.value.forEach(groupKey => {
-              const groupData = deptData[selectedUnit.value][groupKey];
+            // วนลูปทุกตำแหน่งเพื่อเก็บคะแนนของกลุ่มงานนี้
+            Object.keys(evaluationData).forEach(deptKey => {
+              const deptData = evaluationData[deptKey];
+              
+              if (!deptData || !deptData[selectedUnit.value]) return;
+              
+              const groupData = deptData[selectedUnit.value][groupId];
               
               if (groupData) {
                 if (shouldInclude("v1") && groupData.v1?.[period]) {
@@ -232,7 +240,7 @@ const chartData = computed(() => {
           datasets.push({
             label: "ปัจจุบัน",
             backgroundColor: "#1e40af",
-            data: getDepartmentAverages("current")
+            data: getSelectedGroupsAverages("current")
           });
         }
         
@@ -240,12 +248,12 @@ const chartData = computed(() => {
           datasets.push({
             label: "อนาคต",
             backgroundColor: "#3b82f6",
-            data: getDepartmentAverages("future")
+            data: getSelectedGroupsAverages("future")
           });
         }
       }
     } else {
-      // เลือกสายงาน "ทั้งหมด"
+      // เลือกสายงาน "ทั้งหมด" - แสดงกราฟเป็นตำแหน่ง
       const departmentList = departments.filter(d => d.id !== 'all');
       labels = departmentList.map(d => d.name);
       
@@ -298,12 +306,12 @@ const chartData = computed(() => {
   // กรณีเลือกตำแหน่งเฉพาะ และเลือกสายงาน "ทั้งหมด"
   if (selectedUnit.value === "all") {
     const units = unitsByDepartment[selectedDepartment.value] || [];
-    labels = units.map(u => u.id);
+    labels = units.map(u => u.name);
     
     const getUnitAverages = (period) => {
-      return labels.map(unitId => {
+      return units.map(unitObj => {
         const scores = [];
-        const unit = evaluationData[selectedDepartment.value]?.[unitId];
+        const unit = evaluationData[selectedDepartment.value]?.[unitObj.id];
         
         if (!unit) return 0;
         
@@ -351,10 +359,14 @@ const chartData = computed(() => {
     const unit = evaluationData[selectedDepartment.value]?.[selectedUnit.value];
     if (!unit) return { labels: [], datasets: [] };
     
-    labels = Object.keys(unit);
+    const groupIds = Object.keys(unit);
+    labels = groupIds.map(groupId => {
+      const group = workGroups.find(g => g.id === groupId);
+      return group ? group.name : groupId;
+    });
     
     const getGroupAverages = (period) => {
-      return labels.map(groupId => {
+      return groupIds.map(groupId => {
         const group = unit[groupId];
         const scores = [];
         
@@ -391,10 +403,13 @@ const chartData = computed(() => {
   }
 
   // กรณีเลือกเฉพาะบางกลุ่มงาน
-  labels = selectedGroups.value;
+  labels = selectedGroups.value.map(groupId => {
+    const group = workGroups.find(g => g.id === groupId);
+    return group ? group.name : groupId;
+  });
   
   const getSelectedGroupsAverages = (period) => {
-    return labels.map(groupId => {
+    return selectedGroups.value.map(groupId => {
       const unit = evaluationData[selectedDepartment.value]?.[selectedUnit.value];
       if (!unit) return 0;
       

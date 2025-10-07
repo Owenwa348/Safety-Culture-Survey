@@ -2,11 +2,11 @@
 
 // ข้อมูลตำแหน่ง
 export const departments = [
-  { id: 'all', name: 'รวมทั้งหมด' },
-  { id: 'contractor', name: 'ผู้รับเหมา' },
-  { id: 'employee', name: 'พนักงาน' },
+  { id: 'all', name: 'ทั้งหมด' },
+  { id: 'senior', name: 'ผู้บริหารระดับสูง / ผู้จัดการส่วน' },
   { id: 'manager', name: 'ผู้จัดการแผนก / ผู้จัดการ / พนักงานอาวุโส' },
-  { id: 'senior', name: 'ผู้บริหารระดับสูง / ผู้จัดการส่วน' }
+  { id: 'employee', name: 'พนักงาน' },
+  { id: 'contractor', name: 'ผู้รับเหมา' },
 ];
 
 // ข้อมูลสายงานตามตำแหน่ง
