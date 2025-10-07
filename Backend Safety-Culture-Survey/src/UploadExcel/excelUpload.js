@@ -2,7 +2,7 @@
 import express from 'express';
 import multer from 'multer';
 import ExcelJS from 'exceljs';
-import prisma from './prisma.js';
+import prisma from '../prisma.js';
 
 const router = express.Router();
 const upload = multer(); // เก็บไฟล์ใน memory
