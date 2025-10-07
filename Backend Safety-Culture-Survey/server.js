@@ -1,16 +1,22 @@
-const express = require("express");
-const cors = require("cors");
-const uploadRoutes = require("./routes/excelUploadRoutes");
+const express = require('express');
+const cors = require('cors');
+const excelUploadRouter = require('./routes/excelUploadRoutes'); // ตรวจสอบ path
 
 const app = express();
-app.use(cors());
+
+// CORS - ต้องอยู่ก่อน routes
+app.use(cors({
+  origin: 'http://localhost:5173', // URL ของ Vue (ตรวจสอบ port)
+  credentials: true
+}));
+
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-app.use("/excel-upload", uploadRoutes);
-// app.get('/', (req, res) => {
-//   res.send('Backend API is running 🚀');
-// });
+// Routes
+app.use('/excel-upload', excelUploadRouter);
 
-app.listen(5000, () => {
-  console.log("✅ Server running on http://localhost:5000");
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
 });

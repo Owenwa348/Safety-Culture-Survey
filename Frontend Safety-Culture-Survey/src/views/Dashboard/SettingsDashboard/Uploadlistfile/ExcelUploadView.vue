@@ -215,12 +215,20 @@ const handleUpload = async () => {
 
   try {
     const response = await axios.post(
-    'http://localhost:5000/excel-upload/upload',
-    formData,
-    { headers: { 'Content-Type': 'multipart/form-data' } }
-  )
+      'http://localhost:5000/excel-upload/upload',
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    )
     
     message.value = response.data.message || 'อัปโหลดไฟล์สำเร็จ!'
+    
+    // แสดงรายละเอียดเพิ่มเติม (ไม่มี skipped)
+    if (response.data.details) {
+      const { inserted, updated } = response.data.details
+      if (inserted > 0 || updated > 0) {
+        message.value = `เพิ่มข้อมูลใหม่ ${inserted} รายการ${updated > 0 ? `, อัปเดต ${updated} รายการ` : ''}`
+      }
+    }
     
     // Reset form after successful upload
     setTimeout(() => {
@@ -228,11 +236,29 @@ const handleUpload = async () => {
       message.value = ''
       const fileInput = document.querySelector('input[type="file"]')
       if (fileInput) fileInput.value = ''
-    }, 3000)
+    }, 5000)
     
   } catch (err) {
     console.error('Upload error:', err)
-    error.value = err?.response?.data?.message || err.message || 'เกิดข้อผิดพลาดในการอัปโหลดไฟล์'
+    
+    // จัดการ error ตามสถานะ
+    if (err?.response?.status === 409) {
+      // กรณีข้อมูลซ้ำทั้งหมด
+      error.value = 'มีข้อมูลในฐานข้อมูลแล้ว'
+    } else if (err?.response?.status === 400) {
+      // กรณีไฟล์ไม่ถูกต้อง
+      error.value = err.response.data.message || 'รูปแบบไฟล์ไม่ถูกต้อง'
+      
+      // แสดงรายละเอียดเพิ่มเติม
+      if (err.response.data.details || err.response.data.invalidRows) {
+        error.value += ` - ${err.response.data.details || err.response.data.invalidRows}`
+      }
+    } else if (err.code === 'ERR_NETWORK') {
+      error.value = 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบว่า Backend กำลังรันอยู่'
+    } else {
+      // error อื่นๆ
+      error.value = err?.response?.data?.message || err.message || 'เกิดข้อผิดพลาดในการอัปโหลดไฟล์'
+    }
   } finally {
     loading.value = false
   }
