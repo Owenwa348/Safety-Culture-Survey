@@ -431,7 +431,7 @@ const getTableDescription = computed(() => {
   if (selectedVersion.value === 'combined') {
     return `รวมทุกพื้นที่ (${area} - ${time})`;
   } else {
-    return `ทุกกลุ่มใน ${area} - ${time}`;
+    return `ทุกตำแหน่งใน ${area} - ${time}`;
   }
 });
 

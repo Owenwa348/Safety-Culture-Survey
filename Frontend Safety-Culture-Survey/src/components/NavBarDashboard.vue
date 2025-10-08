@@ -15,7 +15,7 @@
           to="/dashboard"
           class="block text-white hover:bg-[#7AE2CF] px-4 py-2.5 rounded-lg transition-colors"
         >
-          หน้าหลัก
+          สรุปผลการประเมิน
         </router-link>
         
         <!-- ผลลัพธ์การประเมิน -->
@@ -24,7 +24,7 @@
             @click="toggleAssessmentMenu"
             class="w-full flex items-center justify-between text-white hover:bg-[#7AE2CF] px-4 py-2.5 rounded-lg transition-colors"
           >
-            <span>ผลลัพธ์การประเมิน</span>
+            <span>วิเคราะห์ผลการประเมิน</span>
             <svg 
               class="w-4 h-4 transition-transform"
               :class="{ 'rotate-180': isAssessmentMenuOpen }"
@@ -59,7 +59,7 @@
               to="/opinion-results"
               class="block text-sm text-gray-300 hover:text-white hover:bg-[#7AE2CF] px-4 py-2 rounded-lg transition-colors"
             >
-              ความคิดเห็นในแต่ละข้อคำถาม
+              สรุปข้อคิดเห็น
             </router-link>
           </div>
         </div>

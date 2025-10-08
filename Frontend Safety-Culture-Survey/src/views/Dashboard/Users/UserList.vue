@@ -103,7 +103,7 @@
                   </th>
                   <th
                     class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[140px]">
-                    พื้นที่
+                    บริษัทฯ/พื้นที่
                   </th>
                   <th
                     class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[100px]">

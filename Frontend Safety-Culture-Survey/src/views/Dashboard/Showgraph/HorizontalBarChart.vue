@@ -8,7 +8,7 @@
           การวิเคราะห์การประเมินประจำปี {{ currentYear }}
         </h1>
         <p class="text-gray-600">
-          การเปรียบเทียบผลการประเมินระหว่างปัจจุบันและอนาคตตามหมวดหมู่
+          การเปรียบเทียบผลการกระจายตัวของข้อมูลตามระดับแต่ละหมวดหมู่ระหว่างปัจจุบันและอนาคต
         </p>
       </div>
 
@@ -67,13 +67,13 @@
         <div class="px-6 py-6">
           <!-- Legend -->
           <div class="flex items-center gap-6 mb-6 pb-4 border-b border-gray-100">
-            <div v-if="selectedView === 'both' || selectedView === 'current'" class="flex items-center gap-2">
-              <div class="w-4 h-4 rounded bg-blue-500"></div>
-              <span class="text-sm font-medium text-gray-700">ปัจจุบัน</span>
-            </div>
             <div v-if="selectedView === 'both' || selectedView === 'future'" class="flex items-center gap-2">
               <div class="w-4 h-4 rounded bg-emerald-500"></div>
               <span class="text-sm font-medium text-gray-700">อนาคต</span>
+            </div>
+            <div v-if="selectedView === 'both' || selectedView === 'current'" class="flex items-center gap-2">
+              <div class="w-4 h-4 rounded bg-blue-500"></div>
+              <span class="text-sm font-medium text-gray-700">ปัจจุบัน</span>
             </div>
           </div>
 
@@ -100,18 +100,7 @@
                   <div v-for="score in [1, 2, 3, 4, 5]" :key="score" 
                        class="h-16 flex flex-col justify-center px-2"
                        :class="selectedView === 'both' ? 'gap-1.5' : 'gap-0'">
-                    <!-- Current Bar -->
-                    <div v-if="selectedView === 'both' || selectedView === 'current'"
-                      class="bg-blue-500 rounded-md transition-all duration-300 ease-out hover:bg-blue-600 flex items-center"
-                      :class="selectedView === 'both' ? 'h-6' : 'h-12'"
-                      :style="{ width: getBarWidth(currentData[score - 1]) }"
-                    >
-                      <span v-if="currentData[score - 1] > 0" 
-                            class="text-white text-xs font-semibold ml-2">
-                        {{ currentData[score - 1] }}
-                      </span>
-                    </div>
-                    <!-- Future Bar -->
+                    <!-- Future Bar (แสดงบนสุด) -->
                     <div v-if="selectedView === 'both' || selectedView === 'future'"
                       class="bg-emerald-500 rounded-md transition-all duration-300 ease-out hover:bg-emerald-600 flex items-center"
                       :class="selectedView === 'both' ? 'h-6' : 'h-12'"
@@ -120,6 +109,17 @@
                       <span v-if="futureData[score - 1] > 0" 
                             class="text-white text-xs font-semibold ml-2">
                         {{ futureData[score - 1] }}
+                      </span>
+                    </div>
+                    <!-- Current Bar (แสดงล่างสุด) -->
+                    <div v-if="selectedView === 'both' || selectedView === 'current'"
+                      class="bg-blue-500 rounded-md transition-all duration-300 ease-out hover:bg-blue-600 flex items-center"
+                      :class="selectedView === 'both' ? 'h-6' : 'h-12'"
+                      :style="{ width: getBarWidth(currentData[score - 1]) }"
+                    >
+                      <span v-if="currentData[score - 1] > 0" 
+                            class="text-white text-xs font-semibold ml-2">
+                        {{ currentData[score - 1] }}
                       </span>
                     </div>
                   </div>
@@ -135,23 +135,6 @@
                   <span class="text-sm font-medium text-gray-600">จำนวนคำตอบ</span>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Summary -->
-        <div class="px-6 py-5 bg-gray-50 border-t border-gray-200">
-          <div class="grid gap-4 max-w-md"
-               :class="selectedView === 'both' ? 'grid-cols-2' : 'grid-cols-1'">
-            <div v-if="selectedView === 'both' || selectedView === 'current'" 
-                 class="bg-white rounded-lg p-4 border border-gray-200">
-              <div class="text-xs font-medium text-gray-500 mb-1">รวมคำตอบปัจจุบัน</div>
-              <div class="text-2xl font-semibold text-gray-900">{{ getTotalCurrent }}</div>
-            </div>
-            <div v-if="selectedView === 'both' || selectedView === 'future'" 
-                 class="bg-white rounded-lg p-4 border border-gray-200">
-              <div class="text-xs font-medium text-gray-500 mb-1">รวมคำตอบอนาคต</div>
-              <div class="text-2xl font-semibold text-gray-900">{{ getTotalFuture }}</div>
             </div>
           </div>
         </div>
@@ -182,44 +165,44 @@ const selectedView = ref('both');
 // ข้อมูลปัจจุบัน - กระจุกตัวที่คะแนน 1-3
 const rawCurrentData = {
   v1: [
-    { scores: [18, 22, 20, 4, 1] }, // หมวดที่ 1
-    { scores: [20, 21, 18, 5, 2] }, // หมวดที่ 2
-    { scores: [19, 24, 19, 6, 2] }, // หมวดที่ 3
-    { scores: [21, 23, 17, 5, 3] }, // หมวดที่ 4
-    { scores: [17, 20, 22, 4, 2] }, // หมวดที่ 5
-    { scores: [18, 21, 20, 6, 3] }, // หมวดที่ 6
-    { scores: [19, 22, 19, 5, 2] }, // หมวดที่ 7
+    { scores: [18, 22, 20, 4, 1] }, // รวม 65
+    { scores: [20, 21, 18, 5, 2] }, // รวม 66
+    { scores: [19, 24, 19, 6, 2] }, // รวม 70
+    { scores: [21, 23, 17, 5, 3] }, // รวม 69
+    { scores: [17, 20, 22, 4, 2] }, // รวม 65
+    { scores: [18, 21, 20, 6, 3] }, // รวม 68
+    { scores: [19, 22, 19, 5, 2] }, // รวม 67
   ],
   v2: [
-    { scores: [16, 20, 22, 7, 3] }, // หมวดที่ 1
-    { scores: [18, 21, 20, 6, 4] }, // หมวดที่ 2
-    { scores: [17, 23, 18, 8, 2] }, // หมวดที่ 3
-    { scores: [19, 22, 19, 7, 4] }, // หมวดที่ 4
-    { scores: [15, 19, 21, 9, 3] }, // หมวดที่ 5
-    { scores: [16, 20, 20, 8, 4] }, // หมวดที่ 6
-    { scores: [17, 21, 19, 7, 3] }, // หมวดที่ 7
+    { scores: [16, 20, 22, 7, 3] }, // รวม 68
+    { scores: [18, 21, 20, 6, 4] }, // รวม 69
+    { scores: [17, 23, 18, 8, 2] }, // รวม 68
+    { scores: [19, 22, 19, 7, 4] }, // รวม 71
+    { scores: [15, 19, 21, 9, 3] }, // รวม 67
+    { scores: [16, 20, 20, 8, 4] }, // รวม 68
+    { scores: [17, 21, 19, 7, 3] }, // รวม 67
   ]
 };
 
-// ข้อมูลอนาคต - กระจุกตัวที่คะแนน 4-5
+// ข้อมูลอนาคต - กระจุกตัวที่คะแนน 4-5 และรวมเท่ากับปัจจุบัน
 const rawFutureData = {
   v1: [
-    { scores: [1, 3, 6, 20, 15] }, // หมวดที่ 1
-    { scores: [2, 2, 7, 19, 16] }, // หมวดที่ 2
-    { scores: [1, 4, 5, 21, 14] }, // หมวดที่ 3
-    { scores: [2, 3, 6, 20, 15] }, // หมวดที่ 4
-    { scores: [1, 2, 5, 22, 16] }, // หมวดที่ 5
-    { scores: [2, 3, 7, 19, 17] }, // หมวดที่ 6
-    { scores: [1, 4, 6, 20, 16] }, // หมวดที่ 7
+    { scores: [1, 2, 6, 28, 28] }, // รวม 65
+    { scores: [1, 3, 5, 29, 28] }, // รวม 66
+    { scores: [2, 2, 6, 30, 30] }, // รวม 70
+    { scores: [1, 3, 5, 31, 29] }, // รวม 69
+    { scores: [1, 2, 5, 28, 29] }, // รวม 65
+    { scores: [2, 2, 6, 29, 29] }, // รวม 68
+    { scores: [1, 3, 5, 30, 28] }, // รวม 67
   ],
   v2: [
-    { scores: [2, 3, 5, 22, 16] }, // หมวดที่ 1
-    { scores: [1, 2, 6, 21, 17] }, // หมวดที่ 2
-    { scores: [2, 4, 7, 19, 15] }, // หมวดที่ 3
-    { scores: [1, 3, 6, 20, 16] }, // หมวดที่ 4
-    { scores: [2, 2, 5, 23, 15] }, // หมวดที่ 5
-    { scores: [1, 3, 6, 21, 17] }, // หมวดที่ 6
-    { scores: [2, 4, 5, 20, 16] }, // หมวดที่ 7
+    { scores: [2, 2, 5, 29, 30] }, // รวม 68
+    { scores: [1, 3, 6, 31, 28] }, // รวม 69
+    { scores: [2, 2, 5, 29, 30] }, // รวม 68
+    { scores: [1, 3, 6, 32, 29] }, // รวม 71
+    { scores: [2, 2, 5, 29, 29] }, // รวม 67
+    { scores: [1, 3, 5, 30, 29] }, // รวม 68
+    { scores: [2, 2, 5, 30, 28] }, // รวม 67
   ]
 };
 

@@ -575,7 +575,7 @@ const dataSummary = computed(() => {
         <!-- Header Section -->
         <header class="mb-6">
           <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-            <h1 class="text-2xl font-bold text-gray-900 mb-1">ผลการประเมินแยกตามกลุ่มงาน</h1>
+            <h1 class="text-2xl font-bold text-gray-900 mb-1">ผลการประเมินตามกลุ่มงาน</h1>
             <p class="text-sm text-gray-600">วิเคราะห์และเปรียบเทียบผลการประเมินตามตำแหน่ง สายงาน และกลุ่มงาน</p>
           </div>
         </header>
