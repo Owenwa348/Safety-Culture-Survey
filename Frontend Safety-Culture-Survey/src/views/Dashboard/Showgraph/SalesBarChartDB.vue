@@ -115,27 +115,30 @@
         
         <!-- Footer Summary -->
         <div class="px-8 py-5 bg-gradient-to-r from-gray-50 to-blue-50 border-t">
-          <div class="flex flex-wrap items-center justify-between text-sm">
-            <div class="flex items-center space-x-6 text-gray-700">
+          <div class="space-y-4">
+            <!-- แถวแรก: จำนวนกลุ่มและหมวดหมู่ -->
+            <div class="flex items-center space-x-6 text-sm text-gray-700">
               <span class="font-semibold">จำนวนกลุ่ม: <span class="text-blue-600">{{ chartData.datasets.length }}</span></span>
               <span class="font-semibold">จำนวนหมวดหมู่: <span class="text-blue-600">{{ chartLabels.length }}</span></span>
             </div>
-            <div class="flex items-center gap-4 mt-3 sm:mt-0">
+            
+            <!-- แถวที่สอง: คำอธิบายสี -->
+            <div class="flex flex-wrap items-center gap-4 text-sm">
               <div class="flex items-center space-x-2">
                 <div class="w-3 h-3 bg-green-500 rounded shadow-sm"></div>
-                <span class="text-gray-700 font-medium">ดีเยี่ยม ≥ 4.5</span>
+                <span class="text-gray-700 font-medium whitespace-nowrap">ดีเยี่ยม ≥ 4.5</span>
               </div>
               <div class="flex items-center space-x-2">
                 <div class="w-3 h-3 bg-blue-500 rounded shadow-sm"></div>
-                <span class="text-gray-700 font-medium">ดี 4.0 - 4.49</span>
+                <span class="text-gray-700 font-medium whitespace-nowrap">ดี 4.0 - 4.49</span>
               </div>
               <div class="flex items-center space-x-2">
                 <div class="w-3 h-3 bg-yellow-500 rounded shadow-sm"></div>
-                <span class="text-gray-700 font-medium">ปานกลาง 3.5 - 3.99</span>
+                <span class="text-gray-700 font-medium whitespace-nowrap">ปานกลาง 3.5 - 3.99</span>
               </div>
               <div class="flex items-center space-x-2">
                 <div class="w-3 h-3 bg-red-500 rounded shadow-sm"></div>
-                <span class="text-gray-700 font-medium">ต้องพัฒนา &lt; 3.5</span>
+                <span class="text-gray-700 font-medium whitespace-nowrap">ต้องพัฒนา &lt; 3.5</span>
               </div>
             </div>
           </div>
@@ -236,7 +239,7 @@ const colors = {
   'all_current': '#7c3aed',
   'all_future': '#10b981',
   'all_combined': '#1e40af',
-  'future_single': '#f59e0b'  // สีสำหรับกราฟอนาคตเมื่อเลือกแค่ช่วงเวลาเดียว
+  'future_single': '#f59e0b'
 };
 
 // ฟังก์ชันสำหรับคำนวณข้อมูลตามช่วงเวลา
@@ -246,7 +249,6 @@ const getDataForTimePeriod = (timePeriod) => {
   } else if (timePeriod === 'future') {
     return futureData;
   } else {
-    // รวมข้อมูลทั้งหมด (เฉลี่ยของ current และ future)
     const combinedData = {};
     for (const group in currentData) {
       combinedData[group] = {
@@ -262,13 +264,10 @@ const chartData = computed(() => {
   const datasets = [];
 
   if (selectedVersion.value === "combined") {
-    // กรณีเลือก Verte Group (รวมทั้งหมด)
     if (selectedTimePeriod.value === 'all') {
-      // แสดงทั้ง current และ future
       const currentCombined = getDataForTimePeriod('current');
       const futureCombined = getDataForTimePeriod('future');
       
-      // ข้อมูลปัจจุบัน
       const totalGroups = Object.keys(currentCombined).length;
       const currentDataPoints = chartLabels.map((_, i) => {
         let sum = 0;
@@ -281,7 +280,6 @@ const chartData = computed(() => {
         return sum / totalGroups;
       });
 
-      // ข้อมูลอนาคต
       const futureDataPoints = chartLabels.map((_, i) => {
         let sum = 0;
         for (const group in futureCombined) {
@@ -305,7 +303,6 @@ const chartData = computed(() => {
         data: futureDataPoints,
       });
     } else {
-      // แสดงเฉพาะช่วงเวลาที่เลือก
       const rawData = getDataForTimePeriod(selectedTimePeriod.value);
       const totalGroups = Object.keys(rawData).length;
       const data = chartLabels.map((_, i) => {
@@ -319,7 +316,6 @@ const chartData = computed(() => {
         return sum / totalGroups;
       });
 
-      // เลือกสีตามช่วงเวลา
       const barColor = selectedTimePeriod.value === 'future' ? colors.future_single : colors.all_combined;
 
       datasets.push({
@@ -329,15 +325,12 @@ const chartData = computed(() => {
       });
     }
   } else {
-    // กรณีเลือกพื้นที่เฉพาะ (Verte Smart Solution หรือ Verte Security)
     if (selectedTimePeriod.value === 'all') {
-      // เปรียบเทียบระหว่าง ปัจจุบัน และ อนาคต - แสดงเฉพาะค่าเฉลี่ยรวมของทั้ง 4 ตำแหน่ง
       const currentRawData = getDataForTimePeriod('current');
       const futureRawData = getDataForTimePeriod('future');
       
       const totalGroups = Object.keys(currentRawData).length;
 
-      // คำนวณค่าเฉลี่ยรวมของทั้ง 4 ตำแหน่งสำหรับปัจจุบัน
       const currentDataPoints = chartLabels.map((_, i) => {
         let sum = 0;
         for (const group in currentRawData) {
@@ -347,7 +340,6 @@ const chartData = computed(() => {
         return sum / totalGroups;
       });
 
-      // คำนวณค่าเฉลี่ยรวมของทั้ง 4 ตำแหน่งสำหรับอนาคต
       const futureDataPoints = chartLabels.map((_, i) => {
         let sum = 0;
         for (const group in futureRawData) {
@@ -357,7 +349,6 @@ const chartData = computed(() => {
         return sum / totalGroups;
       });
 
-      // แสดงเฉพาะ 2 กราฟ: ปัจจุบัน และ อนาคต
       datasets.push({
         label: `ปัจจุบัน (${areaNameMap[selectedVersion.value]})`,
         backgroundColor: colors.all_current,
@@ -370,7 +361,6 @@ const chartData = computed(() => {
         data: futureDataPoints,
       });
     } else {
-      // แสดงเฉพาะช่วงเวลาที่เลือก - แสดงค่าเฉลี่ยรวมของทั้ง 4 ตำแหน่ง
       const rawData = getDataForTimePeriod(selectedTimePeriod.value);
       const totalGroups = Object.keys(rawData).length;
       
@@ -383,7 +373,6 @@ const chartData = computed(() => {
         return sum / totalGroups;
       });
 
-      // เลือกสีตามช่วงเวลา
       const barColor = selectedTimePeriod.value === 'future' ? colors.future_single : colors.all_combined;
 
       datasets.push({
@@ -397,17 +386,16 @@ const chartData = computed(() => {
   return { labels: chartLabels, datasets };
 });
 
-// Helper methods for table
 const getShortLabel = (label, index) => {
   const shortLabels = [
-    'L&C',     // Leadership & Commitment
-    'P&SO',    // Policy & Strategic Objectives
-    'ORD',     // Organization Resource & Documentation
-    'E&RM',    // Evaluation & Risk Management
-    'I&OC',    // Implementation & Operation Control
-    'M&M',     // Monitoring & Measurement
-    'A&R',     // Audit & Review
-    'AVG'      // AVG
+    'L&C',
+    'P&SO',
+    'ORD',
+    'E&RM',
+    'I&OC',
+    'M&M',
+    'A&R',
+    'AVG'
   ];
   return shortLabels[index] || label;
 };
@@ -423,7 +411,6 @@ const getScoreClass = (score) => {
   return 'text-red-700 bg-red-50';
 };
 
-// คำนวณข้อมูลสำหรับแสดงในตารางรายละเอียด
 const getTableDescription = computed(() => {
   const area = areaNameMap[selectedVersion.value];
   const time = timePeriodMap[selectedTimePeriod.value];

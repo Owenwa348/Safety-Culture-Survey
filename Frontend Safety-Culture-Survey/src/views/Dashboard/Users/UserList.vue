@@ -20,6 +20,7 @@
                 <span>ทำแล้ว: {{ stats.done }}</span>
                 <span>กำลังทำ: {{ stats.inProgress }}</span>
                 <span>ยังไม่เริ่ม: {{ stats.notStarted }}</span>
+                <span>ยังไม่ได้ลงทะเบียน: {{ stats.notRegistered }}</span>
               </div>
             </div>
           </div>
@@ -42,6 +43,7 @@
               <option value="done">ทำแล้ว</option>
               <option value="in_progress">กำลังทำ</option>
               <option value="not_started">ยังไม่เริ่ม</option>
+              <option value="not_registered">ยังไม่ได้ลงทะเบียน</option>
             </select>
             <select
               v-model="positionFilter"
@@ -95,7 +97,7 @@
                   </th>
                   <th
                     class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[120px]">
-                    ชื่อ
+                    ชื่อ - สกุล
                   </th>
                   <th
                     class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[160px]">
@@ -116,6 +118,10 @@
                   <th
                     class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[100px]">
                     กลุ่มงาน
+                  </th>
+                  <th
+                    class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[100px]">
+                    ส่วนงาน
                   </th>
                   <th
                     class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[90px]">
@@ -141,8 +147,8 @@
                     {{ (currentPage - 1) * perPage + index + 1 }}
                   </td>
                   <td class="px-3 py-3 text-xs font-medium text-gray-900">
-                    <div v-if="!user.isEditing" class="truncate max-w-[120px]" :title="user.name">
-                      {{ user.name }}
+                    <div v-if="!user.isEditing" class="truncate max-w-[120px]" :title="displayValue(user.name)">
+                      {{ displayValue(user.name) }}
                     </div>
                     <input
                       v-else
@@ -163,8 +169,8 @@
                     />
                   </td>
                   <td class="px-3 py-3 text-xs text-gray-600">
-                    <div v-if="!user.isEditing" class="truncate max-w-[140px]" :title="user.area || '-'">
-                      {{ user.area || "-" }}
+                    <div v-if="!user.isEditing" class="truncate max-w-[140px]" :title="displayValue(user.area)">
+                      {{ displayValue(user.area) }}
                     </div>
                     <input
                       v-else
@@ -175,8 +181,8 @@
                     />
                   </td>
                   <td class="px-3 py-3 text-xs text-gray-600">
-                    <div v-if="!user.isEditing" class="truncate max-w-[100px]" :title="user.position || '-'">
-                      {{ user.position || "-" }}
+                    <div v-if="!user.isEditing" class="truncate max-w-[100px]" :title="displayValue(user.position)">
+                      {{ displayValue(user.position) }}
                     </div>
                     <input
                       v-else
@@ -188,7 +194,7 @@
                   </td>
                   <td class="px-3 py-3 text-xs text-gray-600 text-center">
                     <div v-if="!user.isEditing">
-                      {{ user.department || "-" }}
+                      {{ displayValue(user.department) }}
                     </div>
                     <input
                       v-else
@@ -199,8 +205,8 @@
                     />
                   </td>
                   <td class="px-3 py-3 text-xs text-gray-600">
-                    <div v-if="!user.isEditing" class="truncate max-w-[100px]" :title="user.workGroup || '-'">
-                      {{ user.workGroup || "-" }}
+                    <div v-if="!user.isEditing" class="truncate max-w-[100px]" :title="displayValue(user.workGroup)">
+                      {{ displayValue(user.workGroup) }}
                     </div>
                     <input
                       v-else
@@ -211,8 +217,20 @@
                     />
                   </td>
                   <td class="px-3 py-3 text-xs text-gray-600">
-                    <div v-if="!user.isEditing" class="truncate max-w-[90px]" :title="formatWorkAge(user.workAge)">
-                      {{ formatWorkAge(user.workAge) }}
+                    <div v-if="!user.isEditing" class="truncate max-w-[100px]" :title="displayValue(user.section)">
+                      {{ displayValue(user.section) }}
+                    </div>
+                    <input
+                      v-else
+                      v-model="user.section"
+                      type="text"
+                      class="w-full bg-white border border-blue-300 px-2 py-1 text-xs text-gray-600 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 rounded"
+                      placeholder="ส่วนงาน"
+                    />
+                  </td>
+                  <td class="px-3 py-3 text-xs text-gray-600">
+                    <div v-if="!user.isEditing" class="truncate max-w-[90px]" :title="displayValue(user.workAge)">
+                      {{ displayValue(user.workAge) }}
                     </div>
                     <input
                       v-else
@@ -236,10 +254,16 @@
                       กำลังทำ
                     </span>
                     <span
-                      v-else
+                      v-else-if="user.status === 'not_started'"
                       class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800 whitespace-nowrap"
                     >
                       ยังไม่เริ่ม
+                    </span>
+                    <span
+                      v-else
+                      class="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800 whitespace-nowrap"
+                    >
+                      ยังไม่ได้ลงทะเบียน
                     </span>
                   </td>
                   <td class="px-3 py-3">
@@ -322,7 +346,7 @@
             <div class="ml-4">
               <h3 class="text-lg font-semibold text-gray-800">ยืนยันการลบ</h3>
               <p class="text-sm text-gray-600 mt-1">
-                คุณแน่ใจหรือไม่ที่ต้องการลบ "{{ userToDelete?.name }}" ?
+                คุณแน่ใจหรือไม่ที่ต้องการลบ "{{ displayValue(userToDelete?.name) }}" ?
               </p>
             </div>
           </div>
@@ -370,41 +394,39 @@ const deleteIndex = ref(-1)
 // Store original data for cancel functionality
 const originalUserData = ref({})
 
+// Helper function to display value or "-"
+function displayValue(value) {
+  if (value === null || value === undefined || value === '' || value === '-') {
+    return '-'
+  }
+  return String(value).trim() || '-'
+}
+
 // Edit user functions
 function editUser(user, index) {
-  console.log('Edit button clicked for:', user.name) // Debug log
-  // Store original data before editing
+  console.log('Edit button clicked for:', user.name)
   originalUserData.value[index] = { ...user }
-  // Set editing mode
   user.isEditing = true
-  // Force reactivity update
   users.value = [...users.value]
 }
 
 function saveUser(user, index) {
-  console.log('Saving user data:', user) // Debug log
-  // Here you can add API call to save data
+  console.log('Saving user data:', user)
+  // Normalize empty values to "-"
+  const fieldsToNormalize = ['name', 'position', 'section', 'department', 'workGroup', 'workAge', 'area']
+  fieldsToNormalize.forEach(field => {
+    if (!user[field] || String(user[field]).trim() === '') {
+      user[field] = '-'
+    }
+  })
   
-  // Remove editing mode
   user.isEditing = false
-  
-  // Clear original data
   delete originalUserData.value[index]
-  
-  // Force reactivity update
   users.value = [...users.value]
-  
-  // Example API call:
-  // try {
-  //   await axios.put(`/api/users/${user.id}`, user)
-  // } catch (error) {
-  //   console.error('Error saving user:', error)
-  // }
 }
 
 function cancelEdit(user, index) {
-  console.log('Cancel edit for:', user.name) // Debug log
-  // Restore original data
+  console.log('Cancel edit for:', user.name)
   if (originalUserData.value[index]) {
     const originalData = originalUserData.value[index]
     Object.keys(originalData).forEach(key => {
@@ -414,21 +436,18 @@ function cancelEdit(user, index) {
     })
     delete originalUserData.value[index]
   }
-  
-  // Remove editing mode
   user.isEditing = false
-  
-  // Force reactivity update
   users.value = [...users.value]
 }
 
-// ข้อมูลตัวอย่าง 5 รายชื่อ (เพิ่มสถานะ in_progress และ isEditing)
+// ข้อมูลตัวอย่าง
 const sampleUsers = [
   {
     name: "นายสมชาย วงศ์ใหญ่",
     email: "somchai.wong@company.com",
-    area: "บริษัท ABC จำกัด",
+    area: "Verte Smart Solution",
     position: "ผู้บริหารระดับสูง",
+    section: "-",
     department: "CEO",
     workGroup: "หน่วยงานสนับสนุน",
     workAge: "มากกว่า 15 ปีขึ้นไป",
@@ -438,8 +457,9 @@ const sampleUsers = [
   {
     name: "นางสาวมาลี ศรีสุข",
     email: "malee.srisuk@company.com",
-    area: "บริษัท FGH จำกัด",
+    area: "Verte Smart Solution",
     position: "พนักงาน",
+    section: "-",
     department: "PSE",
     workGroup: "หน่วยงานเดินเครื่อง",
     workAge: "3 ปีขึ้นไป แต่ไม่เกิน 5 ปี",
@@ -449,8 +469,9 @@ const sampleUsers = [
   {
     name: "นายประยุทธ จันทร์เพ็ญ",
     email: "prayut.chanpen@company.com",
-    area: "บริษัท HIJ จำกัด",
+    area: "Verte Security",
     position: "ผู้จัดการแผนก",
+    section: "-",
     department: "CME",
     workGroup: "หน่วยงานวิศวกรรม",
     workAge: "10 ปีขึ้นไป แต่ไม่เกิน 15 ปี",
@@ -460,8 +481,9 @@ const sampleUsers = [
   {
     name: "นางสุดา รัตนโกมล",
     email: "suda.rattanakom@company.com",
-    area: "บริษัท VUP จำกัด",
+    area: "Verte Smart Solution",
     position: "พนักงานอาวุโส",
+    section: "-",
     department: "COO",
     workGroup: "หน่วยงานบำรุงรักษา",
     workAge: "5 ปีขึ้นไป แต่ไม่เกิน 10 ปี",
@@ -471,36 +493,46 @@ const sampleUsers = [
   {
     name: "นายวิทยา ประสบสุข",
     email: "witya.prasopsuk@company.com",
-    area: "บริษัท DFG จำกัด",
+    area: "Verte Security",
     position: "ผู้รับเหมาประจำ",
+    section: "-",
     department: "CFO",
     workGroup: "หน่วยงานสนับสนุน",
     workAge: "0-3 ปี",
     status: "in_progress",
     isEditing: false
+  },
+  {
+    name: "-",
+    email: "newuser1@company.com",
+    area: "Verte Security",
+    position: "-",
+    section: "-",
+    department: "-",
+    workGroup: "-",
+    workAge: "-",
+    status: "not_registered",
+    isEditing: false
+  },
+  {
+    name: "-",
+    email: "newuser2@company.com",
+    area: "Verte Smart Solution",
+    position: "-",
+    section: "-",
+    department: "-",
+    workGroup: "-",
+    workAge: "-",
+    status: "not_registered",
+    isEditing: false
   }
 ]
 
 onMounted(async () => {
-  // ใช้ข้อมูลตัวอย่างทันทีเพื่อให้เห็นผล
   users.value = sampleUsers
   loading.value = false
-  
-  // คอมเมนต์ส่วน API ไว้ก่อน หากต้องการใช้ API ในภายหลัง
-  /*
-  try {
-    const res = await axios.get('/api/user_excel/with-status')
-    users.value = res.data
-  } catch (err) {
-    console.error('Error fetching users:', err)
-    users.value = sampleUsers
-  } finally {
-    loading.value = false
-  }
-  */
 })
 
-// เด้งกลับไปหน้าที่ 1 เมื่อ search หรือ filter เปลี่ยน
 watch([search, statusFilter, positionFilter, departmentFilter], () => {
   currentPage.value = 1
 })
@@ -510,20 +542,21 @@ const stats = computed(() => {
   const done = users.value.filter(u => u.status === 'done').length
   const inProgress = users.value.filter(u => u.status === 'in_progress').length
   const notStarted = users.value.filter(u => u.status === 'not_started').length
-  return { total, done, inProgress, notStarted }
+  const notRegistered = users.value.filter(u => u.status === 'not_registered').length
+  return { total, done, inProgress, notStarted, notRegistered }
 })
 
 const uniquePositions = computed(() => {
   const positions = users.value
     .map(u => u.position)
-    .filter(Boolean)
+    .filter(p => p && p !== '-')
   return [...new Set(positions)].sort()
 })
 
 const uniqueDepartments = computed(() => {
   const departments = users.value
     .map(u => u.department)
-    .filter(Boolean)
+    .filter(d => d && d !== '-')
   return [...new Set(departments)].sort()
 })
 
@@ -535,11 +568,13 @@ const filteredUsers = computed(() => {
       user.email, 
       user.area, 
       user.position, 
+      user.section,
       user.department, 
       user.workGroup
-    ].some(field =>
-      String(field || '').toLowerCase().includes(keyword)
-    )
+    ].some(field => {
+      const value = displayValue(field)
+      return value !== '-' && value.toLowerCase().includes(keyword)
+    })
     
     const matchStatus = 
       statusFilter.value === 'all' || user.status === statusFilter.value
@@ -567,17 +602,6 @@ function goToPage(page) {
   if (page >= 1 && page <= totalPages.value) {
     currentPage.value = page
   }
-}
-
-function formatWorkAge(workAge) {
-  if (!workAge) return '-'
-  if (typeof workAge === 'string') {
-    return workAge
-  }
-  if (typeof workAge === 'number') {
-    return `${workAge} ปี`
-  }
-  return workAge
 }
 
 // Delete user functions

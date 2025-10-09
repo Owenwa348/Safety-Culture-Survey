@@ -202,7 +202,7 @@
 
 <script>
 import { evaluateOpinions } from './EvaluateOpinion.js'
-import NavbarDashboard from '../../../components/NavBarDashboard.vue'
+import NavbarDashboard from '../../../components/NavbarDashboard.vue'
 
 export default {
   name: 'OpinionResults',

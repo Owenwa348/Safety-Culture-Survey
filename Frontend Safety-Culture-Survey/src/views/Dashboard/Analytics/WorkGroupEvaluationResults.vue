@@ -2,7 +2,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from "vue";
 import BetChart from "../Showgraph/BetChart.vue";
-import NavbarDashboard from '../../../components/NavBarDashboard.vue';
+import NavbarDashboard from '../../../components/NavbarDashboard.vue';
 import { 
   departments, 
   unitsByDepartment, 
