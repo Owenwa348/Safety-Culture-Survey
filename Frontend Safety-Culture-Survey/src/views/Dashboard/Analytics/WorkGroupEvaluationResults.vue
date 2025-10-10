@@ -10,7 +10,9 @@ import {
   evaluationData 
 } from './WorkGroupbasedata.js';
 
-// State
+// ============================================
+// SECTION 1: STATE MANAGEMENT
+// ============================================
 const selectedDepartment = ref("all");
 const selectedUnit = ref("all");
 const selectedGroups = ref(["all"]);
@@ -18,16 +20,43 @@ const selectedVersion = ref("both");
 const selectedPeriod = ref("both");
 const versionOptions = ref([]);
 
-// ฟังก์ชันช่วย
+// ============================================
+// SECTION 2: HELPER FUNCTIONS
+// ============================================
+
+/**
+ * ตรวจสอบว่าควรรวม version นี้หรือไม่
+ * @param {string} version - v1 หรือ v2
+ * @returns {boolean}
+ */
 const shouldInclude = (version) => {
   return selectedVersion.value === version || selectedVersion.value === "both";
 };
 
+/**
+ * ตรวจสอบว่าควรรวม period นี้หรือไม่
+ * @param {string} period - current หรือ future
+ * @returns {boolean}
+ */
 const shouldIncludePeriod = (period) => {
   return selectedPeriod.value === period || selectedPeriod.value === "both";
 };
 
-// Mock function สำหรับดึงข้อมูลพื้นที่จาก API
+/**
+ * คำนวณค่าเฉลี่ยจาก array ของคะแนน
+ * @param {Array} scores - array ของคะแนน
+ * @returns {number}
+ */
+const calculateAverage = (scores) => {
+  if (!Array.isArray(scores) || scores.length === 0) return 0;
+  const flat = Array.isArray(scores[0]) ? scores.flat() : scores;
+  if (flat.length === 0) return 0;
+  return +(flat.reduce((a, b) => a + b, 0) / flat.length).toFixed(2);
+};
+
+/**
+ * ดึงข้อมูล version options จาก API (Mock)
+ */
 const fetchVersionOptions = async () => {
   return new Promise((resolve) => {
     setTimeout(() => {
@@ -40,15 +69,15 @@ const fetchVersionOptions = async () => {
   });
 };
 
-// Load version options on component mount
-onMounted(async () => {
-  versionOptions.value = await fetchVersionOptions();
-});
+// ============================================
+// SECTION 3: COMPUTED PROPERTIES
+// ============================================
 
-// Available Units based on selected department
+/**
+ * สายงานที่สามารถเลือกได้ตามตำแหน่งที่เลือก
+ */
 const availableUnits = computed(() => {
   if (selectedDepartment.value === "all") {
-    // รวมสายงานจากทุกตำแหน่ง โดยไม่ซ้ำกัน
     const allUnits = new Set();
     Object.keys(unitsByDepartment).forEach(dept => {
       unitsByDepartment[dept].forEach(unit => {
@@ -60,14 +89,15 @@ const availableUnits = computed(() => {
   return unitsByDepartment[selectedDepartment.value] || [];
 });
 
-// Available Work Groups based on selected unit
+/**
+ * กลุ่มงานที่สามารถเลือกได้ตามตำแหน่งและสายงานที่เลือก
+ */
 const availableWorkGroups = computed(() => {
   if (selectedDepartment.value === "all" && selectedUnit.value === "all") {
     return workGroups;
   }
   
   if (selectedDepartment.value === "all" && selectedUnit.value !== "all") {
-    // เมื่อเลือกตำแหน่งรวมทั้งหมด และเลือกสายงานเฉพาะ
     const availableGroups = [{ id: 'all', name: 'ทั้งหมด' }];
     const groupSet = new Set();
     
@@ -109,56 +139,21 @@ const availableWorkGroups = computed(() => {
   return availableGroups;
 });
 
-// Reset selections when department changes
-watch(selectedDepartment, () => {
-  selectedUnit.value = "all";
-  selectedGroups.value = ["all"];
-});
-
-watch(selectedUnit, () => {
-  selectedGroups.value = ["all"];
-});
-
-// ฟังก์ชันจัดการ checkbox กลุ่มงาน
-const handleGroupChange = (groupId) => {
-  if (groupId === 'all') {
-    selectedGroups.value = ['all'];
-  } else {
-    if (selectedGroups.value.includes('all')) {
-      selectedGroups.value = [groupId];
-    } else {
-      const index = selectedGroups.value.indexOf(groupId);
-      if (index > -1) {
-        selectedGroups.value.splice(index, 1);
-        if (selectedGroups.value.length === 0) {
-          selectedGroups.value = ['all'];
-        }
-      } else {
-        selectedGroups.value.push(groupId);
-      }
-    }
-  }
-};
-
-const calculateAverage = (scores) => {
-  if (!Array.isArray(scores) || scores.length === 0) return 0;
-  const flat = Array.isArray(scores[0]) ? scores.flat() : scores;
-  if (flat.length === 0) return 0;
-  return +(flat.reduce((a, b) => a + b, 0) / flat.length).toFixed(2);
-};
-
+/**
+ * ข้อมูลสำหรับแสดงกราฟ
+ */
 const chartData = computed(() => {
   const datasets = [];
   let labels = [];
 
-  // กรณีเลือก "รวมทั้งหมด" ที่ตำแหน่ง
+  // CASE 1: เลือกตำแหน่ง = "ทั้งหมด"
   if (selectedDepartment.value === "all") {
-    // ถ้าเลือกสายงานเฉพาะ
+    
+    // CASE 1.1: เลือกสายงานเฉพาะ
     if (selectedUnit.value !== "all") {
-      // **แก้ไขส่วนนี้: ให้แสดงกราฟเป็นกลุ่มงาน**
-      // ถ้าเลือกกลุ่มงาน "ทั้งหมด" ให้แสดงทุกกลุ่มงาน
+      
+      // CASE 1.1.1: เลือกกลุ่มงาน = "ทั้งหมด"
       if (selectedGroups.value.includes('all')) {
-        // labels เป็นชื่อกลุ่มงาน
         const availableGroupsList = workGroups.filter(g => g.id !== 'all');
         labels = availableGroupsList.map(g => g.name);
         
@@ -166,14 +161,11 @@ const chartData = computed(() => {
           return availableGroupsList.map(group => {
             const scores = [];
             
-            // วนลูปทุกตำแหน่งเพื่อเก็บคะแนนของกลุ่มงานนี้
             Object.keys(evaluationData).forEach(deptKey => {
               const deptData = evaluationData[deptKey];
-              
               if (!deptData || !deptData[selectedUnit.value]) return;
               
               const groupData = deptData[selectedUnit.value][group.id];
-              
               if (groupData) {
                 if (shouldInclude("v1") && groupData.v1?.[period]) {
                   scores.push(...groupData.v1[period]);
@@ -203,8 +195,9 @@ const chartData = computed(() => {
             data: getWorkGroupAverages("future")
           });
         }
-      } else {
-        // เลือกกลุ่มงานเฉพาะ - แสดงกราฟเป็นกลุ่มงานที่เลือก
+      } 
+      // CASE 1.1.2: เลือกกลุ่มงานเฉพาะ
+      else {
         labels = selectedGroups.value.map(groupId => {
           const group = workGroups.find(g => g.id === groupId);
           return group ? group.name : groupId;
@@ -214,14 +207,11 @@ const chartData = computed(() => {
           return selectedGroups.value.map(groupId => {
             const scores = [];
             
-            // วนลูปทุกตำแหน่งเพื่อเก็บคะแนนของกลุ่มงานนี้
             Object.keys(evaluationData).forEach(deptKey => {
               const deptData = evaluationData[deptKey];
-              
               if (!deptData || !deptData[selectedUnit.value]) return;
               
               const groupData = deptData[selectedUnit.value][groupId];
-              
               if (groupData) {
                 if (shouldInclude("v1") && groupData.v1?.[period]) {
                   scores.push(...groupData.v1[period]);
@@ -252,22 +242,40 @@ const chartData = computed(() => {
           });
         }
       }
-    } else {
-      // เลือกสายงาน "ทั้งหมด" - แสดงกราฟเป็นตำแหน่ง
-      const departmentList = departments.filter(d => d.id !== 'all');
-      labels = departmentList.map(d => d.name);
+    } 
+    // CASE 1.2: เลือกสายงาน = "ทั้งหมด" -> แสดงกราฟเป็นสายงานเสมอ
+    else {
+      // รวมสายงานทั้งหมดจากทุกตำแหน่ง
+      const allUnitsMap = new Map();
+      Object.keys(evaluationData).forEach(deptKey => {
+        Object.keys(evaluationData[deptKey]).forEach(unitKey => {
+          if (!allUnitsMap.has(unitKey)) {
+            const unitInfo = availableUnits.value.find(u => u.id === unitKey);
+            if (unitInfo) {
+              allUnitsMap.set(unitKey, unitInfo.name);
+            }
+          }
+        });
+      });
       
-      const getDepartmentAverages = (period) => {
-        return departmentList.map(dept => {
+      const unitsList = Array.from(allUnitsMap.entries());
+      labels = unitsList.map(([id, name]) => name);
+      
+      const getUnitAverages = (period) => {
+        return unitsList.map(([unitId]) => {
           const scores = [];
-          const deptData = evaluationData[dept.id];
           
-          if (!deptData) return 0;
-          
-          Object.keys(deptData).forEach(unitKey => {
-            Object.keys(deptData[unitKey]).forEach(groupKey => {
-              const groupData = deptData[unitKey][groupKey];
-              
+          Object.keys(evaluationData).forEach(deptKey => {
+            const deptData = evaluationData[deptKey];
+            if (!deptData || !deptData[unitId]) return;
+            
+            // กำหนดกลุ่มงานที่จะนับ
+            const groupsToUse = selectedGroups.value.includes('all') 
+              ? Object.keys(deptData[unitId])
+              : selectedGroups.value;
+            
+            groupsToUse.forEach(groupKey => {
+              const groupData = deptData[unitId][groupKey];
               if (groupData) {
                 if (shouldInclude("v1") && groupData.v1?.[period]) {
                   scores.push(...groupData.v1[period]);
@@ -287,7 +295,7 @@ const chartData = computed(() => {
         datasets.push({
           label: "ปัจจุบัน",
           backgroundColor: "#1e40af",
-          data: getDepartmentAverages("current")
+          data: getUnitAverages("current")
         });
       }
       
@@ -295,7 +303,7 @@ const chartData = computed(() => {
         datasets.push({
           label: "อนาคต",
           backgroundColor: "#3b82f6",
-          data: getDepartmentAverages("future")
+          data: getUnitAverages("future")
         });
       }
     }
@@ -303,7 +311,7 @@ const chartData = computed(() => {
     return { labels, datasets };
   }
 
-  // กรณีเลือกตำแหน่งเฉพาะ และเลือกสายงาน "ทั้งหมด"
+  // CASE 2: เลือกตำแหน่งเฉพาะ และเลือกสายงาน = "ทั้งหมด"
   if (selectedUnit.value === "all") {
     const units = unitsByDepartment[selectedDepartment.value] || [];
     labels = units.map(u => u.name);
@@ -354,7 +362,7 @@ const chartData = computed(() => {
     return { labels, datasets };
   }
 
-  // กรณีเลือกกลุ่มงาน "ทั้งหมด"
+  // CASE 3: เลือกกลุ่มงาน = "ทั้งหมด"
   if (selectedGroups.value.includes('all')) {
     const unit = evaluationData[selectedDepartment.value]?.[selectedUnit.value];
     if (!unit) return { labels: [], datasets: [] };
@@ -402,7 +410,7 @@ const chartData = computed(() => {
     return { labels, datasets };
   }
 
-  // กรณีเลือกเฉพาะบางกลุ่มงาน
+  // CASE 4: เลือกเฉพาะบางกลุ่มงาน
   labels = selectedGroups.value.map(groupId => {
     const group = workGroups.find(g => g.id === groupId);
     return group ? group.name : groupId;
@@ -448,6 +456,9 @@ const chartData = computed(() => {
   return { labels, datasets };
 });
 
+/**
+ * สรุปข้อมูลที่เลือก
+ */
 const dataSummary = computed(() => {
   const deptName = departments.find(d => d.id === selectedDepartment.value)?.name || "";
   
@@ -476,24 +487,28 @@ const dataSummary = computed(() => {
 
   if (selectedDepartment.value === "all") {
     if (selectedUnit.value === "all") {
-      // รวมทุกตำแหน่ง ทุกสายงาน
       Object.keys(evaluationData).forEach(deptKey => {
         Object.keys(evaluationData[deptKey]).forEach(unitKey => {
-          Object.keys(evaluationData[deptKey][unitKey]).forEach(groupKey => {
+          const groupsToCount = selectedGroups.value.includes('all') 
+            ? Object.keys(evaluationData[deptKey][unitKey])
+            : selectedGroups.value;
+          
+          groupsToCount.forEach(groupKey => {
             const group = evaluationData[deptKey][unitKey][groupKey];
-            if (shouldInclude("v1")) {
-              if (shouldIncludePeriod("current") && group.v1?.current) total += group.v1.current.length;
-              if (shouldIncludePeriod("future") && group.v1?.future) total += group.v1.future.length;
-            }
-            if (shouldInclude("v2")) {
-              if (shouldIncludePeriod("current") && group.v2?.current) total += group.v2.current.length;
-              if (shouldIncludePeriod("future") && group.v2?.future) total += group.v2.future.length;
+            if (group) {
+              if (shouldInclude("v1")) {
+                if (shouldIncludePeriod("current") && group.v1?.current) total += group.v1.current.length;
+                if (shouldIncludePeriod("future") && group.v1?.future) total += group.v1.future.length;
+              }
+              if (shouldInclude("v2")) {
+                if (shouldIncludePeriod("current") && group.v2?.current) total += group.v2.current.length;
+                if (shouldIncludePeriod("future") && group.v2?.future) total += group.v2.future.length;
+              }
             }
           });
         });
       });
     } else {
-      // รวมทุกตำแหน่ง แต่เลือกสายงานเฉพาะ
       Object.keys(evaluationData).forEach(deptKey => {
         const unit = evaluationData[deptKey][selectedUnit.value];
         if (unit) {
@@ -561,6 +576,57 @@ const dataSummary = computed(() => {
     group: groupNames,
     total 
   };
+});
+
+// ============================================
+// SECTION 4: EVENT HANDLERS
+// ============================================
+
+/**
+ * จัดการการเปลี่ยนแปลงของ checkbox กลุ่มงาน
+ * @param {string} groupId - ID ของกลุ่มงาน
+ */
+const handleGroupChange = (groupId) => {
+  if (groupId === 'all') {
+    selectedGroups.value = ['all'];
+  } else {
+    if (selectedGroups.value.includes('all')) {
+      selectedGroups.value = [groupId];
+    } else {
+      const index = selectedGroups.value.indexOf(groupId);
+      if (index > -1) {
+        selectedGroups.value.splice(index, 1);
+        if (selectedGroups.value.length === 0) {
+          selectedGroups.value = ['all'];
+        }
+      } else {
+        selectedGroups.value.push(groupId);
+      }
+    }
+  }
+};
+
+// ============================================
+// SECTION 5: WATCHERS
+// ============================================
+
+// Reset selections when department changes
+watch(selectedDepartment, () => {
+  selectedUnit.value = "all";
+  selectedGroups.value = ["all"];
+});
+
+// Reset group selection when unit changes
+watch(selectedUnit, () => {
+  selectedGroups.value = ["all"];
+});
+
+// ============================================
+// SECTION 6: LIFECYCLE HOOKS
+// ============================================
+
+onMounted(async () => {
+  versionOptions.value = await fetchVersionOptions();
 });
 </script>
 
