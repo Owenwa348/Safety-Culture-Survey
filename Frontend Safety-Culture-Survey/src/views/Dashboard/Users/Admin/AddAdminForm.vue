@@ -60,7 +60,7 @@
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
           </svg>
-          เพิ่มผู้ดูแลอีกคน
+          เพิ่มผู้ดูแล
         </button>
         
         <div class="text-sm text-gray-500">

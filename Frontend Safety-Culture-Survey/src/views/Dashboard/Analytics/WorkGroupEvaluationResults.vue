@@ -10,7 +10,9 @@ import {
   evaluationData 
 } from './WorkGroupbasedata.js';
 
-// State
+// ============================================
+// SECTION 1: STATE MANAGEMENT
+// ============================================
 const selectedDepartment = ref("all");
 const selectedUnit = ref("all");
 const selectedGroups = ref(["all"]);
@@ -18,16 +20,43 @@ const selectedVersion = ref("both");
 const selectedPeriod = ref("both");
 const versionOptions = ref([]);
 
-// ฟังก์ชันช่วย
+// ============================================
+// SECTION 2: HELPER FUNCTIONS
+// ============================================
+
+/**
+ * ตรวจสอบว่าควรรวม version นี้หรือไม่
+ * @param {string} version - v1 หรือ v2
+ * @returns {boolean}
+ */
 const shouldInclude = (version) => {
   return selectedVersion.value === version || selectedVersion.value === "both";
 };
 
+/**
+ * ตรวจสอบว่าควรรวม period นี้หรือไม่
+ * @param {string} period - current หรือ future
+ * @returns {boolean}
+ */
 const shouldIncludePeriod = (period) => {
   return selectedPeriod.value === period || selectedPeriod.value === "both";
 };
 
-// Mock function สำหรับดึงข้อมูลพื้นที่จาก API
+/**
+ * คำนวณค่าเฉลี่ยจาก array ของคะแนน
+ * @param {Array} scores - array ของคะแนน
+ * @returns {number}
+ */
+const calculateAverage = (scores) => {
+  if (!Array.isArray(scores) || scores.length === 0) return 0;
+  const flat = Array.isArray(scores[0]) ? scores.flat() : scores;
+  if (flat.length === 0) return 0;
+  return +(flat.reduce((a, b) => a + b, 0) / flat.length).toFixed(2);
+};
+
+/**
+ * ดึงข้อมูล version options จาก API (Mock)
+ */
 const fetchVersionOptions = async () => {
   return new Promise((resolve) => {
     setTimeout(() => {
@@ -40,20 +69,57 @@ const fetchVersionOptions = async () => {
   });
 };
 
-// Load version options on component mount
-onMounted(async () => {
-  versionOptions.value = await fetchVersionOptions();
-});
+// ============================================
+// SECTION 3: COMPUTED PROPERTIES
+// ============================================
 
-// Available Units based on selected department
+/**
+ * สายงานที่สามารถเลือกได้ตามตำแหน่งที่เลือก
+ */
 const availableUnits = computed(() => {
-  if (selectedDepartment.value === "all") return [];
+  if (selectedDepartment.value === "all") {
+    const allUnits = new Set();
+    Object.keys(unitsByDepartment).forEach(dept => {
+      unitsByDepartment[dept].forEach(unit => {
+        allUnits.add(JSON.stringify(unit));
+      });
+    });
+    return Array.from(allUnits).map(u => JSON.parse(u));
+  }
   return unitsByDepartment[selectedDepartment.value] || [];
 });
 
-// Available Work Groups based on selected unit
+/**
+ * กลุ่มงานที่สามารถเลือกได้ตามตำแหน่งและสายงานที่เลือก
+ */
 const availableWorkGroups = computed(() => {
-  if (selectedDepartment.value === "all" || selectedUnit.value === "all") {
+  if (selectedDepartment.value === "all" && selectedUnit.value === "all") {
+    return workGroups;
+  }
+  
+  if (selectedDepartment.value === "all" && selectedUnit.value !== "all") {
+    const availableGroups = [{ id: 'all', name: 'ทั้งหมด' }];
+    const groupSet = new Set();
+    
+    Object.keys(evaluationData).forEach(deptKey => {
+      const dept = evaluationData[deptKey];
+      if (dept[selectedUnit.value]) {
+        Object.keys(dept[selectedUnit.value]).forEach(groupKey => {
+          groupSet.add(groupKey);
+        });
+      }
+    });
+    
+    workGroups.forEach(group => {
+      if (group.id !== 'all' && groupSet.has(group.id)) {
+        availableGroups.push(group);
+      }
+    });
+    
+    return availableGroups;
+  }
+  
+  if (selectedUnit.value === "all") {
     return workGroups;
   }
   
@@ -73,107 +139,187 @@ const availableWorkGroups = computed(() => {
   return availableGroups;
 });
 
-// Reset selections when department changes
-watch(selectedDepartment, () => {
-  selectedUnit.value = "all";
-  selectedGroups.value = ["all"];
-});
-
-watch(selectedUnit, () => {
-  selectedGroups.value = ["all"];
-});
-
-// ฟังก์ชันจัดการ checkbox กลุ่มงาน
-const handleGroupChange = (groupId) => {
-  if (groupId === 'all') {
-    selectedGroups.value = ['all'];
-  } else {
-    if (selectedGroups.value.includes('all')) {
-      selectedGroups.value = [groupId];
-    } else {
-      const index = selectedGroups.value.indexOf(groupId);
-      if (index > -1) {
-        selectedGroups.value.splice(index, 1);
-        if (selectedGroups.value.length === 0) {
-          selectedGroups.value = ['all'];
-        }
-      } else {
-        selectedGroups.value.push(groupId);
-      }
-    }
-  }
-};
-
-const calculateAverage = (scores) => {
-  if (!Array.isArray(scores) || scores.length === 0) return 0;
-  const flat = Array.isArray(scores[0]) ? scores.flat() : scores;
-  if (flat.length === 0) return 0;
-  return +(flat.reduce((a, b) => a + b, 0) / flat.length).toFixed(2);
-};
-
+/**
+ * ข้อมูลสำหรับแสดงกราฟ
+ */
 const chartData = computed(() => {
   const datasets = [];
   let labels = [];
 
-  // กรณีเลือก "รวมทั้งหมด" - แสดงตามตำแหน่ง
+  // CASE 1: เลือกตำแหน่ง = "ทั้งหมด"
   if (selectedDepartment.value === "all") {
-    const departmentList = departments.filter(d => d.id !== 'all');
-    labels = departmentList.map(d => d.name);
     
-    const getDepartmentAverages = (period) => {
-      return departmentList.map(dept => {
-        const scores = [];
-        const deptData = evaluationData[dept.id];
+    // CASE 1.1: เลือกสายงานเฉพาะ
+    if (selectedUnit.value !== "all") {
+      
+      // CASE 1.1.1: เลือกกลุ่มงาน = "ทั้งหมด"
+      if (selectedGroups.value.includes('all')) {
+        const availableGroupsList = workGroups.filter(g => g.id !== 'all');
+        labels = availableGroupsList.map(g => g.name);
         
-        if (!deptData) return 0;
-        
-        Object.keys(deptData).forEach(unitKey => {
-          Object.keys(deptData[unitKey]).forEach(groupKey => {
-            const groupData = deptData[unitKey][groupKey];
+        const getWorkGroupAverages = (period) => {
+          return availableGroupsList.map(group => {
+            const scores = [];
             
-            if (groupData) {
-              if (shouldInclude("v1") && groupData.v1?.[period]) {
-                scores.push(...groupData.v1[period]);
+            Object.keys(evaluationData).forEach(deptKey => {
+              const deptData = evaluationData[deptKey];
+              if (!deptData || !deptData[selectedUnit.value]) return;
+              
+              const groupData = deptData[selectedUnit.value][group.id];
+              if (groupData) {
+                if (shouldInclude("v1") && groupData.v1?.[period]) {
+                  scores.push(...groupData.v1[period]);
+                }
+                if (shouldInclude("v2") && groupData.v2?.[period]) {
+                  scores.push(...groupData.v2[period]);
+                }
               }
-              if (shouldInclude("v2") && groupData.v2?.[period]) {
-                scores.push(...groupData.v2[period]);
-              }
-            }
+            });
+            
+            return calculateAverage(scores);
           });
+        };
+        
+        if (shouldIncludePeriod("current")) {
+          datasets.push({
+            label: "ปัจจุบัน",
+            backgroundColor: "#1e40af",
+            data: getWorkGroupAverages("current")
+          });
+        }
+        
+        if (shouldIncludePeriod("future")) {
+          datasets.push({
+            label: "อนาคต",
+            backgroundColor: "#3b82f6",
+            data: getWorkGroupAverages("future")
+          });
+        }
+      } 
+      // CASE 1.1.2: เลือกกลุ่มงานเฉพาะ
+      else {
+        labels = selectedGroups.value.map(groupId => {
+          const group = workGroups.find(g => g.id === groupId);
+          return group ? group.name : groupId;
         });
         
-        return calculateAverage(scores);
+        const getSelectedGroupsAverages = (period) => {
+          return selectedGroups.value.map(groupId => {
+            const scores = [];
+            
+            Object.keys(evaluationData).forEach(deptKey => {
+              const deptData = evaluationData[deptKey];
+              if (!deptData || !deptData[selectedUnit.value]) return;
+              
+              const groupData = deptData[selectedUnit.value][groupId];
+              if (groupData) {
+                if (shouldInclude("v1") && groupData.v1?.[period]) {
+                  scores.push(...groupData.v1[period]);
+                }
+                if (shouldInclude("v2") && groupData.v2?.[period]) {
+                  scores.push(...groupData.v2[period]);
+                }
+              }
+            });
+            
+            return calculateAverage(scores);
+          });
+        };
+        
+        if (shouldIncludePeriod("current")) {
+          datasets.push({
+            label: "ปัจจุบัน",
+            backgroundColor: "#1e40af",
+            data: getSelectedGroupsAverages("current")
+          });
+        }
+        
+        if (shouldIncludePeriod("future")) {
+          datasets.push({
+            label: "อนาคต",
+            backgroundColor: "#3b82f6",
+            data: getSelectedGroupsAverages("future")
+          });
+        }
+      }
+    } 
+    // CASE 1.2: เลือกสายงาน = "ทั้งหมด" -> แสดงกราฟเป็นสายงานเสมอ
+    else {
+      // รวมสายงานทั้งหมดจากทุกตำแหน่ง
+      const allUnitsMap = new Map();
+      Object.keys(evaluationData).forEach(deptKey => {
+        Object.keys(evaluationData[deptKey]).forEach(unitKey => {
+          if (!allUnitsMap.has(unitKey)) {
+            const unitInfo = availableUnits.value.find(u => u.id === unitKey);
+            if (unitInfo) {
+              allUnitsMap.set(unitKey, unitInfo.name);
+            }
+          }
+        });
       });
-    };
-    
-    if (shouldIncludePeriod("current")) {
-      datasets.push({
-        label: "ปัจจุบัน",
-        backgroundColor: "#1e40af",
-        data: getDepartmentAverages("current")
-      });
-    }
-    
-    if (shouldIncludePeriod("future")) {
-      datasets.push({
-        label: "อนาคต",
-        backgroundColor: "#3b82f6",
-        data: getDepartmentAverages("future")
-      });
+      
+      const unitsList = Array.from(allUnitsMap.entries());
+      labels = unitsList.map(([id, name]) => name);
+      
+      const getUnitAverages = (period) => {
+        return unitsList.map(([unitId]) => {
+          const scores = [];
+          
+          Object.keys(evaluationData).forEach(deptKey => {
+            const deptData = evaluationData[deptKey];
+            if (!deptData || !deptData[unitId]) return;
+            
+            // กำหนดกลุ่มงานที่จะนับ
+            const groupsToUse = selectedGroups.value.includes('all') 
+              ? Object.keys(deptData[unitId])
+              : selectedGroups.value;
+            
+            groupsToUse.forEach(groupKey => {
+              const groupData = deptData[unitId][groupKey];
+              if (groupData) {
+                if (shouldInclude("v1") && groupData.v1?.[period]) {
+                  scores.push(...groupData.v1[period]);
+                }
+                if (shouldInclude("v2") && groupData.v2?.[period]) {
+                  scores.push(...groupData.v2[period]);
+                }
+              }
+            });
+          });
+          
+          return calculateAverage(scores);
+        });
+      };
+      
+      if (shouldIncludePeriod("current")) {
+        datasets.push({
+          label: "ปัจจุบัน",
+          backgroundColor: "#1e40af",
+          data: getUnitAverages("current")
+        });
+      }
+      
+      if (shouldIncludePeriod("future")) {
+        datasets.push({
+          label: "อนาคต",
+          backgroundColor: "#3b82f6",
+          data: getUnitAverages("future")
+        });
+      }
     }
     
     return { labels, datasets };
   }
 
-  // กรณีเลือกสายงาน "ทั้งหมด" - แสดงทุกสายงาน
+  // CASE 2: เลือกตำแหน่งเฉพาะ และเลือกสายงาน = "ทั้งหมด"
   if (selectedUnit.value === "all") {
     const units = unitsByDepartment[selectedDepartment.value] || [];
-    labels = units.map(u => u.id);
+    labels = units.map(u => u.name);
     
     const getUnitAverages = (period) => {
-      return labels.map(unitId => {
+      return units.map(unitObj => {
         const scores = [];
-        const unit = evaluationData[selectedDepartment.value]?.[unitId];
+        const unit = evaluationData[selectedDepartment.value]?.[unitObj.id];
         
         if (!unit) return 0;
         
@@ -216,15 +362,19 @@ const chartData = computed(() => {
     return { labels, datasets };
   }
 
-  // กรณีเลือกกลุ่มงาน "ทั้งหมด" - แสดงทุกกลุ่มงาน
+  // CASE 3: เลือกกลุ่มงาน = "ทั้งหมด"
   if (selectedGroups.value.includes('all')) {
     const unit = evaluationData[selectedDepartment.value]?.[selectedUnit.value];
     if (!unit) return { labels: [], datasets: [] };
     
-    labels = Object.keys(unit);
+    const groupIds = Object.keys(unit);
+    labels = groupIds.map(groupId => {
+      const group = workGroups.find(g => g.id === groupId);
+      return group ? group.name : groupId;
+    });
     
     const getGroupAverages = (period) => {
-      return labels.map(groupId => {
+      return groupIds.map(groupId => {
         const group = unit[groupId];
         const scores = [];
         
@@ -260,11 +410,14 @@ const chartData = computed(() => {
     return { labels, datasets };
   }
 
-  // กรณีเลือกเฉพาะบางกลุ่มงาน
-  labels = selectedGroups.value;
+  // CASE 4: เลือกเฉพาะบางกลุ่มงาน
+  labels = selectedGroups.value.map(groupId => {
+    const group = workGroups.find(g => g.id === groupId);
+    return group ? group.name : groupId;
+  });
   
   const getSelectedGroupsAverages = (period) => {
-    return labels.map(groupId => {
+    return selectedGroups.value.map(groupId => {
       const unit = evaluationData[selectedDepartment.value]?.[selectedUnit.value];
       if (!unit) return 0;
       
@@ -303,13 +456,21 @@ const chartData = computed(() => {
   return { labels, datasets };
 });
 
+/**
+ * สรุปข้อมูลที่เลือก
+ */
 const dataSummary = computed(() => {
   const deptName = departments.find(d => d.id === selectedDepartment.value)?.name || "";
   
   let unitName = "ทั้งหมด";
   if (selectedUnit.value !== "all") {
-    const unit = unitsByDepartment[selectedDepartment.value]?.find(u => u.id === selectedUnit.value);
-    unitName = unit?.name || selectedUnit.value;
+    if (selectedDepartment.value === "all") {
+      const unit = availableUnits.value.find(u => u.id === selectedUnit.value);
+      unitName = unit?.name || selectedUnit.value;
+    } else {
+      const unit = unitsByDepartment[selectedDepartment.value]?.find(u => u.id === selectedUnit.value);
+      unitName = unit?.name || selectedUnit.value;
+    }
   }
   
   let groupNames = "";
@@ -325,21 +486,49 @@ const dataSummary = computed(() => {
   let total = 0;
 
   if (selectedDepartment.value === "all") {
-    Object.keys(evaluationData).forEach(deptKey => {
-      Object.keys(evaluationData[deptKey]).forEach(unitKey => {
-        Object.keys(evaluationData[deptKey][unitKey]).forEach(groupKey => {
-          const group = evaluationData[deptKey][unitKey][groupKey];
-          if (shouldInclude("v1")) {
-            if (shouldIncludePeriod("current") && group.v1?.current) total += group.v1.current.length;
-            if (shouldIncludePeriod("future") && group.v1?.future) total += group.v1.future.length;
-          }
-          if (shouldInclude("v2")) {
-            if (shouldIncludePeriod("current") && group.v2?.current) total += group.v2.current.length;
-            if (shouldIncludePeriod("future") && group.v2?.future) total += group.v2.future.length;
-          }
+    if (selectedUnit.value === "all") {
+      Object.keys(evaluationData).forEach(deptKey => {
+        Object.keys(evaluationData[deptKey]).forEach(unitKey => {
+          const groupsToCount = selectedGroups.value.includes('all') 
+            ? Object.keys(evaluationData[deptKey][unitKey])
+            : selectedGroups.value;
+          
+          groupsToCount.forEach(groupKey => {
+            const group = evaluationData[deptKey][unitKey][groupKey];
+            if (group) {
+              if (shouldInclude("v1")) {
+                if (shouldIncludePeriod("current") && group.v1?.current) total += group.v1.current.length;
+                if (shouldIncludePeriod("future") && group.v1?.future) total += group.v1.future.length;
+              }
+              if (shouldInclude("v2")) {
+                if (shouldIncludePeriod("current") && group.v2?.current) total += group.v2.current.length;
+                if (shouldIncludePeriod("future") && group.v2?.future) total += group.v2.future.length;
+              }
+            }
+          });
         });
       });
-    });
+    } else {
+      Object.keys(evaluationData).forEach(deptKey => {
+        const unit = evaluationData[deptKey][selectedUnit.value];
+        if (unit) {
+          const groupsToCount = selectedGroups.value.includes('all') ? Object.keys(unit) : selectedGroups.value;
+          groupsToCount.forEach(groupKey => {
+            const group = unit[groupKey];
+            if (group) {
+              if (shouldInclude("v1")) {
+                if (shouldIncludePeriod("current") && group.v1?.current) total += group.v1.current.length;
+                if (shouldIncludePeriod("future") && group.v1?.future) total += group.v1.future.length;
+              }
+              if (shouldInclude("v2")) {
+                if (shouldIncludePeriod("current") && group.v2?.current) total += group.v2.current.length;
+                if (shouldIncludePeriod("future") && group.v2?.future) total += group.v2.future.length;
+              }
+            }
+          });
+        }
+      });
+    }
   } else if (selectedUnit.value === "all") {
     const units = unitsByDepartment[selectedDepartment.value] || [];
     units.forEach(unitObj => {
@@ -388,6 +577,57 @@ const dataSummary = computed(() => {
     total 
   };
 });
+
+// ============================================
+// SECTION 4: EVENT HANDLERS
+// ============================================
+
+/**
+ * จัดการการเปลี่ยนแปลงของ checkbox กลุ่มงาน
+ * @param {string} groupId - ID ของกลุ่มงาน
+ */
+const handleGroupChange = (groupId) => {
+  if (groupId === 'all') {
+    selectedGroups.value = ['all'];
+  } else {
+    if (selectedGroups.value.includes('all')) {
+      selectedGroups.value = [groupId];
+    } else {
+      const index = selectedGroups.value.indexOf(groupId);
+      if (index > -1) {
+        selectedGroups.value.splice(index, 1);
+        if (selectedGroups.value.length === 0) {
+          selectedGroups.value = ['all'];
+        }
+      } else {
+        selectedGroups.value.push(groupId);
+      }
+    }
+  }
+};
+
+// ============================================
+// SECTION 5: WATCHERS
+// ============================================
+
+// Reset selections when department changes
+watch(selectedDepartment, () => {
+  selectedUnit.value = "all";
+  selectedGroups.value = ["all"];
+});
+
+// Reset group selection when unit changes
+watch(selectedUnit, () => {
+  selectedGroups.value = ["all"];
+});
+
+// ============================================
+// SECTION 6: LIFECYCLE HOOKS
+// ============================================
+
+onMounted(async () => {
+  versionOptions.value = await fetchVersionOptions();
+});
 </script>
 
 <template>
@@ -401,7 +641,7 @@ const dataSummary = computed(() => {
         <!-- Header Section -->
         <header class="mb-6">
           <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-            <h1 class="text-2xl font-bold text-gray-900 mb-1">ผลการประเมินแยกตามกลุ่มงาน</h1>
+            <h1 class="text-2xl font-bold text-gray-900 mb-1">ผลการประเมินตามกลุ่มงาน</h1>
             <p class="text-sm text-gray-600">วิเคราะห์และเปรียบเทียบผลการประเมินตามตำแหน่ง สายงาน และกลุ่มงาน</p>
           </div>
         </header>
@@ -452,8 +692,7 @@ const dataSummary = computed(() => {
                 <div class="relative">
                   <select 
                     v-model="selectedUnit"
-                    :disabled="selectedDepartment === 'all'"
-                    class="w-full px-4 py-2.5 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed text-sm appearance-none"
+                    class="w-full px-4 py-2.5 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors text-sm appearance-none"
                   >
                     <option value="all">ทั้งหมด</option>
                     <option v-for="unit in availableUnits" :key="unit.id" :value="unit.id">
@@ -482,16 +721,14 @@ const dataSummary = computed(() => {
                   class="relative flex items-center px-4 py-3 border rounded-md cursor-pointer transition-all"
                   :class="{ 
                     'border-blue-500 bg-blue-50': selectedGroups.includes(group.id),
-                    'border-gray-300 bg-white hover:border-gray-400': !selectedGroups.includes(group.id),
-                    'opacity-50 cursor-not-allowed': selectedDepartment === 'all' || selectedUnit === 'all'
+                    'border-gray-300 bg-white hover:border-gray-400': !selectedGroups.includes(group.id)
                   }"
                 >
                   <input
                     type="checkbox"
                     :checked="selectedGroups.includes(group.id)"
                     @change="handleGroupChange(group.id)"
-                    :disabled="selectedDepartment === 'all' || selectedUnit === 'all'"
-                    class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed"
+                    class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                   />
                   <span class="ml-3 text-sm text-gray-800">{{ group.name }}</span>
                   <svg v-if="selectedGroups.includes(group.id)" class="w-4 h-4 text-blue-600 ml-auto" fill="currentColor" viewBox="0 0 20 20">
@@ -499,12 +736,6 @@ const dataSummary = computed(() => {
                   </svg>
                 </label>
               </div>
-              <p v-if="selectedDepartment === 'all' || selectedUnit === 'all'" class="text-xs text-amber-600 mt-2 flex items-center">
-                <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-                </svg>
-                กรุณาเลือกตำแหน่งและสายงานก่อนเพื่อเลือกกลุ่มงาน
-              </p>
             </div>
 
             <!-- Row 3: พื้นที่, ช่วงเวลา -->

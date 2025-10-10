@@ -171,6 +171,7 @@ const chartData = computed(() => {
 
   // สร้าง datasets ตามช่วงเวลา
   if (selectedTimeframe.value === 'comparison') {
+    // คำนวณ % สำหรับแต่ละบล็อก
     const currentTotalPerCategory = chartLabels.map((_, j) =>
       currentData.reduce((sum, level) => sum + level[j], 0)
     );
@@ -180,38 +181,32 @@ const chartData = computed(() => {
     );
 
     const currentDatasets = currentData.map((data, i) => {
-      const total = data.reduce((sum, v) => sum + v, 0);
       return {
         label: `${levelLabels[i]}`,
-        data: data.map((v, j) => currentTotalPerCategory[j] ? +(v * 100 / currentTotalPerCategory[j]).toFixed(2) : 0),
-        raw: data,
-        total,
+        data: data.map((v, j) => currentTotalPerCategory[j] ? (v * 100 / currentTotalPerCategory[j]) : 0),
+        rawData: data, // เก็บข้อมูลจริงไว้สำหรับ tooltip
+        totalPerCategory: currentTotalPerCategory,
         backgroundColor: colors[i],
         borderColor: 'rgba(255, 255, 255, 0.3)',
         borderRadius: 3,
         borderWidth: 1,
         stack: 'current',
-        barThickness: 25,
-        barPercentage: 0.9,
-        categoryPercentage: 0.8
+        barThickness: 25
       };
     });
 
     const futureDatasets = futureData.map((data, i) => {
-      const total = data.reduce((sum, v) => sum + v, 0);
       return {
         label: `${levelLabels[i]}`,
-        data: data.map((v, j) => futureTotalPerCategory[j] ? +(v * 100 / futureTotalPerCategory[j]).toFixed(2) : 0),
-        raw: data,
-        total,
+        data: data.map((v, j) => futureTotalPerCategory[j] ? (v * 100 / futureTotalPerCategory[j]) : 0),
+        rawData: data, // เก็บข้อมูลจริงไว้สำหรับ tooltip
+        totalPerCategory: futureTotalPerCategory,
         backgroundColor: colorsLight[i],
         borderColor: 'rgba(255, 255, 255, 0.3)',
         borderRadius: 3,
         borderWidth: 1,
         stack: 'future',
-        barThickness: 25,
-        barPercentage: 0.9,
-        categoryPercentage: 0.8
+        barThickness: 25
       };
     });
 
@@ -228,12 +223,11 @@ const chartData = computed(() => {
     return {
       labels: chartLabels,
       datasets: selectedData.map((data, i) => {
-        const total = data.reduce((sum, v) => sum + v, 0);
         return {
           label: levelLabels[i],
-          data: data.map((v, j) => totalPerCategory[j] ? +(v * 100 / totalPerCategory[j]).toFixed(2) : 0),
-          raw: data,
-          total,
+          data: data.map((v, j) => totalPerCategory[j] ? (v * 100 / totalPerCategory[j]) : 0),
+          rawData: data, // เก็บข้อมูลจริงไว้สำหรับ tooltip
+          totalPerCategory: totalPerCategory,
           backgroundColor: colors[i],
           borderColor: 'rgba(255, 255, 255, 0.3)',
           borderWidth: 1,
@@ -277,13 +271,19 @@ const chartOptions = computed(() => {
         border: {
           display: true,
           color: '#E5E7EB'
-        },
-        barPercentage: isComparison ? 0.8 : 0.95,
-        categoryPercentage: isComparison ? 0.8 : 0.85
+        }
       },
       y: {
         stacked: true,
         display: false,
+        min: 0,
+        max: 100,
+        ticks: {
+          display: false
+        },
+        grid: {
+          display: false
+        }
       }
     },
     plugins: {
@@ -360,8 +360,8 @@ const chartOptions = computed(() => {
       },
       datalabels: {
         display: ctx => {
-          const value = ctx.dataset.raw[ctx.dataIndex];
-          return value > 0;
+          const rawValue = ctx.dataset.rawData[ctx.dataIndex];
+          return rawValue > 0;
         },
         color: (context) => {
           const datasetIndex = context.datasetIndex;
@@ -375,7 +375,10 @@ const chartOptions = computed(() => {
           weight: '900',
           family: 'inherit'
         },
-        formatter: (_, ctx) => ctx.dataset.raw[ctx.dataIndex],
+        formatter: (_, ctx) => {
+          // แสดงตัวเลขจริง (raw data)
+          return ctx.dataset.rawData[ctx.dataIndex];
+        },
         anchor: 'center',
         align: 'center',
         textShadowColor: (context) => {
@@ -420,9 +423,10 @@ const chartOptions = computed(() => {
           },
           label: ctx => {
             const levelLabel = ctx.dataset.label;
+            const rawValue = ctx.dataset.rawData[ctx.dataIndex];
             const percentage = ctx.parsed.y.toFixed(2);
-            const count = ctx.dataset.raw[ctx.dataIndex];
-            return `${levelLabel}: ${percentage}% (${count} รายการ)`;
+            const total = ctx.dataset.totalPerCategory[ctx.dataIndex];
+            return `${levelLabel}: ${rawValue} รายการ (${percentage}%) จากทั้งหมด ${total}`;
           }
         }
       }

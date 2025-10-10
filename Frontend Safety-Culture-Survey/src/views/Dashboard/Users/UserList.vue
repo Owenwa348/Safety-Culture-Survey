@@ -8,20 +8,26 @@
       <div class="max-w-7xl mx-auto space-y-6">
         <!-- Header -->
         <div class="bg-white rounded-lg shadow-sm border p-6">
-          <div
-            class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
-          >
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <h1 class="text-xl font-semibold text-gray-800">รายชื่อผู้ใช้</h1>
-              <div
-                class="text-sm text-gray-600 mt-2 flex flex-col md:flex-row gap-2"
-              >
+              <div class="text-sm text-gray-600 mt-2 flex flex-col md:flex-row gap-2">
                 <span>ทั้งหมด: {{ stats.total }}</span>
                 <span>ทำแล้ว: {{ stats.done }}</span>
                 <span>กำลังทำ: {{ stats.inProgress }}</span>
                 <span>ยังไม่เริ่ม: {{ stats.notStarted }}</span>
+                <span>ยังไม่ได้ลงทะเบียน: {{ stats.notRegistered }}</span>
               </div>
             </div>
+            <button
+              @click="exportToExcel"
+              class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              ดาวน์โหลด Excel
+            </button>
           </div>
         </div>
 
@@ -42,6 +48,7 @@
               <option value="done">ทำแล้ว</option>
               <option value="in_progress">กำลังทำ</option>
               <option value="not_started">ยังไม่เริ่ม</option>
+              <option value="not_registered">ยังไม่ได้ลงทะเบียน</option>
             </select>
             <select
               v-model="positionFilter"
@@ -81,52 +88,42 @@
         </div>
 
         <!-- Table -->
-        <div
-          v-else
-          class="bg-white rounded-lg shadow-sm border overflow-hidden"
-        >
+        <div v-else class="bg-white rounded-lg shadow-sm border overflow-hidden">
           <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
               <thead class="bg-gray-50">
                 <tr>
-                  <th
-                    class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase w-16">
+                  <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase w-16">
                     ลำดับ
                   </th>
-                  <th
-                    class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[120px]">
-                    ชื่อ
+                  <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[120px]">
+                    ชื่อ - สกุล
                   </th>
-                  <th
-                    class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[160px]">
+                  <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[160px]">
                     อีเมล
                   </th>
-                  <th
-                    class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[140px]">
-                    พื้นที่
+                  <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[140px]">
+                    บริษัทฯ/พื้นที่
                   </th>
-                  <th
-                    class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[100px]">
+                  <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[100px]">
                     ตำแหน่งงาน
                   </th>
-                  <th
-                    class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase w-16">
+                  <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase w-16">
                     สายงาน
                   </th>
-                  <th
-                    class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[100px]">
+                  <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[100px]">
                     กลุ่มงาน
                   </th>
-                  <th
-                    class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[90px]">
+                  <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[100px]">
+                    ส่วนงาน
+                  </th>
+                  <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[90px]">
                     อายุงาน
                   </th>
-                  <th
-                    class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase w-20">
+                  <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase w-20">
                     สถานะ
                   </th>
-                  <th
-                    class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase w-32">
+                  <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase w-32">
                     การจัดการ
                   </th>
                 </tr>
@@ -141,8 +138,8 @@
                     {{ (currentPage - 1) * perPage + index + 1 }}
                   </td>
                   <td class="px-3 py-3 text-xs font-medium text-gray-900">
-                    <div v-if="!user.isEditing" class="truncate max-w-[120px]" :title="user.name">
-                      {{ user.name }}
+                    <div v-if="!user.isEditing" class="truncate max-w-[120px]" :title="displayValue(user.name)">
+                      {{ displayValue(user.name) }}
                     </div>
                     <input
                       v-else
@@ -163,8 +160,8 @@
                     />
                   </td>
                   <td class="px-3 py-3 text-xs text-gray-600">
-                    <div v-if="!user.isEditing" class="truncate max-w-[140px]" :title="user.area || '-'">
-                      {{ user.area || "-" }}
+                    <div v-if="!user.isEditing" class="truncate max-w-[140px]" :title="displayValue(user.area)">
+                      {{ displayValue(user.area) }}
                     </div>
                     <input
                       v-else
@@ -175,8 +172,8 @@
                     />
                   </td>
                   <td class="px-3 py-3 text-xs text-gray-600">
-                    <div v-if="!user.isEditing" class="truncate max-w-[100px]" :title="user.position || '-'">
-                      {{ user.position || "-" }}
+                    <div v-if="!user.isEditing" class="truncate max-w-[100px]" :title="displayValue(user.position)">
+                      {{ displayValue(user.position) }}
                     </div>
                     <input
                       v-else
@@ -188,7 +185,7 @@
                   </td>
                   <td class="px-3 py-3 text-xs text-gray-600 text-center">
                     <div v-if="!user.isEditing">
-                      {{ user.department || "-" }}
+                      {{ displayValue(user.department) }}
                     </div>
                     <input
                       v-else
@@ -199,8 +196,8 @@
                     />
                   </td>
                   <td class="px-3 py-3 text-xs text-gray-600">
-                    <div v-if="!user.isEditing" class="truncate max-w-[100px]" :title="user.workGroup || '-'">
-                      {{ user.workGroup || "-" }}
+                    <div v-if="!user.isEditing" class="truncate max-w-[100px]" :title="displayValue(user.workGroup)">
+                      {{ displayValue(user.workGroup) }}
                     </div>
                     <input
                       v-else
@@ -211,8 +208,20 @@
                     />
                   </td>
                   <td class="px-3 py-3 text-xs text-gray-600">
-                    <div v-if="!user.isEditing" class="truncate max-w-[90px]" :title="formatWorkAge(user.workAge)">
-                      {{ formatWorkAge(user.workAge) }}
+                    <div v-if="!user.isEditing" class="truncate max-w-[100px]" :title="displayValue(user.section)">
+                      {{ displayValue(user.section) }}
+                    </div>
+                    <input
+                      v-else
+                      v-model="user.section"
+                      type="text"
+                      class="w-full bg-white border border-blue-300 px-2 py-1 text-xs text-gray-600 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 rounded"
+                      placeholder="ส่วนงาน"
+                    />
+                  </td>
+                  <td class="px-3 py-3 text-xs text-gray-600">
+                    <div v-if="!user.isEditing" class="truncate max-w-[90px]" :title="displayValue(user.workAge)">
+                      {{ displayValue(user.workAge) }}
                     </div>
                     <input
                       v-else
@@ -236,10 +245,16 @@
                       กำลังทำ
                     </span>
                     <span
-                      v-else
+                      v-else-if="user.status === 'not_started'"
                       class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800 whitespace-nowrap"
                     >
                       ยังไม่เริ่ม
+                    </span>
+                    <span
+                      v-else
+                      class="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800 whitespace-nowrap"
+                    >
+                      ยังไม่ได้ลงทะเบียน
                     </span>
                   </td>
                   <td class="px-3 py-3">
@@ -322,7 +337,7 @@
             <div class="ml-4">
               <h3 class="text-lg font-semibold text-gray-800">ยืนยันการลบ</h3>
               <p class="text-sm text-gray-600 mt-1">
-                คุณแน่ใจหรือไม่ที่ต้องการลบ "{{ userToDelete?.name }}" ?
+                คุณแน่ใจหรือไม่ที่ต้องการลบ "{{ displayValue(userToDelete?.name) }}" ?
               </p>
             </div>
           </div>
@@ -351,6 +366,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import NavbarDashboard from '../../../components/NavbarDashboard.vue'
 import axios from 'axios'
+import * as XLSX from 'xlsx'
 
 const users = ref([])
 const loading = ref(true)
@@ -370,41 +386,107 @@ const deleteIndex = ref(-1)
 // Store original data for cancel functionality
 const originalUserData = ref({})
 
+// Helper function to display value or "-"
+function displayValue(value) {
+  if (value === null || value === undefined || value === '' || value === '-') {
+    return '-'
+  }
+  return String(value).trim() || '-'
+}
+
+// Convert status to Thai text
+function getStatusText(status) {
+  const statusMap = {
+    'done': 'ทำแล้ว',
+    'in_progress': 'กำลังทำ',
+    'not_started': 'ยังไม่เริ่ม',
+    'not_registered': 'ยังไม่ได้ลงทะเบียน'
+  }
+  return statusMap[status] || status
+}
+
+// Export to Excel function
+function exportToExcel() {
+  // Prepare data for export
+  const exportData = filteredUsers.value.map((user, index) => ({
+    'ลำดับ': index + 1,
+    'ชื่อ - สกุล': displayValue(user.name),
+    'อีเมล': user.email,
+    'บริษัทฯ/พื้นที่': displayValue(user.area),
+    'ตำแหน่งงาน': displayValue(user.position),
+    'สายงาน': displayValue(user.department),
+    'กลุ่มงาน': displayValue(user.workGroup),
+    'ส่วนงาน': displayValue(user.section),
+    'อายุงาน': displayValue(user.workAge),
+    'สถานะ': getStatusText(user.status)
+  }))
+
+  // Create worksheet
+  const ws = XLSX.utils.json_to_sheet(exportData)
+
+  // Set column widths
+  ws['!cols'] = [
+    { wch: 8 },   // ลำดับ
+    { wch: 25 },  // ชื่อ - สกุล
+    { wch: 30 },  // อีเมล
+    { wch: 25 },  // บริษัทฯ/พื้นที่
+    { wch: 20 },  // ตำแหน่งงาน
+    { wch: 12 },  // สายงาน
+    { wch: 20 },  // กลุ่มงาน
+    { wch: 20 },  // ส่วนงาน
+    { wch: 25 },  // อายุงาน
+    { wch: 18 }   // สถานะ
+  ]
+
+  // Style header row
+  const range = XLSX.utils.decode_range(ws['!ref'])
+  for (let C = range.s.c; C <= range.e.c; ++C) {
+    const address = XLSX.utils.encode_col(C) + '1'
+    if (!ws[address]) continue
+    ws[address].s = {
+      font: { bold: true },
+      fill: { fgColor: { rgb: "F3F4F6" } },
+      alignment: { horizontal: "center", vertical: "center" }
+    }
+  }
+
+  // Create workbook
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'รายชื่อผู้ใช้')
+
+  // Generate filename with current date
+  const date = new Date()
+  const filename = `รายชื่อผู้ใช้_${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}.xlsx`
+
+  // Save file
+  XLSX.writeFile(wb, filename)
+}
+
 // Edit user functions
 function editUser(user, index) {
-  console.log('Edit button clicked for:', user.name) // Debug log
-  // Store original data before editing
+  console.log('Edit button clicked for:', user.name)
   originalUserData.value[index] = { ...user }
-  // Set editing mode
   user.isEditing = true
-  // Force reactivity update
   users.value = [...users.value]
 }
 
 function saveUser(user, index) {
-  console.log('Saving user data:', user) // Debug log
-  // Here you can add API call to save data
+  console.log('Saving user data:', user)
+  // Normalize empty values to "-"
+  const fieldsToNormalize = ['name', 'position', 'section', 'department', 'workGroup', 'workAge', 'area']
+  fieldsToNormalize.forEach(field => {
+    if (!user[field] || String(user[field]).trim() === '') {
+      user[field] = '-'
+    }
+  })
   
-  // Remove editing mode
   user.isEditing = false
-  
-  // Clear original data
   delete originalUserData.value[index]
-  
-  // Force reactivity update
   users.value = [...users.value]
-  
-  // Example API call:
-  // try {
-  //   await axios.put(`/api/users/${user.id}`, user)
-  // } catch (error) {
-  //   console.error('Error saving user:', error)
-  // }
 }
 
 function cancelEdit(user, index) {
-  console.log('Cancel edit for:', user.name) // Debug log
-  // Restore original data
+  console.log('Cancel edit for:', user.name)
   if (originalUserData.value[index]) {
     const originalData = originalUserData.value[index]
     Object.keys(originalData).forEach(key => {
@@ -414,21 +496,18 @@ function cancelEdit(user, index) {
     })
     delete originalUserData.value[index]
   }
-  
-  // Remove editing mode
   user.isEditing = false
-  
-  // Force reactivity update
   users.value = [...users.value]
 }
 
-// ข้อมูลตัวอย่าง 5 รายชื่อ (เพิ่มสถานะ in_progress และ isEditing)
+// Sample data
 const sampleUsers = [
   {
     name: "นายสมชาย วงศ์ใหญ่",
     email: "somchai.wong@company.com",
-    area: "บริษัท ABC จำกัด",
+    area: "Verte Smart Solution",
     position: "ผู้บริหารระดับสูง",
+    section: "-",
     department: "CEO",
     workGroup: "หน่วยงานสนับสนุน",
     workAge: "มากกว่า 15 ปีขึ้นไป",
@@ -438,8 +517,9 @@ const sampleUsers = [
   {
     name: "นางสาวมาลี ศรีสุข",
     email: "malee.srisuk@company.com",
-    area: "บริษัท FGH จำกัด",
+    area: "Verte Smart Solution",
     position: "พนักงาน",
+    section: "-",
     department: "PSE",
     workGroup: "หน่วยงานเดินเครื่อง",
     workAge: "3 ปีขึ้นไป แต่ไม่เกิน 5 ปี",
@@ -449,8 +529,9 @@ const sampleUsers = [
   {
     name: "นายประยุทธ จันทร์เพ็ญ",
     email: "prayut.chanpen@company.com",
-    area: "บริษัท HIJ จำกัด",
+    area: "Verte Security",
     position: "ผู้จัดการแผนก",
+    section: "-",
     department: "CME",
     workGroup: "หน่วยงานวิศวกรรม",
     workAge: "10 ปีขึ้นไป แต่ไม่เกิน 15 ปี",
@@ -460,8 +541,9 @@ const sampleUsers = [
   {
     name: "นางสุดา รัตนโกมล",
     email: "suda.rattanakom@company.com",
-    area: "บริษัท VUP จำกัด",
+    area: "Verte Smart Solution",
     position: "พนักงานอาวุโส",
+    section: "-",
     department: "COO",
     workGroup: "หน่วยงานบำรุงรักษา",
     workAge: "5 ปีขึ้นไป แต่ไม่เกิน 10 ปี",
@@ -471,36 +553,46 @@ const sampleUsers = [
   {
     name: "นายวิทยา ประสบสุข",
     email: "witya.prasopsuk@company.com",
-    area: "บริษัท DFG จำกัด",
+    area: "Verte Security",
     position: "ผู้รับเหมาประจำ",
+    section: "-",
     department: "CFO",
     workGroup: "หน่วยงานสนับสนุน",
     workAge: "0-3 ปี",
     status: "in_progress",
     isEditing: false
+  },
+  {
+    name: "-",
+    email: "newuser1@company.com",
+    area: "Verte Security",
+    position: "-",
+    section: "-",
+    department: "-",
+    workGroup: "-",
+    workAge: "-",
+    status: "not_registered",
+    isEditing: false
+  },
+  {
+    name: "-",
+    email: "newuser2@company.com",
+    area: "Verte Smart Solution",
+    position: "-",
+    section: "-",
+    department: "-",
+    workGroup: "-",
+    workAge: "-",
+    status: "not_registered",
+    isEditing: false
   }
 ]
 
 onMounted(async () => {
-  // ใช้ข้อมูลตัวอย่างทันทีเพื่อให้เห็นผล
   users.value = sampleUsers
   loading.value = false
-  
-  // คอมเมนต์ส่วน API ไว้ก่อน หากต้องการใช้ API ในภายหลัง
-  /*
-  try {
-    const res = await axios.get('/api/user_excel/with-status')
-    users.value = res.data
-  } catch (err) {
-    console.error('Error fetching users:', err)
-    users.value = sampleUsers
-  } finally {
-    loading.value = false
-  }
-  */
 })
 
-// เด้งกลับไปหน้าที่ 1 เมื่อ search หรือ filter เปลี่ยน
 watch([search, statusFilter, positionFilter, departmentFilter], () => {
   currentPage.value = 1
 })
@@ -510,20 +602,21 @@ const stats = computed(() => {
   const done = users.value.filter(u => u.status === 'done').length
   const inProgress = users.value.filter(u => u.status === 'in_progress').length
   const notStarted = users.value.filter(u => u.status === 'not_started').length
-  return { total, done, inProgress, notStarted }
+  const notRegistered = users.value.filter(u => u.status === 'not_registered').length
+  return { total, done, inProgress, notStarted, notRegistered }
 })
 
 const uniquePositions = computed(() => {
   const positions = users.value
     .map(u => u.position)
-    .filter(Boolean)
+    .filter(p => p && p !== '-')
   return [...new Set(positions)].sort()
 })
 
 const uniqueDepartments = computed(() => {
   const departments = users.value
     .map(u => u.department)
-    .filter(Boolean)
+    .filter(d => d && d !== '-')
   return [...new Set(departments)].sort()
 })
 
@@ -535,11 +628,13 @@ const filteredUsers = computed(() => {
       user.email, 
       user.area, 
       user.position, 
+      user.section,
       user.department, 
       user.workGroup
-    ].some(field =>
-      String(field || '').toLowerCase().includes(keyword)
-    )
+    ].some(field => {
+      const value = displayValue(field)
+      return value !== '-' && value.toLowerCase().includes(keyword)
+    })
     
     const matchStatus = 
       statusFilter.value === 'all' || user.status === statusFilter.value
@@ -567,17 +662,6 @@ function goToPage(page) {
   if (page >= 1 && page <= totalPages.value) {
     currentPage.value = page
   }
-}
-
-function formatWorkAge(workAge) {
-  if (!workAge) return '-'
-  if (typeof workAge === 'string') {
-    return workAge
-  }
-  if (typeof workAge === 'number') {
-    return `${workAge} ปี`
-  }
-  return workAge
 }
 
 // Delete user functions

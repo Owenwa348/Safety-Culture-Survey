@@ -285,7 +285,7 @@ const admins = ref([
     name: 'สมหญิง ทำงาน',
     email: 'somying@company.com',
     role: 'Admin',
-    active: false,
+    active: false,  
     is_verified: true,
     company: 'บริษัท ABC จำกัด',
     created_at: '2024-02-20T14:15:00Z',

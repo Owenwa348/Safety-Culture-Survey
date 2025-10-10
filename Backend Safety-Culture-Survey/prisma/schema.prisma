@@ -1,0 +1,57 @@
+// This is your Prisma schema file
+// Define your data models here
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model user_excel {
+  id                Int      @id @default(autoincrement())
+  email_user        String   @unique
+  company_user      String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model Admin {
+  id                Int      @id @default(autoincrement())
+  name_admin        String
+  email_admin       String   @unique
+  company_admin     String
+  phone_admin       String   @unique
+  password_admin    String
+  role_admin        String   @default("admin") // เป็น admin
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// model User {
+//   id                Int      @id @default(autoincrement())
+//   title_user        String
+//   name_user         String
+//   email_user        String   @unique
+//   company_user      String
+//   phone_user        String   @unique
+//   password_user     String
+//   position_user     String
+//   job_field_user    String
+//   work_group_user   String
+//   years_of_service  String
+//   role_user         String   @default("user")
+//   createdAt         DateTime @default(now())
+//   updatedAt         DateTime @updatedAt
+// }
+
+
+// model SuperAdmin {
+//   id                    Int      @id @default(autoincrement())
+//   email_superadmin      String   @unique
+//   password_superadmin   String
+//   createdAt             DateTime @default(now())
+//   updatedAt             DateTime @updatedAt
+// }
