@@ -6,7 +6,7 @@
     <!-- Main Content -->
     <div class="flex-1 pl-64">
       <!-- Header Section -->
-      <div class="bg-white border-b shadow-sm sticky top-0 z-50">
+      <!-- <div class="bg-white border-b shadow-sm sticky top-0 z-50">
         <div class="px-8 py-6">
           <div class="flex items-center justify-between">
             <div>
@@ -21,7 +21,7 @@
             </div>
           </div>
         </div>
-      </div>
+      </div> -->
 
       <!-- Content Area -->
       <div class="p-8 space-y-8">

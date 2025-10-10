@@ -8,14 +8,10 @@
       <div class="max-w-7xl mx-auto space-y-6">
         <!-- Header -->
         <div class="bg-white rounded-lg shadow-sm border p-6">
-          <div
-            class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
-          >
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <h1 class="text-xl font-semibold text-gray-800">รายชื่อผู้ใช้</h1>
-              <div
-                class="text-sm text-gray-600 mt-2 flex flex-col md:flex-row gap-2"
-              >
+              <div class="text-sm text-gray-600 mt-2 flex flex-col md:flex-row gap-2">
                 <span>ทั้งหมด: {{ stats.total }}</span>
                 <span>ทำแล้ว: {{ stats.done }}</span>
                 <span>กำลังทำ: {{ stats.inProgress }}</span>
@@ -23,6 +19,15 @@
                 <span>ยังไม่ได้ลงทะเบียน: {{ stats.notRegistered }}</span>
               </div>
             </div>
+            <button
+              @click="exportToExcel"
+              class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              ดาวน์โหลด Excel
+            </button>
           </div>
         </div>
 
@@ -83,56 +88,42 @@
         </div>
 
         <!-- Table -->
-        <div
-          v-else
-          class="bg-white rounded-lg shadow-sm border overflow-hidden"
-        >
+        <div v-else class="bg-white rounded-lg shadow-sm border overflow-hidden">
           <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
               <thead class="bg-gray-50">
                 <tr>
-                  <th
-                    class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase w-16">
+                  <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase w-16">
                     ลำดับ
                   </th>
-                  <th
-                    class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[120px]">
+                  <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[120px]">
                     ชื่อ - สกุล
                   </th>
-                  <th
-                    class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[160px]">
+                  <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[160px]">
                     อีเมล
                   </th>
-                  <th
-                    class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[140px]">
+                  <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[140px]">
                     บริษัทฯ/พื้นที่
                   </th>
-                  <th
-                    class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[100px]">
+                  <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[100px]">
                     ตำแหน่งงาน
                   </th>
-                  <th
-                    class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase w-16">
+                  <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase w-16">
                     สายงาน
                   </th>
-                  <th
-                    class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[100px]">
+                  <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[100px]">
                     กลุ่มงาน
                   </th>
-                  <th
-                    class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[100px]">
+                  <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[100px]">
                     ส่วนงาน
                   </th>
-                  <th
-                    class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[90px]">
+                  <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[90px]">
                     อายุงาน
                   </th>
-                  <th
-                    class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase w-20">
+                  <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase w-20">
                     สถานะ
                   </th>
-                  <th
-                    class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase w-32">
+                  <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase w-32">
                     การจัดการ
                   </th>
                 </tr>
@@ -375,6 +366,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import NavbarDashboard from '../../../components/NavbarDashboard.vue'
 import axios from 'axios'
+import * as XLSX from 'xlsx'
 
 const users = ref([])
 const loading = ref(true)
@@ -400,6 +392,74 @@ function displayValue(value) {
     return '-'
   }
   return String(value).trim() || '-'
+}
+
+// Convert status to Thai text
+function getStatusText(status) {
+  const statusMap = {
+    'done': 'ทำแล้ว',
+    'in_progress': 'กำลังทำ',
+    'not_started': 'ยังไม่เริ่ม',
+    'not_registered': 'ยังไม่ได้ลงทะเบียน'
+  }
+  return statusMap[status] || status
+}
+
+// Export to Excel function
+function exportToExcel() {
+  // Prepare data for export
+  const exportData = filteredUsers.value.map((user, index) => ({
+    'ลำดับ': index + 1,
+    'ชื่อ - สกุล': displayValue(user.name),
+    'อีเมล': user.email,
+    'บริษัทฯ/พื้นที่': displayValue(user.area),
+    'ตำแหน่งงาน': displayValue(user.position),
+    'สายงาน': displayValue(user.department),
+    'กลุ่มงาน': displayValue(user.workGroup),
+    'ส่วนงาน': displayValue(user.section),
+    'อายุงาน': displayValue(user.workAge),
+    'สถานะ': getStatusText(user.status)
+  }))
+
+  // Create worksheet
+  const ws = XLSX.utils.json_to_sheet(exportData)
+
+  // Set column widths
+  ws['!cols'] = [
+    { wch: 8 },   // ลำดับ
+    { wch: 25 },  // ชื่อ - สกุล
+    { wch: 30 },  // อีเมล
+    { wch: 25 },  // บริษัทฯ/พื้นที่
+    { wch: 20 },  // ตำแหน่งงาน
+    { wch: 12 },  // สายงาน
+    { wch: 20 },  // กลุ่มงาน
+    { wch: 20 },  // ส่วนงาน
+    { wch: 25 },  // อายุงาน
+    { wch: 18 }   // สถานะ
+  ]
+
+  // Style header row
+  const range = XLSX.utils.decode_range(ws['!ref'])
+  for (let C = range.s.c; C <= range.e.c; ++C) {
+    const address = XLSX.utils.encode_col(C) + '1'
+    if (!ws[address]) continue
+    ws[address].s = {
+      font: { bold: true },
+      fill: { fgColor: { rgb: "F3F4F6" } },
+      alignment: { horizontal: "center", vertical: "center" }
+    }
+  }
+
+  // Create workbook
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'รายชื่อผู้ใช้')
+
+  // Generate filename with current date
+  const date = new Date()
+  const filename = `รายชื่อผู้ใช้_${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}.xlsx`
+
+  // Save file
+  XLSX.writeFile(wb, filename)
 }
 
 // Edit user functions
@@ -440,7 +500,7 @@ function cancelEdit(user, index) {
   users.value = [...users.value]
 }
 
-// ข้อมูลตัวอย่าง
+// Sample data
 const sampleUsers = [
   {
     name: "นายสมชาย วงศ์ใหญ่",

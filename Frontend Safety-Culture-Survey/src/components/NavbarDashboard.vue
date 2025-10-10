@@ -274,7 +274,7 @@ const isAssessmentMenuOpen = ref(false)
 const isSettingsMenuOpen = ref(false)
 
 const userData = ref({
-  fullName: 'ธันวา ชัยรัตนานนท์',
+  fullName: 'มาดี มีสุข',
   email: 'superadmin01@gmail.com',
   company: 'บริษัท ความปลอดภัย จำกัด',
   role: 'SuperAdmin',
