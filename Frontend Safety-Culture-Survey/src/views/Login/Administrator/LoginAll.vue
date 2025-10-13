@@ -134,14 +134,6 @@
               </svg>
               <span class="text-sm font-medium">{{ emailMessage }}</span>
             </div>
-            
-            <div v-else-if="emailStatus === 'no-password'" 
-                 class="flex items-center space-x-2 text-amber-700 bg-amber-50 px-3 py-2 rounded-lg border border-amber-200">
-              <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-              </svg>
-              <span class="text-sm font-medium">{{ emailMessage }}</span>
-            </div>
           </div>
         </div>
 
@@ -190,102 +182,44 @@
           </div>
         </div>
 
-        <!-- Check Email Button -->
+        <!-- Check Email Button / Or main action button -->
         <button
+          v-if="!showPasswordField"
           type="button"
           @click="checkEmail"
           :disabled="!email || isLoading"
           :class="[
-            'w-full py-3 px-6 rounded-xl font-semibold text-lg transition-all duration-300 transform mb-4',
-            'focus:outline-none relative overflow-hidden',
-            loginType === 'admin' 
-              ? 'focus:ring-4 focus:ring-green-100'
-              : 'focus:ring-4 focus:ring-purple-100',
-            (email && !isLoading)
-              ? (loginType === 'admin' 
-                  ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:scale-[1.02] hover:shadow-xl hover:from-emerald-700 hover:to-teal-700'
-                  : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:scale-[1.02] hover:shadow-xl hover:from-indigo-700 hover:to-purple-700')
-              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            'w-full py-3 px-6 rounded-xl font-semibold text-lg transition-all duration-300 transform',
+            'focus:outline-none',
+            loginType === 'admin' ? 'focus:ring-4 focus:ring-green-100' : 'focus:ring-4 focus:ring-purple-100',
+            (email && !isLoading) ? (loginType === 'admin' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:scale-[1.02] hover:shadow-xl' : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:scale-[1.02] hover:shadow-xl') : 'bg-gray-300 text-gray-500 cursor-not-allowed'
           ]"
         >
-          <span class="flex items-center justify-center gap-2">
-            <svg v-if="!isLoading" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            <svg v-else class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            {{ isLoading ? 'กำลังตรวจสอب...' : 'ตรวจสอบอีเมล' }}
-          </span>
+          {{ isLoading ? 'กำลังตรวจสอบ...' : 'ถัดไป' }}
         </button>
 
         <!-- Submit Button -->
         <button
           type="submit"
-          v-show="emailStatus === 'valid'"
+          v-else
           :disabled="!canSubmit || isLoading"
           :class="[
             'w-full py-3 px-6 rounded-xl font-semibold text-lg transition-all duration-300 transform',
-            'focus:outline-none relative overflow-hidden',
-            loginType === 'admin' 
-              ? 'focus:ring-4 focus:ring-green-100'
-              : 'focus:ring-4 focus:ring-purple-100',
-            (canSubmit && !isLoading)
-              ? (loginType === 'admin' 
-                  ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:scale-[1.02] hover:shadow-xl hover:from-green-700 hover:to-emerald-700'
-                  : 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:scale-[1.02] hover:shadow-xl hover:from-purple-700 hover:to-indigo-700')
-              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            'focus:outline-none',
+            loginType === 'admin' ? 'focus:ring-4 focus:ring-green-100' : 'focus:ring-4 focus:ring-purple-100',
+            (canSubmit && !isLoading) ? (loginType === 'admin' ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:scale-[1.02] hover:shadow-xl' : 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:scale-[1.02] hover:shadow-xl') : 'bg-gray-300 text-gray-500 cursor-not-allowed'
           ]"
         >
-          <span class="flex items-center justify-center gap-2">
-            <svg v-if="!isLoading" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                    d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013 3v1"></path>
-            </svg>
-            <svg v-else class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            {{ isLoading ? 'กำลังเข้าสู่ระบบ...' : `เข้าสู่ระบบ ${loginType === 'admin' ? 'Admin' : 'SuperAdmin'}` }}
-          </span>
-          
-          <!-- Button shine effect -->
-          <div v-if="canSubmit && !isLoading" class="absolute inset-0 -top-1 -bottom-1 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+          {{ isLoading ? 'กำลังเข้าสู่ระบบ...' : `เข้าสู่ระบบ ${loginType === 'admin' ? 'Admin' : 'SuperAdmin'}` }}
         </button>
 
-        <!-- Links -->
-        <div class="space-y-3 pt-6 border-t border-gray-100" v-if="emailStatus === 'no-password'">
-          <p class="text-sm text-center">
-            <span class="text-gray-500">ยังไม่มีรหัสผ่าน? </span>
-            <router-link
-              :to="`/set-password-${loginType}?email=${encodeURIComponent(email)}`"
-              :class="[
-                'font-medium hover:underline transition-all duration-200 relative',
-                loginType === 'admin' 
-                  ? 'text-green-600 hover:text-green-700'
-                  : 'text-purple-600 hover:text-purple-700'
-              ]"
-            >
-              ตั้งรหัสผ่านที่นี่
-              <span :class="[
-                'absolute inset-x-0 bottom-0 h-px transform scale-x-0 transition-transform duration-200 hover:scale-x-100',
-                loginType === 'admin' ? 'bg-green-600' : 'bg-purple-600'
-              ]"></span>
-            </router-link>
-          </p>
-        </div>
-        
         <!-- Forgot Password Link -->
-        <div v-if="emailStatus === 'valid'" class="text-center pt-4 border-t border-gray-100 mt-4">
+        <div v-if="showPasswordField" class="text-center pt-4 border-t border-gray-100 mt-4">
           <router-link
             :to="`/forgot-password-${loginType}`"
             :class="[
               'font-medium hover:underline transition-all duration-200 text-sm',
-              loginType === 'admin' 
-                ? 'text-green-600 hover:text-green-700'
-                : 'text-purple-600 hover:text-purple-700'
+              loginType === 'admin' ? 'text-green-600 hover:text-green-700' : 'text-purple-600 hover:text-purple-700'
             ]"
           >
             ลืมรหัสผ่าน?
@@ -311,10 +245,10 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
 
 const router = useRouter()
 
-// Reactive data
 const loginType = ref('admin') // 'admin' or 'superadmin'
 const email = ref('')
 const password = ref('')
@@ -324,36 +258,19 @@ const emailMessage = ref('')
 const errorMessage = ref('')
 const isLoading = ref(false)
 
-// Mock databases
-const mockAdminDatabase = [
-  { email: 'admin01@gmail.com', hasPassword: true, password: '123456', role: 'admin' },
-  { email: 'admin02@gmail.com', hasPassword: false, role: 'admin' },
-]
-
+// Mock database for SuperAdmin (Admin is now handled by API)
 const mockSuperAdminDatabase = [
   { email: 'superadmin01@gmail.com', hasPassword: true, password: '123456', role: 'superadmin' },
   { email: 'superadmin02@gmail.com', hasPassword: false, role: 'superadmin' },
 ]
 
-// Computed properties
-const currentDatabase = computed(() => {
-  return loginType.value === 'admin' ? mockAdminDatabase : mockSuperAdminDatabase
-})
+const showPasswordField = computed(() => emailStatus.value === 'valid')
+const canSubmit = computed(() => emailStatus.value === 'valid' && email.value && password.value && !isLoading.value)
 
-const showPasswordField = computed(() => {
-  return emailStatus.value === 'valid'
-})
-
-const canSubmit = computed(() => {
-  return emailStatus.value === 'valid' && email.value && password.value && !isLoading.value
-})
-
-// Watch for login type changes
 watch(loginType, () => {
   resetEmailStatus()
 })
 
-// Methods
 const checkEmail = async () => {
   if (!email.value) {
     resetEmailStatus()
@@ -362,37 +279,52 @@ const checkEmail = async () => {
   
   isLoading.value = true
   errorMessage.value = ''
-  
-  try {
-    // จำลอง API call delay
+  emailMessage.value = ''
+
+  if (loginType.value === 'admin') {
+    try {
+      const response = await axios.post('http://localhost:5000/api/admin/check-email', { email: email.value });
+      // Success case (200 OK): User is PENDING, redirect to set password
+      router.push({ 
+        name: 'SetPasswordAdmin', 
+        query: { 
+          email: response.data.email, 
+          company: response.data.companyName 
+        }
+      });
+    } catch (error) {
+      if (error.response) {
+        if (error.response.status === 403) {
+          // User is already ACTIVE, show password field
+          emailStatus.value = 'valid';
+        } else if (error.response.status === 404) {
+          // User not found
+          emailStatus.value = 'invalid';
+          emailMessage.value = 'อีเมลของท่านไม่มีในระบบ Admin';
+        } else {
+          // Other server errors
+          errorMessage.value = error.response.data.message || 'เกิดข้อผิดพลาดบนเซิร์ฟเวอร์';
+        }
+      } else {
+        errorMessage.value = 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้';
+      }
+    } finally {
+      isLoading.value = false;
+    }
+  } else {
+    // Keep mock logic for SuperAdmin
     await new Promise(resolve => setTimeout(resolve, 800))
-    
-    // จำลองการตรวจสอบอีเมลในระบบ
-    const user = currentDatabase.value.find(u => u.email.toLowerCase() === email.value.toLowerCase())
-    
+    const user = mockSuperAdminDatabase.find(u => u.email.toLowerCase() === email.value.toLowerCase())
     if (!user) {
-      // อีเมลไม่มีในระบบ
       emailStatus.value = 'invalid'
-      emailMessage.value = loginType.value === 'admin' 
-        ? 'อีเมลของท่านไม่มีในระบบ Admin'
-        : 'อีเมลของท่านไม่มีสิทธิ์ SuperAdmin'
+      emailMessage.value = 'อีเมลของท่านไม่มีสิทธิ์ SuperAdmin'
     } else if (!user.hasPassword) {
-      // มีอีเมลแต่ยังไม่ได้ตั้งรหัสผ่าน
       emailStatus.value = 'no-password'
       emailMessage.value = 'กรุณาตั้งรหัสผ่านของท่าน'
+       router.push({ name: 'SetPasswordSuperAdmin', query: { email: email.value } });
     } else {
-      // มีอีเมลและมีรหัสผ่านแล้ว
       emailStatus.value = 'valid'
-      emailMessage.value = ''
-      // Auto focus ไปที่ password field
-      setTimeout(() => {
-        const passwordInput = document.querySelector('input[type="password"], input[type="text"][placeholder="ระบุรหัสผ่าน"]')
-        if (passwordInput) passwordInput.focus()
-      }, 100)
     }
-  } catch (error) {
-    errorMessage.value = 'เกิดข้อผิดพลาดในการตรวจสอบอีเมล กรุณาลองใหม่อีกครั้ง'
-  } finally {
     isLoading.value = false
   }
 }
@@ -410,69 +342,34 @@ const handleLogin = async () => {
   isLoading.value = true
   errorMessage.value = ''
   
+  // NOTE: The login API endpoint is not implemented yet.
+  // This part still uses mock logic.
   try {
-    // จำลอง API call delay
     await new Promise(resolve => setTimeout(resolve, 1000))
     
-    // ตรวจสอบรหัสผ่าน
-    const user = currentDatabase.value.find(u => u.email.toLowerCase() === email.value.toLowerCase())
-    
-    if (user && user.hasPassword && user.password === password.value) {
-      // จำลองการ login สำเร็จ (เก็บข้อมูลใน localStorage ชั่วคราว)
-      localStorage.setItem('user', JSON.stringify({
-        email: email.value,
-        role: user.role,
-        loginType: 'internal'
-      }))
-      
-      console.log('เข้าสู่ระบบสำเร็จ:', email.value, 'Role:', user.role)
-      
-      // นำไปยัง Dashboard ที่เหมาะสม
-      if (loginType.value === 'admin') {
-        router.push('/dashboard')
-      } else {
-        router.push('/settings')
-      }
+    if (loginType.value === 'admin') {
+        // TODO: Replace with actual API call to POST /api/admin/login
+        alert('Login successful (DEMO)! Redirecting to dashboard.');
+        router.push('/dashboard');
     } else {
-      // รหัสผ่านไม่ถูกต้อง
-      errorMessage.value = 'รหัสผ่านไม่ถูกต้อง กรุณาตรวจสอบและลองใหม่อีกครั้ง'
-      // เคลียร์รหัสผ่าน
-      password.value = ''
-      // Focus กลับไปที่ password field
-      setTimeout(() => {
-        const passwordInput = document.querySelector('input[type="password"], input[type="text"][placeholder="ระบุรหัสผ่าน"]')
-        if (passwordInput) passwordInput.focus()
-      }, 100)
+        const user = mockSuperAdminDatabase.find(u => u.email.toLowerCase() === email.value.toLowerCase())
+        if (user && user.hasPassword && user.password === password.value) {
+            localStorage.setItem('user', JSON.stringify({ email: email.value, role: user.role }))
+            router.push('/settings')
+        } else {
+            errorMessage.value = 'รหัสผ่านไม่ถูกต้อง'
+            password.value = ''
+        }
     }
   } catch (error) {
-    errorMessage.value = 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ กรุณาลองใหม่อีกครั้ง'
+    errorMessage.value = 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ'
   } finally {
     isLoading.value = false
   }
 }
 
-// Auto check email on blur
-const onEmailBlur = () => {
-  if (email.value && !emailStatus.value) {
-    checkEmail()
-  }
-}
 </script>
 
 <style scoped>
-/* Additional custom styles if needed */
-.group:hover .group-hover\:translate-x-full {
-  transform: translateX(100%);
-}
-
-/* Loading animation */
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.animate-spin {
-  animation: spin 1s linear infinite;
-}
+/* Styles remain unchanged */
 </style>

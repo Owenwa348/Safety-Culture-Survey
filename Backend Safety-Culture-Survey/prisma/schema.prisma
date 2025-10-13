@@ -18,16 +18,20 @@ model user_excel {
   updatedAt         DateTime @updatedAt
 }
 
-model Admin {
-  id                Int      @id @default(autoincrement())
-  name_admin        String
-  email_admin       String   @unique
-  company_admin     String
-  phone_admin       String   @unique
-  password_admin    String
-  role_admin        String   @default("admin") // เป็น admin
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+model AdminList {
+  id          Int       @id @default(autoincrement())
+  email       String    @unique
+  companyName String
+  firstName   String?
+  lastName    String?
+  phone       String?
+  password    String?
+  role        String    @default("Admin")
+  status      String    @default("PENDING") // PENDING = ยังไม่ยืนยันตัวตน, ACTIVE = ยืนยันตัวตนแล้ว
+  joinedAt    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // model User {

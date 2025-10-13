@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const excelUploadRouter = require('./routes/UploadExcel/excelUploadRoutes'); // ตรวจสอบ path
+const adminAuthRoutes = require('./routes/Admin/adminAuthRoutes'); // Import admin routes
 
 const app = express();
 
@@ -15,6 +16,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use('/excel-upload', excelUploadRouter);
+app.use('/api/admin', adminAuthRoutes); // Use admin routes
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
