@@ -1,5 +1,6 @@
 <template>
   <div class="bg-white rounded-lg border border-gray-200 p-6">
+    <!-- Header -->
     <div class="flex items-center justify-between mb-6">
       <h4 class="text-lg font-medium text-gray-900">จัดการกลุ่มงาน</h4>
       <button
@@ -37,7 +38,10 @@
     </div>
 
     <!-- Edit Form -->
-    <div v-if="editingIndex !== -1" class="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+    <div
+      v-if="editingItem"
+      class="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200"
+    >
       <h5 class="font-medium text-gray-900 mb-3">แก้ไขกลุ่มงาน</h5>
       <div class="flex gap-3">
         <input
@@ -64,28 +68,31 @@
     <!-- Work Groups List -->
     <div class="space-y-3">
       <div
-        v-for="(workGroup, index) in workGroups"
-        :key="index"
+        v-for="workGroup in workGroups"
+        :key="workGroup.id"
         class="flex items-center justify-between p-4 bg-gray-50 rounded-lg border hover:bg-gray-100 transition-colors"
       >
-        <span class="text-gray-900">{{ workGroup }}</span>
+        <span class="text-gray-900">{{ workGroup.name }}</span>
         <div class="flex gap-2">
           <button
-            @click="startEdit(index)"
+            @click="startEdit(workGroup)"
             class="text-blue-600 hover:text-blue-800 px-3 py-1 text-sm font-medium"
           >
             แก้ไข
           </button>
           <button
-            @click="deleteWorkGroup(index)"
+            @click="deleteWorkGroup(workGroup.id)"
             class="text-red-600 hover:text-red-800 px-3 py-1 text-sm font-medium"
           >
             ลบ
           </button>
         </div>
       </div>
-      
-      <div v-if="workGroups.length === 0" class="text-center py-8 text-gray-500">
+
+      <div
+        v-if="workGroups.length === 0"
+        class="text-center py-8 text-gray-500"
+      >
         ไม่มีข้อมูลกลุ่มงาน
       </div>
     </div>
@@ -93,54 +100,88 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, onMounted } from 'vue'
+import axios from 'axios'
 
-const workGroups = reactive([
-  'หน่วยงานเดินเครื่อง',
-  'หน่วยงานบำรุงรักษา',
-  'หน่วยงานวิศวกรรม',
-  'หน่วยงานสนับสนุน'
-])
+// API base URL
+const API_URL = 'http://localhost:5000/api/workgroups' // 🔧 เปลี่ยนตาม backend ของคุณ
 
-const newWorkGroup = ref('')
+const workGroups = ref([])
 const showAddForm = ref(false)
-const editingIndex = ref(-1)
+const newWorkGroup = ref('')
+const editingItem = ref(null)
 const editingText = ref('')
 
-const addWorkGroup = () => {
-  if (newWorkGroup.value.trim()) {
-    workGroups.push(newWorkGroup.value.trim())
+// ✅ โหลดข้อมูลจาก backend
+const fetchWorkGroups = async () => {
+  try {
+    const res = await axios.get(API_URL)
+    workGroups.value = res.data
+  } catch (err) {
+    console.error('fetchWorkGroups error:', err)
+    alert('เกิดข้อผิดพลาดในการโหลดข้อมูล')
+  }
+}
+
+// ✅ เพิ่มกลุ่มงาน
+const addWorkGroup = async () => {
+  if (!newWorkGroup.value.trim()) return
+  try {
+    await axios.post(API_URL, { name: newWorkGroup.value.trim() })
     newWorkGroup.value = ''
     showAddForm.value = false
+    await fetchWorkGroups()
+  } catch (err) {
+    console.error('addWorkGroup error:', err)
+    alert(err.response?.data?.message || 'เกิดข้อผิดพลาดในการเพิ่มข้อมูล')
   }
 }
 
-const cancelAdd = () => {
-  newWorkGroup.value = ''
-  showAddForm.value = false
+// ✅ เริ่มแก้ไข
+const startEdit = (item) => {
+  editingItem.value = item
+  editingText.value = item.name
 }
 
-const startEdit = (index) => {
-  editingIndex.value = index
-  editingText.value = workGroups[index]
-}
-
-const saveEdit = () => {
-  if (editingText.value.trim()) {
-    workGroups[editingIndex.value] = editingText.value.trim()
-    editingIndex.value = -1
+// ✅ บันทึกการแก้ไข
+const saveEdit = async () => {
+  if (!editingItem.value || !editingText.value.trim()) return
+  try {
+    await axios.put(`${API_URL}/${editingItem.value.id}`, {
+      name: editingText.value.trim(),
+    })
+    editingItem.value = null
     editingText.value = ''
+    await fetchWorkGroups()
+  } catch (err) {
+    console.error('saveEdit error:', err)
+    alert(err.response?.data?.message || 'เกิดข้อผิดพลาดในการแก้ไข')
   }
 }
 
+// ✅ ยกเลิกแก้ไข
 const cancelEdit = () => {
-  editingIndex.value = -1
+  editingItem.value = null
   editingText.value = ''
 }
 
-const deleteWorkGroup = (index) => {
-  if (confirm('คุณต้องการลบกลุ่มงานนี้หรือไม่?')) {
-    workGroups.splice(index, 1)
+// ✅ ยกเลิกเพิ่ม
+const cancelAdd = () => {
+  showAddForm.value = false
+  newWorkGroup.value = ''
+}
+
+// ✅ ลบกลุ่มงาน
+const deleteWorkGroup = async (id) => {
+  if (!confirm('คุณต้องการลบกลุ่มงานนี้หรือไม่?')) return
+  try {
+    await axios.delete(`${API_URL}/${id}`)
+    await fetchWorkGroups()
+  } catch (err) {
+    console.error('deleteWorkGroup error:', err)
+    alert(err.response?.data?.message || 'เกิดข้อผิดพลาดในการลบข้อมูล')
   }
 }
+
+onMounted(fetchWorkGroups)
 </script>

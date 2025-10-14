@@ -34,6 +34,42 @@ model AdminList {
   updatedAt DateTime @updatedAt
 }
 
+// ตาราง Department - สายงาน
+model Department {
+  id            Int      @id @default(autoincrement())
+  name          String   // ชื่อสายงาน เช่น CEO, REP, COO, CFO, SSE, PSE, CME
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+}
+
+// ตาราง Experience - ประสบการณ์การทำงาน
+model Experience {
+  id            Int      @id @default(autoincrement())
+  name          String   // ช่วงประสบการณ์ เช่น 0-3 ปี, 3 ปีขึ้นไป แต่ไม่เกิน 5 ปี , 5 ปีขึ้นไป แต่ไม่เกิน 10 ปี , 10 ปีขึ้นไป แต่ไม่เกิน 15 ปี , มากกว่า 15 ปีขึ้นไป
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+}
+
+// ตาราง Position - ตำแหน่งงาน
+model Position {
+  id            Int      @id @default(autoincrement())
+  name          String   // ชื่อตำแหน่ง เช่น ผู้บริหารระดับสูง / ผู้จัดการส่วน , ผู้จัดการแผนก / ผู้จัดการ / พนักงานอาวุโส , พนักงาน , ผู้รับเหมาประจำ
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+}
+
+// ตาราง WorkGroup - กลุ่มงาน
+model WorkGroup {
+  id            Int      @id @default(autoincrement())
+  name          String   // ชื่อกลุ่มงาน เช่น หน่วยงานเดินเครื่อง (Operation), หน่วยงานบำรุงรักษา (Maintenance) , หน่วยงานวิศวกรรม (Engineering) ,หน่วยงานสนับสนุน (Supporting functions)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+}
+
 // model User {
 //   id                Int      @id @default(autoincrement())
 //   title_user        String
@@ -50,7 +86,6 @@ model AdminList {
 //   createdAt         DateTime @default(now())
 //   updatedAt         DateTime @updatedAt
 // }
-
 
 // model SuperAdmin {
 //   id                    Int      @id @default(autoincrement())
