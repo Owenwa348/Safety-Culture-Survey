@@ -84,6 +84,7 @@ model Question {
   categoryId  Int
   category    Category   @relation(fields: [categoryId], references: [id])
   options     Option[]
+  order       Int        @default(0)  // Add order field for question sequencing
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 }
