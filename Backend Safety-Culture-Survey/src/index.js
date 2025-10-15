@@ -6,6 +6,8 @@ import departmentRoutes from './routes/departmentRoutes.js'
 import experienceRoutes from './routes/experienceRoutes.js'
 import positionRoutes from './routes/positionRoutes.js'
 import workGroupRoutes from './routes/workGroupRoutes.js'
+import categoryRoutes from './routes/categoryRoutes.js'
+import questionRoutes from './routes/questionRoutes.js'
 
 const app = express();
 
@@ -18,6 +20,8 @@ app.use('/api/departments', departmentRoutes)
 app.use('/api/experiences', experienceRoutes)
 app.use('/api/positions', positionRoutes)
 app.use('/api/workgroups', workGroupRoutes)
+app.use('/api/categories', categoryRoutes)
+app.use('/api/questions', questionRoutes)
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
