@@ -78,7 +78,13 @@
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
-                <tr v-for="admin in filteredAdmins" :key="admin.id" class="hover:bg-gray-50 transition-colors">
+                <tr v-if="isLoading">
+                  <td colspan="5" class="text-center py-12 text-gray-500">กำลังโหลดข้อมูล...</td>
+                </tr>
+                <tr v-else-if="error">
+                   <td colspan="5" class="text-center py-12 text-red-500">{{ error }}</td>
+                </tr>
+                <tr v-for="admin in filteredAdmins" :key="admin.id" v-else class="hover:bg-gray-50 transition-colors">
                   <!-- Admin Email -->
                   <td class="px-6 py-4">
                     <div class="flex items-center">
@@ -95,10 +101,10 @@
                     </div>
                   </td>
                   
-                  <!-- Role (Fixed as SuperAdmin) -->
+                  <!-- Role -->
                   <td class="px-6 py-4">
                     <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
-                      Super Admin
+                      {{ admin.role }}
                     </span>
                   </td>
                   
@@ -119,33 +125,35 @@
                   <!-- Last Login -->
                   <td class="px-6 py-4">
                     <div class="text-sm text-gray-900">
-                      {{ admin.status === 'active' && admin.lastLogin ? formatDateTime(admin.lastLogin) : '-' }}
+                      {{ admin.status === 'ACTIVE' && admin.lastLogin ? formatDateTime(admin.lastLogin) : '-' }}
                     </div>
                   </td>
                   
                   <!-- Actions -->
                   <td class="px-6 py-4">
-                    <div class="flex items-center space-x-3" v-if="admin.status === 'pending'">
+                    <!-- Actions for PENDING status -->
+                    <div class="flex items-center space-x-3" v-if="admin.status === 'PENDING'">
                       <button 
-                        @click="removeAdmin(admin)" 
+                        @click="deleteSuperAdmin(admin)" 
                         class="text-sm font-medium text-red-600 hover:text-red-800 hover:underline transition-colors"
                       >
                         ลบ
                       </button>
                     </div>
+                    <!-- Actions for ACTIVE or INACTIVE status -->
                     <div class="flex items-center space-x-3" v-else>
                       <button 
-                        @click="toggleActive(admin)" 
-                        :class="admin.status === 'active' 
+                        @click="toggleAccountStatus(admin)" 
+                        :class="admin.status === 'ACTIVE' 
                           ? 'text-yellow-600 hover:text-yellow-800' 
                           : 'text-green-600 hover:text-green-800'"
                         class="text-sm font-medium hover:underline transition-colors"
                       >
-                        {{ admin.status === 'active' ? 'ปิดบัญชี' : 'เปิดบัญชี' }}
+                        {{ admin.status === 'ACTIVE' ? 'ปิดบัญชี' : 'เปิดบัญชี' }}
                       </button>
                       <span class="text-gray-300">|</span>
                       <button 
-                        @click="removeAdmin(admin)" 
+                        @click="deleteSuperAdmin(admin)" 
                         class="text-sm font-medium text-red-600 hover:text-red-800 hover:underline transition-colors"
                       >
                         ลบ
@@ -153,21 +161,18 @@
                     </div>
                   </td>
                 </tr>
+                 <tr v-if="!isLoading && filteredAdmins.length === 0">
+                    <td colspan="5" class="text-center py-12">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                        <h3 class="mt-2 text-sm font-medium text-gray-900">ไม่พบผู้ดูแล</h3>
+                        <p class="mt-1 text-sm text-gray-500">ไม่มีผู้ดูแลที่ตรงกับการค้นหา หรือยังไม่มีข้อมูล</p>
+                    </td>
+                </tr>
               </tbody>
             </table>
-            
-            <!-- Empty State -->
-            <div v-if="filteredAdmins.length === 0" class="text-center py-12">
-              <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-              </svg>
-              <h3 class="mt-2 text-sm font-medium text-gray-900">ไม่พบผู้ดูแล</h3>
-              <p class="mt-1 text-sm text-gray-500">ไม่มีผู้ดูแลที่ตรงกับการค้นหา</p>
-              <div class="mt-4 text-xs text-red-500">
-                Debug: admins.length = {{ admins.length }}, filteredAdmins.length = {{ filteredAdmins.length }}
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -181,103 +186,83 @@ import axios from 'axios';
 import AddSuperAdminForm from './AddSuperAdminForm.vue'; 
 import NavbarDashboard from '../../../../components/NavbarDashboard.vue';
 
+const API_URL = 'http://localhost:5000/api/super-admins';
+
 const showForm = ref(false);
 const admins = ref([]);
 const search = ref('');
+const isLoading = ref(true);
+const error = ref(null);
 
-// ข้อมูลตัวอย่าง
-const sampleAdmins = [
-  {
-    id: 1,
-    email: 'somchai.w@company.com',
-    role: 'SuperAdmin',
-    status: 'active',
-    created_at: '2024-01-15T08:30:00Z',
-    lastLogin: '2024-09-23T14:35:22Z'
-  },
-  {
-    id: 2,
-    email: 'supawadee.j@company.com',
-    role: 'SuperAdmin',
-    status: 'pending',
-    created_at: '2024-02-20T14:15:00Z',
-    lastLogin: null
-  },
-  {
-    id: 3,
-    email: 'admin.disabled@company.com',
-    role: 'SuperAdmin',
-    status: 'inactive',
-    created_at: '2024-01-10T10:20:00Z',
-    lastLogin: null
-  }
-];
-
-// Fetch all admins
-async function fetchAdmins() {
+// Fetch all super admins
+async function fetchSuperAdmins() {
+  isLoading.value = true;
+  error.value = null;
   try {
-    const { data } = await axios.get('/api/admin');
-    admins.value = Array.isArray(data) ? data : sampleAdmins;
-  } catch (error) {
-    console.error('Failed to fetch admins:', error);
-    admins.value = sampleAdmins;
-    console.log('Using sample data instead');
+    const { data } = await axios.get(API_URL);
+    admins.value = Array.isArray(data) ? data : [];
+  } catch (err) {
+    console.error('Failed to fetch super admins:', err);
+    error.value = 'ไม่สามารถโหลดข้อมูลได้ กรุณาตรวจสอบว่าเซิร์ฟเวอร์ Backend ทำงานอยู่';
+    admins.value = []; // Clear data on error
+  } finally {
+    isLoading.value = false;
   }
 }
 
+// Handle event from child component
 function handleAdminAdded() {
-  fetchAdmins();
-  showForm.value = false;
+  fetchSuperAdmins(); // Refresh the list
+  showForm.value = false; // Close the form
 }
 
-// ใช้ข้อมูลตัวอย่างทันทีและไม่เรียก API ในการ demo
+// Load data on component mount
 onMounted(() => {
-  admins.value = [...sampleAdmins];
-  console.log('Loaded sample admins:', admins.value);
+  fetchSuperAdmins();
 });
 
-async function toggleActive(admin) {
+// Toggle account status (Activate/Deactivate)
+async function toggleAccountStatus(admin) {
+  const newStatus = admin.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+  const actionText = newStatus === 'INACTIVE' ? 'ปิดบัญชี' : 'เปิดบัญชี';
+
+  if (!confirm(`ต้องการ ${actionText} ของ ${admin.email} หรือไม่?`)) return;
+
   try {
-    const newStatus = admin.status === 'active' ? 'inactive' : 'active';
-    await axios.patch(`/api/admin/${admin.id}/status`, { status: newStatus });
-    admin.status = newStatus;
-    // ถ้าเปิดใช้งาน ให้ใส่เวลาล่าสุด
-    if (newStatus === 'active') {
-      admin.lastLogin = new Date().toISOString();
+    await axios.put(`${API_URL}/${admin.id}/status`, { status: newStatus });
+    // Update local data to reflect the change immediately
+    const index = admins.value.findIndex(a => a.id === admin.id);
+    if (index !== -1) {
+      admins.value[index].status = newStatus;
     }
-  } catch (error) {
-    console.error('Failed to toggle status:', error);
-    // สำหรับ demo จะแสดงผลการเปลี่ยนแปลงทันที
-    admin.status = admin.status === 'active' ? 'inactive' : 'active';
-    // ถ้าเปิดใช้งาน ให้ใส่เวลาล่าสุด
-    if (admin.status === 'active') {
-      admin.lastLogin = new Date().toISOString();
-    }
-    alert('อัปเดตสถานะสำเร็จ (Demo Mode)');
+  } catch (err) {
+    console.error(`Failed to ${actionText}:`, err);
+    alert(`เกิดข้อผิดพลาดในการ${actionText}`);
   }
 }
 
-async function removeAdmin(admin) {
-  if (!confirm(`ต้องการลบ ${admin.email}?\n\nการดำเนินการนี้ไม่สามารถยกเลิกได้`)) return;
-  
+// Delete a super admin
+async function deleteSuperAdmin(admin) {
+  if (!confirm(`ต้องการลบ ${admin.email} ออกจากระบบใช่หรือไม่?\nการดำเนินการนี้ไม่สามารถย้อนกลับได้`)) return;
+
   try {
-    await axios.delete(`/api/admin/${admin.id}`);
+    await axios.delete(`${API_URL}/${admin.id}`);
     admins.value = admins.value.filter(a => a.id !== admin.id);
-  } catch (error) {
-    console.error('Failed to remove admin:', error);
-    // สำหรับ demo จะลบออกจาก array ทันที
-    admins.value = admins.value.filter(a => a.id !== admin.id);
-    alert('ลบสำเร็จ (Demo Mode)');
+  } catch (err) {
+    console.error('Failed to delete admin:', err);
+    alert('เกิดข้อผิดพลาดในการลบ');
   }
 }
+
+// --- Helper Functions for Display ---
 
 function getStatusClass(status) {
   switch (status) {
-    case 'active':
+    case 'ACTIVE':
       return 'bg-green-100 text-green-800 border-green-200';
-    case 'inactive':
+    case 'INACTIVE':
       return 'bg-red-100 text-red-800 border-red-200';
-    case 'pending':
+    case 'PENDING':
       return 'bg-yellow-100 text-yellow-800 border-yellow-200';
     default:
       return 'bg-gray-100 text-gray-800 border-gray-200';
@@ -286,11 +271,11 @@ function getStatusClass(status) {
 
 function getStatusDotClass(status) {
   switch (status) {
-    case 'active':
+    case 'ACTIVE':
       return 'bg-green-400';
-    case 'inactive':
+    case 'INACTIVE':
       return 'bg-red-400';
-    case 'pending':
+    case 'PENDING':
       return 'bg-yellow-400';
     default:
       return 'bg-gray-400';
@@ -299,11 +284,11 @@ function getStatusDotClass(status) {
 
 function getStatusText(status) {
   switch (status) {
-    case 'active':
-      return 'เปิดใช้งาน';
-    case 'inactive':
+    case 'ACTIVE':
+      return 'ยืนยันตัวตนแล้ว';
+    case 'INACTIVE':
       return 'ปิดใช้งาน';
-    case 'pending':
+    case 'PENDING':
       return 'ยังไม่ยืนยันตัวตน';
     default:
       return 'ไม่ทราบสถานะ';
@@ -319,26 +304,22 @@ function formatDateTime(dateString) {
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
-    second: '2-digit'
   });
 }
 
 const filteredAdmins = computed(() => {
-  if (!Array.isArray(admins.value)) {
-    return [];
-  }
+  if (!admins.value) return [];
 
   let filtered = [...admins.value];
+  const keyword = search.value.toLowerCase().trim();
 
-  // Filter by search keyword
-  const keyword = search.value.toLowerCase();
   if (keyword) {
     filtered = filtered.filter(admin =>
       admin.email.toLowerCase().includes(keyword)
     );
   }
 
-  // Sort by email
-  return filtered.sort((a, b) => a.email.localeCompare(b.email));
+  return filtered;
 });
+
 </script>

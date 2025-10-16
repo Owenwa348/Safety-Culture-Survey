@@ -116,10 +116,15 @@ model Option {
 //   updatedAt         DateTime @updatedAt
 // }
 
-// model SuperAdmin {
-//   id                    Int      @id @default(autoincrement())
-//   email_superadmin      String   @unique
-//   password_superadmin   String
-//   createdAt             DateTime @default(now())
-//   updatedAt             DateTime @updatedAt
-// }
+model SuperAdminList {
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  phone     String?   @unique
+  pin       String?
+  password  String?
+  role      String    @default("Super Admin")
+  status    String    @default("PENDING") // PENDING = ยังไม่ยืนยันตัวตน, ACTIVE = ยืนยันตัวตนแล้ว
+  lastLogin DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}

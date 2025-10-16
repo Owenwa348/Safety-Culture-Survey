@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const excelUploadRouter = require('./routes/UploadExcel/excelUploadRoutes'); // ตรวจสอบ path
 const adminAuthRoutes = require('./routes/Admin/adminAuthRoutes'); // Import admin routes
+const superAdminRoutes = require('./routes/SuperAdmin/superAdminRoutes'); // Import super admin routes
 
 // เพิ่ม routes ใหม่
 const departmentRoutes = require('./routes/Department/departmentRoutes');
@@ -38,6 +39,7 @@ app.use('/api/workgroups', workGroupRoutes)
 // Routes สำหรับคำถาม
 app.use('/api/categories', categoryRoutes)
 app.use('/api/questions', questionRoutes)
+app.use('/api/super-admins', superAdminRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

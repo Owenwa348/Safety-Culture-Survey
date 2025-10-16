@@ -258,12 +258,6 @@ const emailMessage = ref('')
 const errorMessage = ref('')
 const isLoading = ref(false)
 
-// Mock database for SuperAdmin (Admin is now handled by API)
-const mockSuperAdminDatabase = [
-  { email: 'superadmin01@gmail.com', hasPassword: true, password: '123456', role: 'superadmin' },
-  { email: 'superadmin02@gmail.com', hasPassword: false, role: 'superadmin' },
-]
-
 const showPasswordField = computed(() => emailStatus.value === 'valid')
 const canSubmit = computed(() => emailStatus.value === 'valid' && email.value && password.value && !isLoading.value)
 
@@ -281,28 +275,24 @@ const checkEmail = async () => {
   errorMessage.value = ''
   emailMessage.value = ''
 
+  const userEmail = email.value.trim();
+
   if (loginType.value === 'admin') {
+    // --- Admin Logic (existing) ---
     try {
-      const response = await axios.post('http://localhost:5000/api/admin/check-email', { email: email.value });
-      // Success case (200 OK): User is PENDING, redirect to set password
+      const response = await axios.post('http://localhost:5000/api/admin/check-email', { email: userEmail });
       router.push({ 
         name: 'SetPasswordAdmin', 
-        query: { 
-          email: response.data.email, 
-          company: response.data.companyName 
-        }
+        query: { email: response.data.email, company: response.data.companyName }
       });
     } catch (error) {
       if (error.response) {
         if (error.response.status === 403) {
-          // User is already ACTIVE, show password field
           emailStatus.value = 'valid';
         } else if (error.response.status === 404) {
-          // User not found
           emailStatus.value = 'invalid';
           emailMessage.value = 'อีเมลของท่านไม่มีในระบบ Admin';
         } else {
-          // Other server errors
           errorMessage.value = error.response.data.message || 'เกิดข้อผิดพลาดบนเซิร์ฟเวอร์';
         }
       } else {
@@ -312,20 +302,31 @@ const checkEmail = async () => {
       isLoading.value = false;
     }
   } else {
-    // Keep mock logic for SuperAdmin
-    await new Promise(resolve => setTimeout(resolve, 800))
-    const user = mockSuperAdminDatabase.find(u => u.email.toLowerCase() === email.value.toLowerCase())
-    if (!user) {
-      emailStatus.value = 'invalid'
-      emailMessage.value = 'อีเมลของท่านไม่มีสิทธิ์ SuperAdmin'
-    } else if (!user.hasPassword) {
-      emailStatus.value = 'no-password'
-      emailMessage.value = 'กรุณาตั้งรหัสผ่านของท่าน'
-       router.push({ name: 'SetPasswordSuperAdmin', query: { email: email.value } });
-    } else {
-      emailStatus.value = 'valid'
+    // --- SuperAdmin Logic (new) ---
+    try {
+        const response = await axios.post('http://localhost:5000/api/super-admins/check-email', { email: userEmail });
+        // Success (200): User is PENDING, redirect to set password
+        router.push({ name: 'SetPasswordSuperAdmin', query: { email: response.data.email } });
+
+    } catch (error) {
+        if (error.response) {
+            if (error.response.status === 409) {
+                // 409 Conflict: User is ACTIVE, show password field
+                emailStatus.value = 'valid';
+            } else if (error.response.status === 404) {
+                // 404 Not Found: User does not exist
+                emailStatus.value = 'invalid';
+                emailMessage.value = 'อีเมลของท่านไม่มีสิทธิ์ SuperAdmin';
+            } else {
+                // Other server errors
+                errorMessage.value = error.response.data.message || 'เกิดข้อผิดพลาดบนเซิร์ฟเวอร์';
+            }
+        } else {
+            errorMessage.value = 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ SuperAdmin ได้';
+        }
+    } finally {
+        isLoading.value = false;
     }
-    isLoading.value = false
   }
 }
 
@@ -342,27 +343,33 @@ const handleLogin = async () => {
   isLoading.value = true
   errorMessage.value = ''
   
-  // NOTE: The login API endpoint is not implemented yet.
-  // This part still uses mock logic.
+  const userEmail = email.value.trim();
+  const userPassword = password.value;
+
   try {
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
     if (loginType.value === 'admin') {
         // TODO: Replace with actual API call to POST /api/admin/login
-        alert('Login successful (DEMO)! Redirecting to dashboard.');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        alert('Admin Login successful (DEMO)! Redirecting to dashboard.');
         router.push('/dashboard');
     } else {
-        const user = mockSuperAdminDatabase.find(u => u.email.toLowerCase() === email.value.toLowerCase())
-        if (user && user.hasPassword && user.password === password.value) {
-            localStorage.setItem('user', JSON.stringify({ email: email.value, role: user.role }))
-            router.push('/settings')
-        } else {
-            errorMessage.value = 'รหัสผ่านไม่ถูกต้อง'
-            password.value = ''
-        }
+        // --- SuperAdmin Login API Call ---
+        const response = await axios.post('http://localhost:5000/api/super-admins/login', {
+            email: userEmail,
+            password: userPassword,
+        });
+
+        // On success, store user info and redirect
+        localStorage.setItem('user', JSON.stringify({ email: userEmail, role: response.data.role }));
+        router.push('/settings'); // Redirect to the main settings/dashboard for super admins
     }
   } catch (error) {
-    errorMessage.value = 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ'
+    if (error.response) {
+        errorMessage.value = error.response.data.message || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
+    } else {
+        errorMessage.value = 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ';
+    }
+    password.value = '';
   } finally {
     isLoading.value = false
   }
