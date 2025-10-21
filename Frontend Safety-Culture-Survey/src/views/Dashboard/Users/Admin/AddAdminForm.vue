@@ -144,6 +144,7 @@
 
 <script setup>
 import { ref } from 'vue';
+import axios from 'axios';
 
 // Define emits
 const emit = defineEmits(['admin-added']);
@@ -190,26 +191,20 @@ function clearForm() {
 }
 
 // Submit form
-function submitForm() {
+async function submitForm() {
   error.value = '';
   successMessage.value = '';
-  
-  console.log('Submit form called with:', adminForms.value);
-  
+
   // Validate all forms
-  const invalidForms = adminForms.value.filter(admin => 
-    !admin.email || !admin.company
-  );
-  
+  const invalidForms = adminForms.value.filter(admin => !admin.email || !admin.company);
   if (invalidForms.length > 0) {
     error.value = 'กรุณากรอกข้อมูลให้ครบถ้วน (อีเมล, บริษัท)';
     return;
   }
-  
-  // ตรวจสอบอีเมลซ้ำ
+
+  // Check for duplicate emails in the form
   const emailSet = new Set();
   const duplicateEmails = [];
-  
   adminForms.value.forEach(admin => {
     if (emailSet.has(admin.email.toLowerCase())) {
       duplicateEmails.push(admin.email);
@@ -217,46 +212,63 @@ function submitForm() {
       emailSet.add(admin.email.toLowerCase());
     }
   });
-  
   if (duplicateEmails.length > 0) {
-    error.value = `พบอีเมลซ้ำ: ${duplicateEmails.join(', ')}`;
+    error.value = `พบอีเมลซ้ำในฟอร์ม: ${duplicateEmails.join(', ')}`;
     return;
   }
-  
-  // สร้าง array ของ admin ใหม่
-  const newAdmins = adminForms.value.map((admin, index) => ({
-    id: Date.now() + index, // สร้าง ID ชั่วคราว
-    name: null, // ยังไม่ยืนยันตัวตน
-    email: admin.email.trim(),
-    role: 'Admin',
-    active: false,
-    is_verified: false, // ยังไม่ยืนยันตัวตน
-    company: admin.company.trim(),
-    created_at: new Date().toISOString(),
-    verified_at: null
-  }));
-  
-  console.log('New admins created:', newAdmins);
-  
-  // แสดงข้อความสำเร็จ
-  successMessage.value = `เพิ่มผู้ดูแลสำเร็จ ${adminForms.value.length} คน`;
-  
-  // ส่งข้อมูลใหม่ไปยัง parent component
-  emit('admin-added', newAdmins);
-  
-  // ล้างฟอร์ม
-  clearForm();
-  
-  // ซ่อนข้อความสำเร็จหลัง 3 วินาที
-  setTimeout(() => {
-    successMessage.value = '';
-  }, 3000);
+
+  const promises = adminForms.value.map(admin => {
+    return axios.post('http://localhost:5000/api/admin/add', {
+      email: admin.email.trim(),
+      companyName: admin.company.trim() // Map component's 'company' to backend's 'companyName'
+    });
+  });
+
+  try {
+    const results = await Promise.allSettled(promises);
+    
+    const successfulAdds = [];
+    const failedAdds = [];
+
+    results.forEach((result, index) => {
+      if (result.status === 'fulfilled') {
+        successfulAdds.push(adminForms.value[index].email);
+      } else {
+        const errorMessage = result.reason.response?.data?.message || result.reason.message;
+        failedAdds.push(`${adminForms.value[index].email} (${errorMessage})`);
+      }
+    });
+
+    if (successfulAdds.length > 0) {
+      successMessage.value = `เพิ่มผู้ดูแลสำเร็จ ${successfulAdds.length} คน`;
+      emit('admin-added'); // Emit event to notify parent to refresh list
+    }
+
+    if (failedAdds.length > 0) {
+      error.value = `เกิดข้อผิดพลาดในการเพิ่ม ${failedAdds.length} คน: ${failedAdds.join('; ')}`;
+    }
+
+    if (failedAdds.length === 0) {
+      clearForm(); // Clear form only if all were successful
+    } else {
+      // Filter out successful ones and keep failed ones in the form
+      adminForms.value = adminForms.value.filter((_, index) => results[index].status !== 'fulfilled');
+    }
+
+    setTimeout(() => {
+      successMessage.value = '';
+      error.value = '';
+    }, 5000);
+
+  } catch (e) {
+    console.error('An unexpected error occurred during form submission:', e);
+    error.value = 'เกิดข้อผิดพลาดที่ไม่คาดคิด โปรดลองอีกครั้ง';
+  }
 }
 
 // Download template
 function downloadTemplate() {
-  const csvContent = "\uFEFFemail,company\nsomchai@abc.com,บริษัท เอบีซี จำกัด\nsomying@xyz.com,บริษัท เอ็กซ์วายซี จำกัด\nwichai@def.com,บริษัท ดีอีเอฟ จำกัด";
-  
+  const csvContent = "\uFEFFemail,company\n";
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);

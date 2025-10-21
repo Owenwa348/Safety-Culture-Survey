@@ -100,11 +100,8 @@
                 class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 transition-all focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300"
                 required
               >
-                <option value="">เลือกตำแหน่งงาน</option>
-                <option value="executive">ผู้บริหารระดับสูง / ผู้จัดการส่วน</option>
-                <option value="manager">ผู้จัดการแผนก / ผู้จัดการ / พนักงานอาวุโส</option>
-                <option value="employee">พนักงาน</option>
-                <option value="contractor">ผู้รับเหมาประจำ</option>
+                <option value="" disabled class="text-gray-400">เลือกตำแหน่งงาน</option>
+                <option v-for="pos in positions" :key="pos.id" :value="pos.name">{{ pos.name }}</option>
               </select>
             </div>
 
@@ -113,32 +110,12 @@
               <label class="block text-sm font-semibold text-gray-700 mb-2">สายงานที่ท่านสังกัด <span class="text-red-500">*</span></label>
               <select 
                 v-model="form.department"
-                @change="handleDepartmentChange"
                 class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 transition-all focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300"
                 required
               >
-                <option value="">เลือกสายงาน</option>
-                <option value="CEO">CEO</option>
-                <option value="REP">REP</option>
-                <option value="COO">COO</option>
-                <option value="CFO">CFO</option>
-                <option value="SSE">SSE</option>
-                <option value="PSE">PSE</option>
-                <option value="CME">CME</option>
-                <option value="other">อื่นๆ (ระบุ)</option>
+                <option value="" disabled class="text-gray-400">เลือกสายงาน</option>
+                <option v-for="dep in departments" :key="dep.id" :value="dep.name">{{ dep.name }}</option>
               </select>
-            </div>
-
-            <!-- ระบุสายงานอื่นๆ -->
-            <div v-if="form.department === 'other'" class="md:col-span-2">
-              <label class="block text-sm font-semibold text-gray-700 mb-2">ระบุสายงาน <span class="text-red-500">*</span></label>
-              <input 
-                type="text" 
-                v-model="form.customDepartment"
-                class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 transition-all focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300" 
-                placeholder="กรุณาระบุสายงาน"
-                required
-              />
             </div>
 
             <!-- กลุ่มงานที่สังกัด -->
@@ -149,11 +126,8 @@
                 class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 transition-all focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300"
                 required
               >
-                <option value="">เลือกกลุ่มงาน</option>
-                <option value="operation">หน่วยงานเดินเครื่อง (Operation)</option>
-                <option value="maintenance">หน่วยงานบำรุงรักษา (Maintenance)</option>
-                <option value="engineering">หน่วยงานวิศวกรรม (Engineering)</option>
-                <option value="supporting">หน่วยงานสนับสนุน (Supporting functions)</option>
+                <option value="" disabled class="text-gray-400">เลือกกลุ่มงาน</option>
+                <option v-for="wg in workGroups" :key="wg.id" :value="wg.name">{{ wg.name }}</option>
               </select>
             </div>
 
@@ -165,12 +139,8 @@
                 class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 transition-all focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300"
                 required
               >
-                <option value="">เลือกอายุงาน</option>
-                <option value="0-3">0-3 ปี</option>
-                <option value="3-5">3 ปีขึ้นไป แต่ไม่เกิน 5 ปี</option>
-                <option value="5-10">5 ปีขึ้นไป แต่ไม่เกิน 10 ปี</option>
-                <option value="10-15">10 ปีขึ้นไป แต่ไม่เกิน 15 ปี</option>
-                <option value="15+">มากกว่า 15 ปีขึ้นไป</option>
+                <option value="" disabled class="text-gray-400">เลือกอายุงาน</option>
+                <option v-for="exp in experiences" :key="exp.id" :value="exp.name">{{ exp.name }}</option>
               </select>
             </div>
           </div>
@@ -335,7 +305,7 @@
           <p class="text-sm text-gray-600">
             มีบัญชีอยู่แล้ว? 
             <a href="#" class="text-blue-600 hover:text-blue-800 font-semibold transition-colors"
-               @click="$router?.push('/') || (window.location.href = '/')">เข้าสู่ระบบ</a>
+               @click="redirectToLogin">เข้าสู่ระบบ</a>
           </p>
         </div>
       </form>
@@ -384,234 +354,207 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'CompanyRegistrationForm',
-  data() {
-    return {
-      form: {
-        fullName: '',
-        email: '',
-        phone: '',
-        company: '',
-        customCompany: '',
-        position: '',
-        department: '',
-        customDepartment: '',
-        workGroup: '',
-        workExperience: '',
-        password: '',
-        confirmPassword: '',
-        acceptTerms: false
-      },
-      showPassword: false,
-      showConfirmPassword: false,
-      isLoading: false,
-      emailError: '',
-      phoneError: '',
-      passwordChecks: {
-        length: false,
-        uppercase: false,
-        lowercase: false,
-        number: false
-      },
-      showSuccessModal: false
-    }
-  },
-  computed: {
-    passwordsMatch() {
-      return this.form.password === this.form.confirmPassword && this.form.confirmPassword.length > 0
-    },
-    passwordStrength() {
-      const checks = this.passwordChecks
-      const checkedCount = Object.values(checks).filter(Boolean).length
-      
-      if (checkedCount === 0) {
-        return { text: 'อ่อนแอมาก', color: 'text-red-600', bgColor: 'bg-red-500', width: '25%' }
-      } else if (checkedCount === 1) {
-        return { text: 'อ่อนแอ', color: 'text-red-500', bgColor: 'bg-red-400', width: '40%' }
-      } else if (checkedCount === 2) {
-        return { text: 'ปานกลาง', color: 'text-yellow-600', bgColor: 'bg-yellow-500', width: '60%' }
-      } else if (checkedCount === 3) {
-        return { text: 'ดี', color: 'text-blue-600', bgColor: 'bg-blue-500', width: '80%' }
-      } else {
-        return { text: 'แข็งแรง', color: 'text-green-600', bgColor: 'bg-green-500', width: '100%' }
-      }
-    },
-    isFormValid() {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      
-      return (
-        this.form.fullName.trim() !== '' &&
-        emailRegex.test(this.form.email) &&
-        this.form.phone.length === 10 &&
-        this.form.phone.startsWith('0') &&
-        this.form.company !== '' &&
-        this.form.position !== '' &&
-        this.form.department !== '' &&
-        (this.form.department !== 'other' || this.form.customDepartment.trim() !== '') &&
-        this.form.workGroup !== '' &&
-        this.form.workExperience !== '' &&
-        this.form.password.length >= 6 &&
-        this.passwordsMatch &&
-        this.form.acceptTerms &&
-        !this.emailError &&
-        !this.phoneError
-      )
-    }
-  },
-  methods: {
-    handleCompanyChange() {
-      // No longer needed since it's a text input
-    },
-    handleDepartmentChange() {
-      if (this.form.department !== 'other') {
-        this.form.customDepartment = ''
-      }
-    },
-    checkPasswordStrength() {
-      const password = this.form.password
-      
-      this.passwordChecks = {
-        length: password.length >= 6,
-        uppercase: /[A-Z]/.test(password),
-        lowercase: /[a-z]/.test(password),
-        number: /[0-9]/.test(password)
-      }
-    },
-    validatePhone() {
-      // Allow only numbers
-      this.form.phone = this.form.phone.replace(/[^0-9]/g, '')
-      
-      // Check phone number requirements
-      if (this.form.phone.length > 0) {
-        if (!this.form.phone.startsWith('0')) {
-          this.phoneError = 'เบอร์โทรศัพท์ต้องขึ้นต้นด้วย 0'
-        } else if (this.form.phone.length !== 10) {
-          this.phoneError = 'เบอร์โทรศัพท์ต้องมี 10 หลัก'
-        } else {
-          this.phoneError = ''
-        }
-      } else {
-        this.phoneError = ''
-      }
-    },
-    validateFullName() {
-      // Allow Thai characters, English letters, and spaces
-      this.form.fullName = this.form.fullName.replace(/[^ก-๙a-zA-Z\s]/g, '')
-    },
-    validateEmail() {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      if (this.form.email && !emailRegex.test(this.form.email)) {
-        this.emailError = 'กรุณากรอกอีเมลที่ถูกต้อง'
-      } else {
-        this.emailError = ''
-      }
-    },
-    resetForm() {
-      this.form = {
-        fullName: '',
-        email: '',
-        phone: '',
-        company: '',
-        customCompany: '',
-        position: '',
-        department: '',
-        customDepartment: '',
-        workGroup: '',
-        workExperience: '',
-        password: '',
-        confirmPassword: '',
-        acceptTerms: false
-      }
-      
-      // Reset all validation states
-      this.emailError = ''
-      this.phoneError = ''
-      this.passwordChecks = {
-        length: false,
-        uppercase: false,
-        lowercase: false,
-        number: false
-      }
-      
-      this.showSuccessModal = false
-    },
-    redirectToLogin() {
-      // Use Vue Router if available, otherwise fallback to window location
-      if (this.$router) {
-        this.$router.push('/')
-      } else {
-        window.location.href = '/'
-      }
-    },
-    async submitForm() {
-      if (!this.isFormValid) {
-        alert('กรุณากรอกข้อมูลให้ครบถ้วนและถูกต้อง')
-        return
-      }
+<script setup>
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import axios from 'axios';
 
-      this.isLoading = true
+const router = useRouter();
 
-      try {
-        // สร้างข้อมูลสำหรับบันทึก
-        const registrationData = {
-          fullName: this.form.fullName,
-          email: this.form.email,
-          phone: this.form.phone,
-          company: this.form.company,
-          position: this.form.position,
-          department: this.form.department === 'other' ? this.form.customDepartment : this.form.department,
-          workGroup: this.form.workGroup,
-          workExperience: this.form.workExperience,
-          registrationDate: new Date().toLocaleString('th-TH', {
-            timeZone: 'Asia/Bangkok',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-          })
-        }
+const form = ref({
+  fullName: '',
+  email: '',
+  phone: '',
+  company: '',
+  position: '',
+  department: '',
+  workGroup: '',
+  workExperience: '',
+  password: '',
+  confirmPassword: '',
+  acceptTerms: false
+});
 
-        // จำลองการส่งข้อมูลไปยัง API
-        await this.simulateApiCall(registrationData)
+const positions = ref([]);
+const departments = ref([]);
+const workGroups = ref([]);
+const experiences = ref([]);
 
-        // แสดง Modal สำเร็จ
-        this.showSuccessModal = true
+const showPassword = ref(false);
+const showConfirmPassword = ref(false);
+const isLoading = ref(false);
+const emailError = ref('');
+const phoneError = ref('');
+const showSuccessModal = ref(false);
 
-      } catch (error) {
-        console.error('เกิดข้อผิดพลาดในการลงทะเบียน:', error)
-        alert('เกิดข้อผิดพลาดในการลงทะเบียน กรุณาลองใหม่อีกครั้ง')
-      } finally {
-        this.isLoading = false
-      }
-    },
+const passwordChecks = ref({
+  length: false,
+  uppercase: false,
+  lowercase: false,
+  number: false
+});
 
-    async simulateApiCall(data) {
-      // จำลองการเรียก API (ใช้เวลา 2 วินาที)
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          console.log('ข้อมูลการลงทะเบียน:', data)
-          
-          // บันทึกข้อมูลลงใน memory (ไม่ใช้ localStorage)
-          if (typeof window !== 'undefined') {
-            // จำลองการบันทึกข้อมูลในหน่วยความจำ
-            window.registeredUsers = window.registeredUsers || []
-            window.registeredUsers.push({
-              ...data,
-              id: Date.now(),
-              createdAt: new Date().toISOString()
-            })
-            console.log('Users in memory:', window.registeredUsers)
-          }
-          
-          resolve()
-        }, 2000)
-      })
-    }
+const API_URL = 'http://localhost:5000/api';
+
+const fetchData = async () => {
+  try {
+    const [posRes, depRes, wgRes, expRes] = await Promise.all([
+      axios.get(`${API_URL}/positions`),
+      axios.get(`${API_URL}/departments`),
+      axios.get(`${API_URL}/workgroups`),
+      axios.get(`${API_URL}/experiences`)
+    ]);
+    positions.value = posRes.data;
+    departments.value = depRes.data;
+    workGroups.value = wgRes.data;
+    experiences.value = expRes.data;
+  } catch (error) {
+    console.error("Could not fetch data:", error);
   }
-}
+};
+
+onMounted(fetchData);
+
+const passwordsMatch = computed(() => {
+  return form.value.password === form.value.confirmPassword && form.value.confirmPassword.length > 0;
+});
+
+const passwordStrength = computed(() => {
+  const checkedCount = Object.values(passwordChecks.value).filter(Boolean).length;
+  if (checkedCount <= 1) return { text: 'อ่อนแอ', color: 'text-red-500', bgColor: 'bg-red-400', width: '25%' };
+  if (checkedCount === 2) return { text: 'ปานกลาง', color: 'text-yellow-600', bgColor: 'bg-yellow-500', width: '60%' };
+  if (checkedCount === 3) return { text: 'ดี', color: 'text-blue-600', bgColor: 'bg-blue-500', width: '80%' };
+  return { text: 'แข็งแรง', color: 'text-green-600', bgColor: 'bg-green-500', width: '100%' };
+});
+
+const isFormValid = computed(() => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return (
+    form.value.fullName.trim() !== '' &&
+    emailRegex.test(form.value.email) &&
+    form.value.phone.length === 10 &&
+    form.value.phone.startsWith('0') &&
+    form.value.company !== '' &&
+    form.value.position !== '' &&
+    form.value.department !== '' &&
+    form.value.workGroup !== '' &&
+    form.value.workExperience !== '' &&
+    form.value.password.length >= 6 &&
+    passwordsMatch.value &&
+    form.value.acceptTerms &&
+    !emailError.value &&
+    !phoneError.value
+  );
+});
+
+const checkPasswordStrength = () => {
+  const password = form.value.password;
+  passwordChecks.value = {
+    length: password.length >= 6,
+    uppercase: /[A-Z]/.test(password),
+    lowercase: /[a-z]/.test(password),
+    number: /[0-9]/.test(password)
+  };
+};
+
+const validatePhone = () => {
+  form.value.phone = form.value.phone.replace(/[^0-9]/g, '');
+  if (form.value.phone.length > 0) {
+    if (!form.value.phone.startsWith('0')) {
+      phoneError.value = 'เบอร์โทรศัพท์ต้องขึ้นต้นด้วย 0';
+    } else if (form.value.phone.length !== 10) {
+      phoneError.value = 'เบอร์โทรศัพท์ต้องมี 10 หลัก';
+    } else {
+      phoneError.value = '';
+    }
+  } else {
+    phoneError.value = '';
+  }
+};
+
+const validateFullName = () => {
+  form.value.fullName = form.value.fullName.replace(/[^ก-๙a-zA-Z\s]/g, '');
+};
+
+const validateEmail = () => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (form.value.email && !emailRegex.test(form.value.email)) {
+    emailError.value = 'กรุณากรอกอีเมลที่ถูกต้อง';
+  } else {
+    emailError.value = '';
+  }
+};
+
+const resetForm = () => {
+  form.value = {
+    fullName: '',
+    email: '',
+    phone: '',
+    company: '',
+    position: '',
+    department: '',
+    workGroup: '',
+    workExperience: '',
+    password: '',
+    confirmPassword: '',
+    acceptTerms: false
+  };
+  emailError.value = '';
+  phoneError.value = '';
+  passwordChecks.value = { length: false, uppercase: false, lowercase: false, number: false };
+  showSuccessModal.value = false;
+};
+
+const redirectToLogin = () => {
+  router.push('/');
+};
+
+const submitForm = async () => {
+  if (!isFormValid.value) {
+    alert('กรุณากรอกข้อมูลให้ครบถ้วนและถูกต้อง');
+    return;
+  }
+  isLoading.value = true;
+  try {
+    const registrationData = {
+      fullName: form.value.fullName,
+      email: form.value.email,
+      phone: form.value.phone,
+      company: form.value.company,
+      position: form.value.position,
+      department: form.value.department,
+      workGroup: form.value.workGroup,
+      workExperience: form.value.workExperience,
+      registrationDate: new Date().toLocaleString('th-TH', {
+        timeZone: 'Asia/Bangkok',
+        year: 'numeric', month: 'long', day: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      })
+    };
+    
+    await simulateApiCall(registrationData);
+    showSuccessModal.value = true;
+  } catch (error) {
+    console.error('เกิดข้อผิดพลาดในการลงทะเบียน:', error);
+    alert('เกิดข้อผิดพลาดในการลงทะเบียน กรุณาลองใหม่อีกครั้ง');
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const simulateApiCall = (data) => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      console.log('ข้อมูลการลงทะเบียน:', data);
+      if (typeof window !== 'undefined') {
+        window.registeredUsers = window.registeredUsers || [];
+        window.registeredUsers.push({ ...data, id: Date.now(), createdAt: new Date().toISOString() });
+        console.log('Users in memory:', window.registeredUsers);
+      }
+      resolve();
+    }, 2000);
+  });
+};
 </script>
 
 <style scoped>

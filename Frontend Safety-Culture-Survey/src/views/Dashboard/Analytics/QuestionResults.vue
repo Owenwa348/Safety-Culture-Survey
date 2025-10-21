@@ -1,5 +1,3 @@
-<!-- QuestionResults.vue -->
-
 <script setup>
 import { ref, computed } from "vue";
 import StackedBar from "../Showgraph/StackedBar.vue";
@@ -286,14 +284,18 @@ const stackedBarV2CompareData = computed(() => {
           <h2 class="text-lg font-bold text-gray-800">{{ getGroupLabel() }}</h2>
           <p class="text-sm text-gray-600 mt-1">Verte Group (Security + Smart Solution)</p>
         </div>
-        <div class="w-full" style="height: 600px;">
+        <div class="w-full" style="height: 450px;">
           <StackedBar 
             v-if="!isCompareMode" 
-            :chart-data="stackedBarCombinedData" 
+            :chart-data="stackedBarCombinedData"
+            :bar-percentage="0.5"
+            :category-percentage="0.6"
           />
           <StackedBar 
             v-else 
-            :chart-data="stackedBarCombinedCompareData" 
+            :chart-data="stackedBarCombinedCompareData"
+            :bar-percentage="0.5"
+            :category-percentage="0.6"
           />
         </div>
       </div>
@@ -304,14 +306,18 @@ const stackedBarV2CompareData = computed(() => {
           <h2 class="text-lg font-bold text-gray-800">{{ getGroupLabel() }}</h2>
           <p class="text-sm text-gray-600 mt-1">Verte Security</p>
         </div>
-        <div class="w-full" style="height: 600px;">
+        <div class="w-full" style="height: 450px;">
           <StackedBar 
             v-if="!isCompareMode" 
-            :chart-data="stackedBarV1Data" 
+            :chart-data="stackedBarV1Data"
+            :bar-percentage="0.5"
+            :category-percentage="0.6"
           />
           <StackedBar 
             v-else 
-            :chart-data="stackedBarV1CompareData" 
+            :chart-data="stackedBarV1CompareData"
+            :bar-percentage="0.5"
+            :category-percentage="0.6"
           />
         </div>
       </div>
@@ -322,14 +328,18 @@ const stackedBarV2CompareData = computed(() => {
           <h2 class="text-lg font-bold text-gray-800">{{ getGroupLabel() }}</h2>
           <p class="text-sm text-gray-600 mt-1">Verte Smart Solution</p>
         </div>
-        <div class="w-full" style="height: 600px;">
+        <div class="w-full" style="height: 450px;">
           <StackedBar 
             v-if="!isCompareMode" 
-            :chart-data="stackedBarV2Data" 
+            :chart-data="stackedBarV2Data"
+            :bar-percentage="0.5"
+            :category-percentage="0.6"
           />
           <StackedBar 
             v-else 
-            :chart-data="stackedBarV2CompareData" 
+            :chart-data="stackedBarV2CompareData"
+            :bar-percentage="0.5"
+            :category-percentage="0.6"
           />
         </div>
       </div>

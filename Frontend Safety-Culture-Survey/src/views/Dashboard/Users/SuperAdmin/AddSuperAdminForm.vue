@@ -90,27 +90,26 @@
 
 <script setup>
 import { ref } from 'vue';
+import axios from 'axios';
 
 // Define emits
 const emit = defineEmits(['admin-added']);
 
 // Reactive data
 const adminForms = ref([
-  {
-    email: '',
-    role: 'SuperAdmin'
-  }
+  { email: '' }
 ]);
 
 const error = ref('');
 const successMessage = ref('');
+const isLoading = ref(false);
+
+// API base URL
+const API_URL = 'http://localhost:5000/api/super-admins';
 
 // Add new admin form
 function addAdmin() {
-  adminForms.value.push({
-    email: '',
-    role: 'SuperAdmin'
-  });
+  adminForms.value.push({ email: '' });
 }
 
 // Remove admin form
@@ -122,72 +121,85 @@ function removeAdmin(index) {
 
 // Clear all forms
 function clearForm() {
-  adminForms.value = [{
-    email: '',
-    role: 'SuperAdmin'
-  }];
+  adminForms.value = [{ email: '' }];
   error.value = '';
   successMessage.value = '';
 }
 
 // Submit form
-function submitForm() {
+async function submitForm() {
   error.value = '';
   successMessage.value = '';
-  
-  console.log('Submit form called with:', adminForms.value);
-  
-  // Validate all forms
-  const invalidForms = adminForms.value.filter(admin => !admin.email);
-  
-  if (invalidForms.length > 0) {
+  isLoading.value = true;
+
+  // 1. Validate all forms for empty emails
+  if (adminForms.value.some(admin => !admin.email.trim())) {
     error.value = 'กรุณากรอกอีเมลให้ครบถ้วน';
+    isLoading.value = false;
     return;
   }
-  
-  // ตรวจสอบอีเมลซ้ำ
+
+  // 2. Check for duplicate emails in the form
   const emailSet = new Set();
-  const duplicateEmails = [];
-  
-  adminForms.value.forEach(admin => {
-    if (emailSet.has(admin.email.toLowerCase())) {
-      duplicateEmails.push(admin.email);
-    } else {
-      emailSet.add(admin.email.toLowerCase());
-    }
-  });
-  
+  const duplicateEmails = adminForms.value
+    .map(admin => admin.email.toLowerCase().trim())
+    .filter(email => {
+      if (emailSet.has(email)) return true;
+      emailSet.add(email);
+      return false;
+    });
+
   if (duplicateEmails.length > 0) {
-    error.value = `พบอีเมลซ้ำ: ${duplicateEmails.join(', ')}`;
+    error.value = `พบอีเมลซ้ำในฟอร์ม: ${[...new Set(duplicateEmails)].join(', ')}`;
+    isLoading.value = false;
     return;
   }
-  
-  // สร้าง array ของ SuperAdmin ใหม่
-  const newAdmins = adminForms.value.map((admin, index) => ({
-    id: Date.now() + index, // สร้าง ID ชั่วคราว
-    name: null, // ยังไม่ยืนยันตัวตน
-    email: admin.email.trim(),
-    role: 'SuperAdmin',
-    active: false,
-    is_verified: false, // ยังไม่ยืนยันตัวตน
-    created_at: new Date().toISOString(),
-    verified_at: null
-  }));
-  
-  console.log('New SuperAdmins created:', newAdmins);
-  
-  // แสดงข้อความสำเร็จ
-  successMessage.value = `เพิ่ม Super Admin สำเร็จ ${adminForms.value.length} คน`;
-  
-  // ส่งข้อมูลใหม่ไปยัง parent component
-  emit('admin-added', newAdmins);
-  
-  // ล้างฟอร์ม
-  clearForm();
-  
-  // ซ่อนข้อความสำเร็จหลัง 3 วินาที
-  setTimeout(() => {
-    successMessage.value = '';
-  }, 3000);
+
+  // 3. Create API requests
+  const requests = adminForms.value.map(admin => 
+    axios.post(API_URL, { email: admin.email.trim() })
+  );
+
+  try {
+    const results = await Promise.allSettled(requests);
+    
+    const successfulAdds = [];
+    const failedAdds = [];
+
+    results.forEach((result, index) => {
+      const email = adminForms.value[index].email;
+      if (result.status === 'fulfilled') {
+        successfulAdds.push(email);
+      } else {
+        // Axios wraps the error response in result.reason.response
+        const errorMessage = result.reason.response?.data?.message || result.reason.message;
+        failedAdds.push({ email, reason: errorMessage });
+      }
+    });
+
+    let summaryMessage = '';
+    if (successfulAdds.length > 0) {
+      summaryMessage += `เพิ่ม Super Admin สำเร็จ ${successfulAdds.length} คน `;
+      successMessage.value = summaryMessage;
+      emit('admin-added'); // Notify parent to refresh
+      clearForm();
+    }
+
+    if (failedAdds.length > 0) {
+      const errorDetails = failedAdds.map(f => `${f.email} (${f.reason})`).join('; ');
+      error.value = `ล้มเหลว ${failedAdds.length} คน: ${errorDetails}`;
+    }
+
+  } catch (e) {
+    // This catch block might not be strictly necessary with allSettled but is good for unforeseen issues
+    error.value = 'เกิดข้อผิดพลาดที่ไม่คาดคิดขณะส่งข้อมูล';
+  } finally {
+    isLoading.value = false;
+    // Hide messages after 5 seconds
+    setTimeout(() => {
+      successMessage.value = '';
+      error.value = '';
+    }, 5000);
+  }
 }
 </script>

@@ -83,10 +83,11 @@ const formattedChartData = computed(() => {
         label: `คะแนน ${level} (ปัจจุบัน)`,
         data: currentData.scoreCounts.map(scores => scores[level]),
         backgroundColor: currentColors[level],
-        borderColor: 'rgba(255, 255, 255, 0.3)',
+        borderColor: 'rgba(255, 255, 255, 0.5)',
         borderWidth: 1,
         stack: 'current',
-        barThickness: 30,
+        barThickness: 22,
+        maxBarThickness: 24,
       })
     }
 
@@ -96,10 +97,11 @@ const formattedChartData = computed(() => {
         label: `คะแนน ${level} (อนาคต)`,
         data: futureData.scoreCounts.map(scores => scores[level]),
         backgroundColor: futureColors[level],
-        borderColor: 'rgba(255, 255, 255, 0.3)',
+        borderColor: 'rgba(255, 255, 255, 0.5)',
         borderWidth: 1,
         stack: 'future',
-        barThickness: 30,
+        barThickness: 22,
+        maxBarThickness: 24,
       })
     }
   } else {
@@ -111,9 +113,11 @@ const formattedChartData = computed(() => {
         label: `คะแนน ${level}`,
         data: singleData.scoreCounts.map(scores => scores[level]),
         backgroundColor: scoreColors[level],
-        borderColor: 'rgba(255, 255, 255, 0.3)',
+        borderColor: 'rgba(255, 255, 255, 0.5)',
         borderWidth: 1,
         stack: 'stack1',
+        barThickness: 28,
+        maxBarThickness: 32,
       })
     }
   }
@@ -137,33 +141,78 @@ const chartOptions = computed(() => ({
       position: 'top',
       align: 'start',
       labels: {
-        boxWidth: 12,
-        boxHeight: 12,
-        padding: 12,
+        boxWidth: 14,
+        boxHeight: 14,
+        padding: 15,
         font: {
-          size: 11,
-          family: 'inherit'
+          size: 12,
+          family: 'inherit',
+          weight: '500'
         },
-        color: '#374151',
+        color: '#1F2937',
         usePointStyle: false,
+        generateLabels: (chart) => {
+          const datasets = chart.data.datasets;
+          const labels = [];
+          
+          if (isCompareMode.value) {
+            // แสดงเฉพาะ Legend สำหรับคะแนน 1-5 ของแต่ละโหมด
+            for (let level = 1; level <= 5; level++) {
+              labels.push({
+                text: `คะแนน ${level}`,
+                fillStyle: currentColors[level],
+                strokeStyle: 'rgba(255, 255, 255, 0.5)',
+                lineWidth: 1,
+                hidden: false,
+                index: level - 1
+              });
+            }
+            
+            // เพิ่ม separator
+            labels.push({
+              text: '─────────',
+              fillStyle: 'transparent',
+              strokeStyle: 'transparent',
+              lineWidth: 0,
+              hidden: false,
+              fontColor: '#9CA3AF'
+            });
+            
+            labels.push({
+              text: '■ ปัจจุบัน (เข้ม)   ■ อนาคต (อ่อน)',
+              fillStyle: 'transparent',
+              strokeStyle: 'transparent',
+              lineWidth: 0,
+              hidden: false,
+              fontColor: '#6B7280'
+            });
+          }
+          
+          return labels;
+        }
       }
     },
     tooltip: {
-      backgroundColor: 'rgba(0, 0, 0, 0.85)',
-      titleColor: '#fff',
-      bodyColor: '#fff',
+      backgroundColor: 'rgba(17, 24, 39, 0.95)',
+      titleColor: '#F9FAFB',
+      bodyColor: '#F3F4F6',
       titleFont: {
-        size: 12,
-        weight: 'bold'
+        size: 13,
+        weight: 'bold',
+        family: 'inherit'
       },
       bodyFont: {
-        size: 11
+        size: 12,
+        family: 'inherit'
       },
-      padding: 10,
-      cornerRadius: 6,
+      padding: 12,
+      cornerRadius: 8,
       displayColors: true,
-      boxWidth: 10,
-      boxHeight: 10,
+      boxWidth: 12,
+      boxHeight: 12,
+      boxPadding: 4,
+      borderColor: 'rgba(255, 255, 255, 0.1)',
+      borderWidth: 1,
       callbacks: {
         title: (context) => {
           return context[0].label
@@ -175,16 +224,19 @@ const chartOptions = computed(() => ({
         },
         footer: (context) => {
           const total = context.reduce((sum, item) => sum + item.parsed.y, 0)
-          return total > 0 ? `รวมทั้งหมด: ${total} คน` : ''
+          return total > 0 ? `━━━━━━━━━━━\nรวมทั้งหมด: ${total} คน` : ''
         }
       }
     },
     datalabels: {
       color: (context) => {
+        const value = context.dataset.data[context.dataIndex];
+        if (value === 0) return 'transparent';
+        
         const datasetIndex = context.datasetIndex;
         // ถ้าเป็นโหมดเปรียบเทียบ และเป็น dataset ของอนาคต (index 5-9) ให้ใช้สีดำ
         if (isCompareMode.value && datasetIndex >= 5) {
-          return '#000000';
+          return '#1F2937';
         }
         // นอกนั้นใช้สีขาว
         return '#ffffff';
@@ -192,25 +244,31 @@ const chartOptions = computed(() => ({
       anchor: 'center',
       align: 'center',
       font: {
-        weight: '900',
-        size: 12,
+        weight: 'bold',
+        size: 11,
         family: 'inherit'
       },
       formatter: (value) => value > 0 ? value : '',
       textShadowColor: (context) => {
+        const value = context.dataset.data[context.dataIndex];
+        if (value === 0) return 'transparent';
+        
         const datasetIndex = context.datasetIndex;
         // ถ้าเป็นโหมดเปรียบเทียบ และเป็น dataset ของอนาคต ไม่ใช้ shadow
         if (isCompareMode.value && datasetIndex >= 5) {
           return 'transparent';
         }
-        return 'rgba(0, 0, 0, 0.5)';
+        return 'rgba(0, 0, 0, 0.6)';
       },
       textShadowBlur: (context) => {
+        const value = context.dataset.data[context.dataIndex];
+        if (value === 0) return 0;
+        
         const datasetIndex = context.datasetIndex;
         if (isCompareMode.value && datasetIndex >= 5) {
           return 0;
         }
-        return 3;
+        return 2;
       }
     }
   },
@@ -223,32 +281,38 @@ const chartOptions = computed(() => ({
       ticks: {
         font: {
           size: 10,
-          family: 'inherit'
+          family: 'inherit',
+          weight: '500'
         },
-        color: '#6B7280',
+        color: '#4B5563',
         maxRotation: 45,
         minRotation: 45,
-        autoSkip: false
+        autoSkip: false,
+        padding: 8
       },
       border: {
         display: true,
-        color: '#E5E7EB'
+        color: '#D1D5DB',
+        width: 1
       }
     },
     y: {
       stacked: true,
       beginAtZero: true,
       grid: {
-        color: '#F3F4F6',
-        drawBorder: false
+        color: 'rgba(229, 231, 235, 0.8)',
+        drawBorder: false,
+        lineWidth: 1
       },
       ticks: {
         font: {
           size: 11,
-          family: 'inherit'
+          family: 'inherit',
+          weight: '500'
         },
-        color: '#6B7280',
+        color: '#4B5563',
         precision: 0,
+        padding: 8,
         callback: (value) => `${value}`
       },
       border: {
@@ -258,13 +322,21 @@ const chartOptions = computed(() => ({
         display: true,
         text: 'จำนวนผู้ตอบ (คน)',
         font: {
-          size: 12,
+          size: 13,
           weight: 'bold',
           family: 'inherit'
         },
-        color: '#374151',
-        padding: { top: 0, bottom: 10 }
+        color: '#1F2937',
+        padding: { top: 0, bottom: 12 }
       }
+    }
+  },
+  layout: {
+    padding: {
+      left: 10,
+      right: 10,
+      top: 10,
+      bottom: 10
     }
   }
 }))

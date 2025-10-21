@@ -16,23 +16,18 @@ router.post('/upload', upload.single('file'), async (req, res) => {
 
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(req.file.buffer);
-
     const worksheet = workbook.worksheets[0];
-    
-    // ตรวจสอบ header
+
+    // อ่าน header เพื่อตรวจสอบคอลัมน์
     const headerRow = worksheet.getRow(1);
     const headers = [];
-    headerRow.eachCell((cell, colNumber) => {
+    headerRow.eachCell((cell) => {
       headers.push(cell.value?.toString().trim().toLowerCase() || '');
     });
 
-    // ตรวจสอบว่ามีคอลัมน์ที่จำเป็นหรือไม่
-    const hasEmail = headers.some(h => 
-      h.includes('email') || h === 'อีเมล' || h === 'email_user'
-    );
-    const hasCompany = headers.some(h => 
-      h.includes('company') || h === 'บริษัท' || h === 'company_user'
-    );
+    const hasEmail = headers.some(h => h.includes('email') || h === 'อีเมล' || h === 'email_user');
+    const hasCompany = headers.some(h => h.includes('company') || h === 'บริษัท' || h === 'company_user');
+    const hasDepartment = headers.some(h => h.includes('department') || h === 'ส่วนงาน' || h === 'department_user');
 
     if (!hasEmail || !hasCompany) {
       return res.status(400).json({ 
@@ -45,18 +40,17 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     let invalidRows = [];
 
     worksheet.eachRow((row, rowNumber) => {
-      if (rowNumber === 1) return; // ข้าม header
-      
+      if (rowNumber === 1) return;
+
       const email = row.getCell(1).value?.toString().trim();
       const company = row.getCell(2).value?.toString().trim();
+      const department = row.getCell(3)?.value?.toString().trim() || null; // ✅ อ่านส่วนงาน
 
-      // ตรวจสอบว่าข้อมูลครบถ้วน
       if (!email || !company) {
         invalidRows.push(rowNumber);
         return;
       }
 
-      // ตรวจสอบรูปแบบ email
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
         invalidRows.push(rowNumber);
@@ -65,11 +59,11 @@ router.post('/upload', upload.single('file'), async (req, res) => {
 
       rows.push({ 
         email_user: email, 
-        company_user: company 
+        company_user: company,
+        department_user: department
       });
     });
 
-    // ถ้าไม่มีข้อมูลที่ถูกต้อง
     if (rows.length === 0) {
       return res.status(400).json({ 
         message: 'ไม่พบข้อมูลที่ถูกต้องในไฟล์',
@@ -82,84 +76,61 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     let insertedCount = 0;
     let updatedCount = 0;
 
-    // ตรวจสอบว่ามีข้อมูลอยู่แล้วหรือไม่
-    const existingEmails = await prisma.user_excel.findMany({
+    const existing = await prisma.user_excel.findMany({
       where: {
-        email_user: {
-          in: rows.map(r => r.email_user)
-        }
+        email_user: { in: rows.map(r => r.email_user) }
       },
-      select: { email_user: true, company_user: true }
+      select: { email_user: true, company_user: true, department_user: true }
     });
 
-    const existingEmailMap = new Map(
-      existingEmails.map(e => [e.email_user, e.company_user])
-    );
+    const existingMap = new Map(existing.map(e => [e.email_user, { company_user: e.company_user, department_user: e.department_user }]));
 
-    // ถ้าข้อมูลซ้ำทั้งหมดและไม่มีการเปลี่ยนแปลง
-    const allExist = rows.every(row => existingEmailMap.has(row.email_user));
-    const noChanges = rows.every(row => 
-      existingEmailMap.get(row.email_user) === row.company_user
-    );
+    const allExist = rows.every(r => existingMap.has(r.email_user));
+    const noChanges = rows.every(r => {
+      const ex = existingMap.get(r.email_user);
+      return ex && ex.company_user === r.company_user && ex.department_user === r.department_user;
+    });
 
     if (allExist && noChanges) {
       return res.status(409).json({ 
         message: 'มีข้อมูลในฐานข้อมูลแล้ว',
-        details: {
-          total: rows.length,
-          existing: rows.length
-        }
+        details: { total: rows.length, existing: rows.length }
       });
     }
 
-    // บันทึกข้อมูล
     for (const row of rows) {
       try {
         const result = await prisma.user_excel.upsert({
           where: { email_user: row.email_user },
-          update: { company_user: row.company_user },
+          update: { company_user: row.company_user, department_user: row.department_user },
           create: row,
         });
 
-        // ตรวจสอบว่าเป็นการ insert หรือ update
-        const wasExisting = existingEmailMap.has(row.email_user);
-        const wasUpdated = wasExisting && 
-          existingEmailMap.get(row.email_user) !== row.company_user;
+        const existed = existingMap.has(row.email_user);
+        const updated = existed && (
+          existingMap.get(row.email_user).company_user !== row.company_user ||
+          existingMap.get(row.email_user).department_user !== row.department_user
+        );
 
-        if (!wasExisting) {
-          insertedCount++;
-        } else if (wasUpdated) {
-          updatedCount++;
-        }
-      } catch (error) {
-        console.error(`Error processing ${row.email_user}:`, error);
+        if (!existed) insertedCount++;
+        else if (updated) updatedCount++;
+      } catch (err) {
+        console.error(`Error saving ${row.email_user}:`, err);
       }
     }
 
-    // สร้างข้อความตอบกลับ
     let message = '';
-    if (insertedCount > 0) {
-      message += `เพิ่มข้อมูลใหม่ ${insertedCount} รายการ`;
-    }
-    if (updatedCount > 0) {
-      message += (message ? ', ' : '') + `อัปเดต ${updatedCount} รายการ`;
-    }
+    if (insertedCount > 0) message += `เพิ่มข้อมูลใหม่ ${insertedCount} รายการ`;
+    if (updatedCount > 0) message += (message ? ', ' : '') + `อัปเดต ${updatedCount} รายการ`;
 
-    res.json({ 
+    res.json({
       message: message || 'ดำเนินการเสร็จสิ้น',
-      details: {
-        total: rows.length,
-        inserted: insertedCount,
-        updated: updatedCount
-      }
+      details: { total: rows.length, inserted: insertedCount, updated: updatedCount }
     });
 
   } catch (error) {
     console.error('Upload error:', error);
-    res.status(500).json({ 
-      message: 'เกิดข้อผิดพลาดในการประมวลผลไฟล์', 
-      error: error.message 
-    });
+    res.status(500).json({ message: 'เกิดข้อผิดพลาดในการประมวลผลไฟล์', error: error.message });
   }
 });
 
