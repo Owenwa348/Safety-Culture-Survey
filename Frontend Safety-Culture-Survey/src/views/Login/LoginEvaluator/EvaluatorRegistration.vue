@@ -22,6 +22,21 @@
           </h3>
           
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- คำนำหน้า -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">คำนำหน้า <span class="text-red-500">*</span></label>
+              <select 
+                v-model="form.title"
+                class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 transition-all focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300"
+                required
+              >
+                <option value="" disabled class="text-gray-400">เลือกคำนำหน้า</option>
+                <option value="นาย">นาย</option>
+                <option value="นาง">นาง</option>
+                <option value="นางสาว">นางสาว</option>
+              </select>
+            </div>
+
             <!-- ชื่อ - นามสกุล -->
             <div>
               <label class="block text-sm font-semibold text-gray-700 mb-2">ชื่อ - นามสกุล <span class="text-red-500">*</span></label>
@@ -41,7 +56,8 @@
               <input 
                 type="text" 
                 v-model="form.company"
-                class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 transition-all focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300" 
+                disabled
+                class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 transition-all bg-gray-100 cursor-not-allowed" 
                 placeholder="กรุณากรอกชื่อบริษัท/องค์กร"
                 required
               />
@@ -53,8 +69,8 @@
               <input 
                 type="email" 
                 v-model="form.email"
-                @blur="validateEmail"
-                class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 transition-all focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300" 
+                disabled
+                class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 transition-all bg-gray-100 cursor-not-allowed" 
                 placeholder="example@company.com"
                 required
               />
@@ -129,6 +145,19 @@
                 <option value="" disabled class="text-gray-400">เลือกกลุ่มงาน</option>
                 <option v-for="wg in workGroups" :key="wg.id" :value="wg.name">{{ wg.name }}</option>
               </select>
+            </div>
+
+            <!-- ส่วนงาน -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">ส่วนงาน <span class="text-red-500">*</span></label>
+              <input 
+                type="text" 
+                v-model="form.section"
+                disabled
+                class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 transition-all bg-gray-100 cursor-not-allowed" 
+                placeholder="ส่วนงาน"
+                required
+              />
             </div>
 
             <!-- อายุงาน -->
@@ -263,21 +292,6 @@
           </div>
         </div>
 
-        <!-- Terms and Conditions -->
-        <div class="flex items-start space-x-3 p-4 bg-blue-50 rounded-xl border border-blue-200">
-          <input 
-            type="checkbox" 
-            id="terms" 
-            v-model="form.acceptTerms"
-            class="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-            required
-          />
-          <label for="terms" class="text-sm text-gray-700">
-            ฉันได้อ่านและยอมรับ <a href="#" class="text-blue-600 hover:text-blue-800 underline font-medium">ข้อกำหนดการใช้งาน</a> และ 
-            <a href="#" class="text-blue-600 hover:text-blue-800 underline font-medium">นโยบายความเป็นส่วนตัว</a> ของระบบ
-          </label>
-        </div>
-
         <button 
           type="submit" 
           :disabled="!isFormValid || isLoading"
@@ -340,12 +354,6 @@
               >
                 ไปหน้าเข้าสู่ระบบ
               </button>
-              <button 
-                @click="resetForm"
-                class="w-full border-2 border-gray-300 text-gray-700 py-3 px-6 rounded-xl font-semibold transition-all duration-200 hover:bg-gray-50 hover:border-gray-400"
-              >
-                ลงทะเบียนบัญชีใหม่อีก
-              </button>
             </div>
           </div>
         </div>
@@ -356,12 +364,14 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import axios from 'axios';
 
 const router = useRouter();
+const route = useRoute();
 
 const form = ref({
+  title: '', // Added title field
   fullName: '',
   email: '',
   phone: '',
@@ -369,10 +379,11 @@ const form = ref({
   position: '',
   department: '',
   workGroup: '',
+  section: '', // Added section field
   workExperience: '',
   password: '',
-  confirmPassword: '',
-  acceptTerms: false
+  confirmPassword: ''
+  // Removed acceptTerms field
 });
 
 const positions = ref([]);
@@ -394,15 +405,30 @@ const passwordChecks = ref({
   number: false
 });
 
-const API_URL = 'http://localhost:5000/api';
+// Pre-fill form with data from query parameters
+onMounted(async () => {
+  // Pre-fill email and company from query parameters
+  if (route.query.email) {
+    form.value.email = route.query.email;
+  }
+  if (route.query.company) {
+    form.value.company = route.query.company;
+  }
+  if (route.query.division) {
+    form.value.section = route.query.division;
+  }
+  
+  // Fetch dropdown data
+  await fetchData();
+});
 
 const fetchData = async () => {
   try {
     const [posRes, depRes, wgRes, expRes] = await Promise.all([
-      axios.get(`${API_URL}/positions`),
-      axios.get(`${API_URL}/departments`),
-      axios.get(`${API_URL}/workgroups`),
-      axios.get(`${API_URL}/experiences`)
+      axios.get('http://localhost:5000/api/positions'),
+      axios.get('http://localhost:5000/api/departments'),
+      axios.get('http://localhost:5000/api/workgroups'),
+      axios.get('http://localhost:5000/api/experiences')
     ]);
     positions.value = posRes.data;
     departments.value = depRes.data;
@@ -412,8 +438,6 @@ const fetchData = async () => {
     console.error("Could not fetch data:", error);
   }
 };
-
-onMounted(fetchData);
 
 const passwordsMatch = computed(() => {
   return form.value.password === form.value.confirmPassword && form.value.confirmPassword.length > 0;
@@ -430,6 +454,7 @@ const passwordStrength = computed(() => {
 const isFormValid = computed(() => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return (
+    form.value.title !== '' && // Added title validation
     form.value.fullName.trim() !== '' &&
     emailRegex.test(form.value.email) &&
     form.value.phone.length === 10 &&
@@ -438,12 +463,13 @@ const isFormValid = computed(() => {
     form.value.position !== '' &&
     form.value.department !== '' &&
     form.value.workGroup !== '' &&
+    form.value.section !== '' && // Added section validation
     form.value.workExperience !== '' &&
     form.value.password.length >= 6 &&
     passwordsMatch.value &&
-    form.value.acceptTerms &&
     !emailError.value &&
     !phoneError.value
+    // Removed acceptTerms validation
   );
 });
 
@@ -476,28 +502,21 @@ const validateFullName = () => {
   form.value.fullName = form.value.fullName.replace(/[^ก-๙a-zA-Z\s]/g, '');
 };
 
-const validateEmail = () => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (form.value.email && !emailRegex.test(form.value.email)) {
-    emailError.value = 'กรุณากรอกอีเมลที่ถูกต้อง';
-  } else {
-    emailError.value = '';
-  }
-};
-
 const resetForm = () => {
   form.value = {
+    title: '',
     fullName: '',
-    email: '',
+    email: form.value.email, // Keep email from query params
     phone: '',
-    company: '',
+    company: form.value.company, // Keep company from query params
     position: '',
     department: '',
     workGroup: '',
+    section: form.value.section, // Keep section from query params
     workExperience: '',
     password: '',
-    confirmPassword: '',
-    acceptTerms: false
+    confirmPassword: ''
+    // Removed acceptTerms field
   };
   emailError.value = '';
   phoneError.value = '';
@@ -516,8 +535,12 @@ const submitForm = async () => {
   }
   isLoading.value = true;
   try {
+    // Combine title and full name
+    const fullNameWithTitle = `${form.value.title}${form.value.fullName}`;
+    
     const registrationData = {
-      fullName: form.value.fullName,
+      title: form.value.title, // Added title to registration data
+      fullName: form.value.fullName, // Send only the full name without the title
       email: form.value.email,
       phone: form.value.phone,
       company: form.value.company,
@@ -525,35 +548,35 @@ const submitForm = async () => {
       department: form.value.department,
       workGroup: form.value.workGroup,
       workExperience: form.value.workExperience,
-      registrationDate: new Date().toLocaleString('th-TH', {
-        timeZone: 'Asia/Bangkok',
-        year: 'numeric', month: 'long', day: 'numeric',
-        hour: '2-digit', minute: '2-digit'
-      })
+      password: form.value.password // In a real app, this should be hashed
     };
     
-    await simulateApiCall(registrationData);
-    showSuccessModal.value = true;
+    // Call backend API to register user
+    const response = await axios.post('http://localhost:5000/api/users/register', registrationData);
+    
+    if (response.status === 201) {
+      showSuccessModal.value = true;
+      // Try to refresh the user list in the dashboard
+      try {
+        if (typeof window.refreshUsersList === 'function') {
+          window.refreshUsersList();
+        }
+      } catch (e) {
+        console.log('Could not refresh user list:', e);
+      }
+    } else {
+      throw new Error('Registration failed');
+    }
   } catch (error) {
     console.error('เกิดข้อผิดพลาดในการลงทะเบียน:', error);
-    alert('เกิดข้อผิดพลาดในการลงทะเบียน กรุณาลองใหม่อีกครั้ง');
+    if (error.response && error.response.data && error.response.data.message) {
+      alert(`เกิดข้อผิดพลาด: ${error.response.data.message}`);
+    } else {
+      alert('เกิดข้อผิดพลาดในการลงทะเบียน กรุณาลองใหม่อีกครั้ง');
+    }
   } finally {
     isLoading.value = false;
   }
-};
-
-const simulateApiCall = (data) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      console.log('ข้อมูลการลงทะเบียน:', data);
-      if (typeof window !== 'undefined') {
-        window.registeredUsers = window.registeredUsers || [];
-        window.registeredUsers.push({ ...data, id: Date.now(), createdAt: new Date().toISOString() });
-        console.log('Users in memory:', window.registeredUsers);
-      }
-      resolve();
-    }, 2000);
-  });
 };
 </script>
 

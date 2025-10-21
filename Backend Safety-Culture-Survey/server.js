@@ -15,6 +15,9 @@ const workGroupRoutes = require('./routes/Workgroup/workGroupRoutes');
 const categoryRoutes = require('./routes/Category/categoryRoutes');
 const questionRoutes = require('./routes/Questions/questionRoutes');
 
+// เพิ่ม user routes
+const userRoutes = require('./routes/User/userRoutes');
+
 const app = express();
 
 // CORS - ต้องอยู่ก่อน routes
@@ -40,6 +43,9 @@ app.use('/api/workgroups', workGroupRoutes)
 app.use('/api/categories', categoryRoutes)
 app.use('/api/questions', questionRoutes)
 app.use('/api/super-admins', superAdminRoutes);
+
+// User routes
+app.use('/api/users', userRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

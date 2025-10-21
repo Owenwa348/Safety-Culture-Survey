@@ -177,6 +177,7 @@
 <script setup>
 import { ref } from "vue";
 import { useRouter } from "vue-router";
+import axios from "axios";
 
 const router = useRouter();
 
@@ -188,15 +189,16 @@ const successMessage = ref("");
 const showPassword = ref(false);
 const showPasswordField = ref(false);
 
+// Store user data for registration
+const userData = ref({
+  email: "",
+  company: "",
+  division: ""
+});
+
 const togglePassword = () => {
   showPassword.value = !showPassword.value;
 };
-
-// Mock database - จำลองข้อมูลผู้ใช้ในระบบ
-const mockEmailDatabase = [
-  { email: "user01@email.com", isRegistered: true, password: "123456" },
-  { email: "user02@email.com", isRegistered: false }, // มีอีเมลในระบบแต่ยังไม่ลงทะเบียน
-];
 
 // ฟังก์ชันล้าง error
 const clearError = (field) => {
@@ -253,10 +255,15 @@ const validatePassword = () => {
 
 // ฟังก์ชันตรวจสอบอีเมลในระบบ
 const checkEmailInSystem = async (emailToCheck) => {
-  // จำลองการเรียก API
-  await new Promise(resolve => setTimeout(resolve, 500));
-  
-  return mockEmailDatabase.find(user => user.email === emailToCheck);
+  try {
+    const response = await axios.post('http://localhost:5000/api/users/check-email', { email: emailToCheck });
+    return response.data;
+  } catch (error) {
+    if (error.response && error.response.status === 404) {
+      throw new Error("Email not found in system");
+    }
+    throw error;
+  }
 };
 
 // ฟังก์ชัน reset form
@@ -283,39 +290,45 @@ const handleEmailCheck = async () => {
   if (!validateEmail()) return;
 
   try {
-    const userInSystem = await checkEmailInSystem(email.value);
+    const result = await checkEmailInSystem(email.value);
+    
+    userData.value = {
+      email: result.email,
+      company: result.company,
+      division: result.division
+    };
 
-    if (!userInSystem) {
-      // ไม่มีอีเมลในระบบ
-      errorMessage.value = "ไม่พบอีเมลนี้ในระบบ กรุณาตรวจสอบอีเมลหรือลงทะเบียนใหม่";
-      return;
-    }
-
-    if (!userInSystem.isRegistered) {
-      // มีอีเมลในระบบแต่ยังไม่ได้ลงทะเบียน
+    if (result.isRegistered) {
+      // User is already registered - show password field
+      successMessage.value = "พบอีเมลในระบบ กรุณากรอกรหัสผ่าน";
+      showPasswordField.value = true;
+      
+      // Clear success message after 2 seconds
+      setTimeout(() => {
+        successMessage.value = "";
+      }, 2000);
+    } else {
+      // User exists in excel but not registered
       successMessage.value = "พบอีเมลในระบบแต่ยังไม่ได้ลงทะเบียน กำลังนำท่านไปยังหน้าลงทะเบียน...";
       
-      // รอสักครู่แล้วไปหน้าลงทะเบียน
+      // Wait and then go to registration page
       setTimeout(() => {
         router.push({
           path: "/evaluator-registration",
-          query: { email: email.value }
+          query: { 
+            email: email.value,
+            company: result.company,
+            division: result.division
+          }
         });
       }, 2000);
-      return;
     }
-
-    // มีอีเมลและลงทะเบียนแล้ว - แสดงช่องรหัสผ่าน
-    successMessage.value = "พบอีเมลในระบบ กรุณากรอกรหัสผ่าน";
-    showPasswordField.value = true;
-    
-    // Clear success message หลังจาก 2 วินาที
-    setTimeout(() => {
-      successMessage.value = "";
-    }, 2000);
-
   } catch (error) {
-    errorMessage.value = "เกิดข้อผิดพลาดในการตรวจสอบอีเมล กรุณาลองใหม่อีกครั้ง";
+    if (error.message === "Email not found in system") {
+      errorMessage.value = "ไม่พบอีเมลนี้ในระบบ กรุณาตรวจสอบอีเมลหรือลงทะเบียนใหม่";
+    } else {
+      errorMessage.value = "เกิดข้อผิดพลาดในการตรวจสอบอีเมล กรุณาลองใหม่อีกครั้ง";
+    }
   }
 };
 
@@ -325,26 +338,11 @@ const handleLogin = () => {
   
   if (!validatePassword()) return;
 
-  // ค้นหาผู้ใช้ในระบบ
-  const user = mockEmailDatabase.find(
-    (u) => u.email === email.value && u.password === password.value
-  );
-
-  if (!user) {
-    errorMessage.value = "รหัสผ่านไม่ถูกต้อง กรุณาตรวจสอบและลองใหม่อีกครั้ง";
-    return;
-  }
-
-  // เข้าสู่ระบบสำเร็จ
+  // In a real application, you would validate the password against the backend
+  // For now, we'll simulate a successful login
   successMessage.value = "เข้าสู่ระบบสำเร็จ กำลังนำท่านเข้าสู่ระบบ...";
   
   setTimeout(() => {
-    // Use auth composable to login
-    // login('evaluator', {
-    //   email: user.email,
-    //   role: "evaluator"
-    // });
-
     router.push("/home");
   }, 1500);
 };

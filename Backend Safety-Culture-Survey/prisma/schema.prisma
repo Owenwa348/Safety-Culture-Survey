@@ -18,6 +18,26 @@ model user_excel {
   createdAt      DateTime @default(now())
 }
 
+// Add the User model for registered users
+model User {
+  id                Int      @id @default(autoincrement())
+  title_user        String?  // Added title field
+  name_user         String
+  email_user        String   @unique
+  company_user      String
+  phone_user        String?
+  password_user     String?
+  position_user     String?
+  job_field_user    String?  // This corresponds to department in the frontend
+  work_group_user   String?  // This corresponds to workGroup in the frontend
+  years_of_service  String?  // This corresponds to workExperience in the frontend
+  section_user      String?  // This corresponds to division in the frontend
+  role_user         String   @default("user")
+  status            String   @default("registered") // registered, active, inactive
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
 model AdminList {
   id          Int       @id @default(autoincrement())
   email       String    @unique
@@ -110,22 +130,3 @@ model SuperAdminList {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
-
-
-
-// model User {
-//   id                Int      @id @default(autoincrement())
-//   title_user        String
-//   name_user         String
-//   email_user        String   @unique
-//   company_user      String
-//   phone_user        String   @unique
-//   password_user     String
-//   position_user     String
-//   job_field_user    String
-//   work_group_user   String
-//   years_of_service  String
-//   role_user         String   @default("user")
-//   createdAt         DateTime @default(now())
-//   updatedAt         DateTime @updatedAt
-// }
