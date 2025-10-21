@@ -6,4 +6,4 @@
 */
 -- AlterTable
 ALTER TABLE `user_excel` DROP COLUMN `updatedAt`,
-    ADD COLUMN `department_user` VARCHAR(191) NULL;
+    ADD COLUMN `division_user` VARCHAR(191) NULL;

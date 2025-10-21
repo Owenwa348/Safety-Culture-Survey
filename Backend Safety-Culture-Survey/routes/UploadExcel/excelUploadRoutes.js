@@ -27,7 +27,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
 
     const hasEmail = headers.some(h => h.includes('email') || h === 'อีเมล' || h === 'email_user');
     const hasCompany = headers.some(h => h.includes('company') || h === 'บริษัท' || h === 'company_user');
-    const hasDepartment = headers.some(h => h.includes('department') || h === 'ส่วนงาน' || h === 'department_user');
+    const hasDivision = headers.some(h => h.includes('division') || h === 'ส่วนงาน' || h === 'division_user');
 
     if (!hasEmail || !hasCompany) {
       return res.status(400).json({ 
@@ -44,7 +44,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
 
       const email = row.getCell(1).value?.toString().trim();
       const company = row.getCell(2).value?.toString().trim();
-      const department = row.getCell(3)?.value?.toString().trim() || null; // ✅ อ่านส่วนงาน
+      const division = row.getCell(3)?.value?.toString().trim() || null; // ✅ อ่านส่วนงาน (division)
 
       if (!email || !company) {
         invalidRows.push(rowNumber);
@@ -60,7 +60,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       rows.push({ 
         email_user: email, 
         company_user: company,
-        department_user: department
+        division_user: division
       });
     });
 
@@ -68,7 +68,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       return res.status(400).json({ 
         message: 'ไม่พบข้อมูลที่ถูกต้องในไฟล์',
         invalidRows: invalidRows.length > 0 
-          ? `แถวที่มีปัญหา: ${invalidRows.join(', ')}` 
+          ? `แถวที่มีปัญหา: ${invalidRows.join(', ')}`
           : 'ไฟล์ว่างเปล่าหรือไม่มีข้อมูล'
       });
     }
@@ -80,15 +80,17 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       where: {
         email_user: { in: rows.map(r => r.email_user) }
       },
-      select: { email_user: true, company_user: true, department_user: true }
+      select: { email_user: true, company_user: true, division_user: true }
     });
 
-    const existingMap = new Map(existing.map(e => [e.email_user, { company_user: e.company_user, department_user: e.department_user }]));
+    const existingMap = new Map(
+      existing.map(e => [e.email_user, { company_user: e.company_user, division_user: e.division_user }])
+    );
 
     const allExist = rows.every(r => existingMap.has(r.email_user));
     const noChanges = rows.every(r => {
       const ex = existingMap.get(r.email_user);
-      return ex && ex.company_user === r.company_user && ex.department_user === r.department_user;
+      return ex && ex.company_user === r.company_user && ex.division_user === r.division_user;
     });
 
     if (allExist && noChanges) {
@@ -102,14 +104,14 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       try {
         const result = await prisma.user_excel.upsert({
           where: { email_user: row.email_user },
-          update: { company_user: row.company_user, department_user: row.department_user },
+          update: { company_user: row.company_user, division_user: row.division_user },
           create: row,
         });
 
         const existed = existingMap.has(row.email_user);
         const updated = existed && (
           existingMap.get(row.email_user).company_user !== row.company_user ||
-          existingMap.get(row.email_user).department_user !== row.department_user
+          existingMap.get(row.email_user).division_user !== row.division_user
         );
 
         if (!existed) insertedCount++;
@@ -130,7 +132,10 @@ router.post('/upload', upload.single('file'), async (req, res) => {
 
   } catch (error) {
     console.error('Upload error:', error);
-    res.status(500).json({ message: 'เกิดข้อผิดพลาดในการประมวลผลไฟล์', error: error.message });
+    res.status(500).json({ 
+      message: 'เกิดข้อผิดพลาดในการประมวลผลไฟล์', 
+      error: error.message 
+    });
   }
 });
 

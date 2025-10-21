@@ -14,7 +14,7 @@ model user_excel {
   id             Int      @id @default(autoincrement())
   email_user     String   @unique
   company_user   String
-  department_user String? 
+  division_user  String?
   createdAt      DateTime @default(now())
 }
 
