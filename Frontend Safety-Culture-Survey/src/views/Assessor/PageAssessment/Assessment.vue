@@ -13,12 +13,9 @@
                 หมวดหมู่ : {{ questions[currentIndex].category }}
               </span>
             </div>
-            <h1 class="text-2xl lg:text-3xl font-bold text-gray-800 mb-2">
-              {{ questions[currentIndex].th }}
+            <h1 class="text-2xl lg:text-3xl font-bold text-gray-800">
+              {{ questions[currentIndex].question }}
             </h1>
-            <p class="text-lg text-gray-600">
-              {{ questions[currentIndex].en }}
-            </p>
           </div>
           <div class="flex flex-col items-end gap-2">
             <div class="text-sm font-medium text-gray-500">
@@ -155,11 +152,8 @@
               <!-- Level Description -->
               <div class="col-span-7">
                 <div class="bg-gray-50 p-4 rounded-lg border">
-                  <p class="text-gray-800 font-medium mb-2">
-                    {{ level.th }}
-                  </p>
-                  <p class="text-gray-600 italic text-sm">
-                    {{ level.en }}
+                  <p class="text-gray-800 font-medium">
+                    {{ level }}
                   </p>
                 </div>
               </div>
@@ -310,10 +304,6 @@ function goBackOrHome() {
   } else {
     currentIndex.value--;
   }
-}
-
-function goBack() {
-  if (currentIndex.value > 0) currentIndex.value--;
 }
 
 async function goNext() {

@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const registerRoutes = require('./routes'); // Import the central route registrar
 
+
 const app = express();
 
 // CORS - ต้องอยู่ก่อน routes
