@@ -1,3 +1,4 @@
+<!-- UserList.vue -->
 <template>
   <div class="flex min-h-screen bg-gray-50">
     <!-- Sidebar -->
