@@ -8,6 +8,7 @@ const workGroupRoutes = require('./Workgroup/workGroupRoutes');
 const categoryRoutes = require('./Category/categoryRoutes');
 const questionRoutes = require('./Questions/questionRoutes');
 const userRoutes = require('./User/userRoutes');
+const assessmentRoutes = require('./Assessment/assessmentRoutes');
 
 
 const registerRoutes = (app) => {
@@ -21,6 +22,7 @@ const registerRoutes = (app) => {
   app.use('/api/questions', questionRoutes);
   app.use('/api/super-admins', superAdminRoutes);
   app.use('/api/users', userRoutes);
+  app.use('/api/assessment', assessmentRoutes);
 };
 
 module.exports = registerRoutes;
