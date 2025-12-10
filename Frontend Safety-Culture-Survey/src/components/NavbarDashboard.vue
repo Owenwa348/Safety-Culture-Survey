@@ -165,6 +165,15 @@
               <span>จัดการรายชื่อ SuperAdmin</span>
             </router-link>
             <router-link 
+              to="/data-management"
+              class="block text-sm px-4 py-2.5 rounded-lg transition-all duration-200"
+              :class="isActivePath('/data-management')
+                ? 'bg-[#7AE2CF]/20 text-[#7AE2CF] font-semibold border-l-2 border-[#7AE2CF] pl-3'
+                : 'text-gray-400 hover:text-white hover:bg-white/10'"
+            >
+              <span>การจัดการคำถาม</span>
+            </router-link>
+            <router-link 
               to="/excelupload"
               class="block text-sm px-4 py-2.5 rounded-lg transition-all duration-200"
               :class="isActivePath('/excelupload')
@@ -290,7 +299,7 @@ const isAssessmentActive = computed(() => {
 })
 
 const isSettingsActive = computed(() => {
-  return ['/settings', '/admin', '/superadmin', '/excelupload'].includes(route.path)
+  return ['/settings', '/admin', '/superadmin', '/excelupload', '/data-management'].includes(route.path)
 })
 
 const userInitials = computed(() => {
