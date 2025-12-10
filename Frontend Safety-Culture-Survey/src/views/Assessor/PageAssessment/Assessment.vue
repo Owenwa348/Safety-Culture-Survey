@@ -258,6 +258,7 @@ const router = useRouter();
 const currentIndex = ref(0);
 const showValidationAlert = ref(false);
 const categories = ref([]);
+const userId = ref(null); // We'll get the user ID from localStorage
 
 const questions = computed(() => {
   return categories.value.flatMap(category => 
@@ -269,6 +270,17 @@ const answers = ref([]);
 
 onMounted(async () => {
   try {
+    // Get user ID from localStorage
+    const userData = JSON.parse(localStorage.getItem('user') || '{}');
+    if (userData && userData.id) {
+      userId.value = userData.id;
+    } else {
+      // If no user data in localStorage, redirect to login
+      alert("กรุณาเข้าสู่ระบบก่อนทำแบบประเมิน");
+      router.push('/');
+      return;
+    }
+    
     const response = await axios.get('http://localhost:5000/api/assessment');
     categories.value = response.data;
     answers.value = questions.value.map(() => ({
@@ -289,7 +301,49 @@ function goBackOrHome() {
   }
 }
 
-function goNext() {
+async function submitAnswer(questionId, currentScore, expectedScore, comment) {
+  try {
+    const response = await axios.post('http://localhost:5000/api/assessment/answer', {
+      userId: userId.value,
+      questionId: questionId,
+      currentScore: currentScore,
+      expectedScore: expectedScore,
+      comment: comment
+    });
+    
+    console.log('Answer submitted:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error submitting answer:', error);
+    throw error;
+  }
+}
+
+async function submitAllAnswers() {
+  try {
+    // Submit all answers
+    for (let i = 0; i < questions.value.length; i++) {
+      const answer = answers.value[i];
+      const question = questions.value[i];
+      
+      if (answer.level !== null && answer.futureLevel !== null) {
+        await submitAnswer(
+          question.id,
+          answer.level,
+          answer.futureLevel,
+          answer.comment
+        );
+      }
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error submitting all answers:', error);
+    throw error;
+  }
+}
+
+async function goNext() {
   // Validate the current question before doing anything
   const currentAnswer = answers.value[currentIndex.value];
   if (currentAnswer.level === null || currentAnswer.futureLevel === null || currentAnswer.comment.trim() === '') {
@@ -297,6 +351,19 @@ function goNext() {
     setTimeout(() => {
       showValidationAlert.value = false;
     }, 3000);
+    return;
+  }
+
+  // Submit the current answer to the backend
+  try {
+    await submitAnswer(
+      questions.value[currentIndex.value].id,
+      currentAnswer.level,
+      currentAnswer.futureLevel,
+      currentAnswer.comment
+    );
+  } catch (error) {
+    alert("เกิดข้อผิดพลาดในการบันทึกคำตอบ กรุณาลองใหม่อีกครั้ง");
     return;
   }
 
@@ -311,15 +378,21 @@ function goNext() {
     );
 
     if (allAnswered) {
-      // If all are answered, submit.
-      alert("ส่งแบบประเมินเรียบร้อยแล้ว ขอบคุณค่ะ");
-      console.log("คำตอบทั้งหมด:", answers.value);
-      router.push('/home');
-      // Here you would typically send the data to the server
-      // e.g., axios.post('/api/submit-assessment', { answers: answers.value });
+      // Submit all answers
+      try {
+        await submitAllAnswers();
+        alert("ส่งแบบประเมินเรียบร้อยแล้ว ขอบคุณค่ะ");
+        console.log("คำตอบทั้งหมด:", answers.value);
+        // Refresh the user list to show updated status
+        if (window.refreshUsersList) {
+          window.refreshUsersList();
+        }
+        router.push('/home');
+      } catch (error) {
+        alert("เกิดข้อผิดพลาดในการบันทึกคำตอบทั้งหมด กรุณาลองใหม่อีกครั้ง");
+      }
     } else {
-      // If not all are answered, show an alert and navigate to the first unanswered question.
-       
+      // If not all are answered, navigate to the first unanswered question.
       const firstUnansweredIndex = answers.value.findIndex(
         ans => ans.level === null || ans.futureLevel === null || ans.comment.trim() === ''
       );

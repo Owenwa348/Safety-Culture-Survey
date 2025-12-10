@@ -34,8 +34,10 @@ model User {
   section_user      String?  // This corresponds to division in the frontend
   role_user         String   @default("user")
   status            String   @default("registered") // registered, active, inactive
+  surveyStatus      String   @default("not_started") // not_started, in_progress, done
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+  surveyAnswers     SurveyAnswer[]
 }
 
 model AdminList {
@@ -107,6 +109,7 @@ model Question {
   order       Int        @default(0)  // Add order field for question sequencing
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+  surveyAnswers SurveyAnswer[]
 }
 
 model Option {
@@ -129,4 +132,20 @@ model SuperAdminList {
   lastLogin DateTime?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+}
+
+// Model for storing survey answers
+model SurveyAnswer {
+  id                 Int      @id @default(autoincrement())
+  userId             Int
+  user               User     @relation(fields: [userId], references: [id])
+  questionId         Int
+  question           Question @relation(fields: [questionId], references: [id])
+  currentScore       Int      // 1-5 score for current situation
+  expectedScore      Int      // 1-5 score for expected future situation
+  comment            String?  // Additional comments
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@unique([userId, questionId]) // Ensure one answer per user per question
 }

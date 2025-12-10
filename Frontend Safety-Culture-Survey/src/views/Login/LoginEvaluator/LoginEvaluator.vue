@@ -220,24 +220,6 @@ const isValidEmail = (email) => {
   return emailRegex.test(email);
 };
 
-// ฟังก์ชันตรวจสอบอีเมล
-const validateEmail = () => {
-  errors.value = {};
-  clearMessages();
-
-  if (!email.value) {
-    errors.value.email = "กรุณากรอกอีเมล";
-    return false;
-  }
-  
-  if (!isValidEmail(email.value)) {
-    errors.value.email = "รูปแบบอีเมลไม่ถูกต้อง";
-    return false;
-  }
-
-  return true;
-};
-
 // ฟังก์ชันตรวจสอบรหัสผ่าน
 const validatePassword = () => {
   if (!password.value) {
@@ -281,13 +263,24 @@ const handleSubmit = async () => {
     await handleEmailCheck();
   } else {
     // ขั้นตอนที่สอง: เข้าสู่ระบบด้วยรหัสผ่าน
-    handleLogin();
+    await handleLogin();
   }
 };
 
 // ฟังก์ชันตรวจสอบอีเมล
 const handleEmailCheck = async () => {
-  if (!validateEmail()) return;
+  errors.value = {};
+  clearMessages();
+
+  if (!email.value) {
+    errors.value.email = "กรุณากรอกอีเมล";
+    return;
+  }
+  
+  if (!isValidEmail(email.value)) {
+    errors.value.email = "รูปแบบอีเมลไม่ถูกต้อง";
+    return;
+  }
 
   try {
     const result = await checkEmailInSystem(email.value);
@@ -333,17 +326,37 @@ const handleEmailCheck = async () => {
 };
 
 // ฟังก์ชันเข้าสู่ระบบ
-const handleLogin = () => {
+const handleLogin = async () => {
   clearMessages();
   
   if (!validatePassword()) return;
 
-  // In a real application, you would validate the password against the backend
-  // For now, we'll simulate a successful login
-  successMessage.value = "เข้าสู่ระบบสำเร็จ กำลังนำท่านเข้าสู่ระบบ...";
-  
-  setTimeout(() => {
-    router.push("/home");
-  }, 1500);
+  try {
+    // Authenticate with the backend
+    const response = await axios.post('http://localhost:5000/api/users/login', {
+      email: email.value,
+      password: password.value
+    });
+    
+    if (response.data && response.data.user) {
+      // Store user data in localStorage
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+      
+      successMessage.value = "เข้าสู่ระบบสำเร็จ กำลังนำท่านเข้าสู่ระบบ...";
+      
+      setTimeout(() => {
+        router.push("/home");
+      }, 1500);
+    } else {
+      errorMessage.value = "ไม่พบบัญชีผู้ใช้ กรุณาลงทะเบียนก่อน";
+    }
+  } catch (error) {
+    console.error('Login error:', error);
+    if (error.response && error.response.data && error.response.data.message) {
+      errorMessage.value = error.response.data.message;
+    } else {
+      errorMessage.value = "เกิดข้อผิดพลาดในการเข้าสู่ระบบ กรุณาลองใหม่อีกครั้ง";
+    }
+  }
 };
 </script>

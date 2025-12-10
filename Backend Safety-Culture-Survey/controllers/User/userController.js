@@ -33,6 +33,7 @@ const getAllUsers = async (req, res) => {
         years_of_service: true,
         section_user: true,
         status: true,
+        surveyStatus: true, // Include survey status
         createdAt: true
       }
     });
@@ -59,7 +60,9 @@ const getAllUsers = async (req, res) => {
           work_group_user: registeredUser.work_group_user || "-",
           years_of_service: registeredUser.years_of_service || "-",
           section_user: registeredUser.section_user || "-",
-          status: registeredUser.status === "active" ? "registered" : registeredUser.status,
+          status: registeredUser.surveyStatus === 'done' ? 'done' : 
+                  registeredUser.surveyStatus === 'in_progress' ? 'in_progress' : 
+                  registeredUser.status === "active" ? "registered" : registeredUser.status,
           createdAt: registeredUser.createdAt,
           sortOrder: excelUser.id // Use Excel record ID for sorting to maintain original position
         };
@@ -120,7 +123,9 @@ const checkUserEmail = async (req, res) => {
         email: email,
         isRegistered: true,
         company: excelUser.company_user,
-        division: excelUser.division_user || "-"
+        division: excelUser.division_user || "-",
+        surveyStatus: registeredUser.surveyStatus, // Include survey status
+        userId: registeredUser.id // Include user ID
       });
     }
 
@@ -191,7 +196,8 @@ const registerUser = async (req, res) => {
         years_of_service: workExperience,
         section_user: excelUser.division_user || "-", // Use division from excel as section
         password_user: password || null, // In a real app, this should be hashed
-        status: "active"
+        status: "active",
+        surveyStatus: "not_started" // Initialize survey status
       },
     });
 
@@ -209,7 +215,10 @@ const registerUser = async (req, res) => {
         work_group_user: newUser.work_group_user,
         years_of_service: newUser.years_of_service,
         section_user: newUser.section_user,
-        status: newUser.status
+        status: newUser.surveyStatus === 'done' ? 'done' : 
+                newUser.surveyStatus === 'in_progress' ? 'in_progress' : 
+                newUser.status,
+        surveyStatus: newUser.surveyStatus
       }
     });
   } catch (error) {
@@ -218,8 +227,57 @@ const registerUser = async (req, res) => {
   }
 };
 
+// Login user (for LoginEvaluator.vue)
+const loginUser = async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ message: 'Email and password are required.' });
+  }
+
+  try {
+    // Check if user exists
+    const user = await prisma.user.findUnique({
+      where: { email_user: email },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found. Please register first.' });
+    }
+
+    // In a real application, you would validate the password here
+    // For now, we'll just check if the user exists
+    
+    // Return user data without sensitive information
+    res.status(200).json({
+      message: 'Login successful.',
+      user: {
+        id: user.id,
+        title_user: user.title_user,
+        name_user: user.name_user,
+        email_user: user.email_user,
+        company_user: user.company_user,
+        phone_user: user.phone_user,
+        position_user: user.position_user,
+        job_field_user: user.job_field_user,
+        work_group_user: user.work_group_user,
+        years_of_service: user.years_of_service,
+        section_user: user.section_user,
+        status: user.surveyStatus === 'done' ? 'done' : 
+                user.surveyStatus === 'in_progress' ? 'in_progress' : 
+                user.status,
+        surveyStatus: user.surveyStatus
+      }
+    });
+  } catch (error) {
+    console.error('Login user error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 module.exports = {
   getAllUsers,
   checkUserEmail,
-  registerUser
+  registerUser,
+  loginUser // Export the new login function
 };
