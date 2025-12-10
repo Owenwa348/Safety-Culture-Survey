@@ -803,7 +803,3 @@ const moveQuestion = async (questionId, newCategoryId) => {
   }
 }
 </script>
-
-<style scoped>
-/* Minimal custom styles - most styling is done with Tailwind */
-</style>

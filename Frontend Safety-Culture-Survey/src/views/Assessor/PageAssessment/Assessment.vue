@@ -1,7 +1,8 @@
+<!-- Assessment.vue -->
 <template>
   <div class="min-h-screen bg-gray-100">
     <!-- Header Section -->
-    <div class="bg-white shadow border-b sticky top-0 z-10">
+    <div class="bg-white shadow border-b sticky top-0 z-10" v-if="questions.length > 0 && questions[currentIndex]">
       <div class="max-w-6xl mx-auto px-4 py-4">
         <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div class="flex-1">
@@ -10,15 +11,12 @@
                 {{ currentIndex + 1 }}
               </div>
               <span class="text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
-                หมวดหมู่ : {{ questions[currentIndex].category }}
+                หมวดหมู่ : {{ questions[currentIndex].categoryName }}
               </span>
             </div>
-            <h1 class="text-2xl lg:text-3xl font-bold text-gray-800 mb-2">
-              {{ questions[currentIndex].th }}
+            <h1 class="text-2xl lg:text-3xl font-bold text-gray-800">
+              {{ questions[currentIndex].text }}
             </h1>
-            <p class="text-lg text-gray-600">
-              {{ questions[currentIndex].en }}
-            </p>
           </div>
           <div class="flex flex-col items-end gap-2">
             <div class="text-sm font-medium text-gray-500">
@@ -87,10 +85,10 @@
         </div>
 
         <!-- Assessment Options -->
-        <form class="divide-y divide-gray-200">
+        <form class="divide-y divide-gray-200" v-if="questions.length > 0 && questions[currentIndex]">
           <div
-            v-for="(level, index) in questions[currentIndex].levels"
-            :key="index"
+            v-for="(option, index) in questions[currentIndex].options"
+            :key="option.id"
             class="px-6 py-4 hover:bg-gray-50 transition-colors duration-200"
             :class="{
               'bg-blue-50 border-l-4 border-blue-500': 
@@ -155,11 +153,8 @@
               <!-- Level Description -->
               <div class="col-span-7">
                 <div class="bg-gray-50 p-4 rounded-lg border">
-                  <p class="text-gray-800 font-medium mb-2">
-                    {{ level.th }}
-                  </p>
-                  <p class="text-gray-600 italic text-sm">
-                    {{ level.en }}
+                  <p class="text-gray-800 font-medium">
+                    {{ option.text }}
                   </p>
                 </div>
               </div>
@@ -169,7 +164,7 @@
       </div>
 
       <!-- Comment Section -->
-      <div class="mt-6 bg-white rounded-lg shadow border overflow-hidden">
+      <div class="mt-6 bg-white rounded-lg shadow border overflow-hidden" v-if="questions.length > 0 && answers.length > 0">
         <div class="bg-red-50 px-6 py-4 border-b border-red-200">
           <div class="flex items-center gap-3">
             <div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
@@ -225,21 +220,16 @@
         </div>
 
         <button
-          class="flex items-center gap-2 px-6 py-3 rounded-lg shadow font-medium transition-colors duration-200 disabled:opacity-50"
+          class="flex items-center gap-2 px-6 py-3 rounded-lg shadow font-medium transition-colors duration-200"
           :class="currentIndex === questions.length - 1 
             ? 'bg-green-500 hover:bg-green-600 text-white' 
             : 'bg-blue-500 hover:bg-blue-600 text-white'"
           @click="goNext"
           type="button"
-          :disabled="loading"
         >
           <span>{{ currentIndex === questions.length - 1 ? "ส่งแบบประเมิน" : "ถัดไป" }}</span>
-          <svg v-if="!loading" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-          </svg>
-          <svg v-else class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
         </button>
       </div>
@@ -259,64 +249,102 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
-import { useRouter } from "vue-router";
-import { questions } from "./data/questions.js";
-import axios from "axios";
+import { ref, onMounted, computed } from "vue";
+import { useRouter } from 'vue-router';
+import axios from 'axios';
 
 const router = useRouter();
-const email = sessionStorage.getItem("userEmail") || "unknown@example.com";
 
 const currentIndex = ref(0);
-const loading = ref(false);
 const showValidationAlert = ref(false);
+const categories = ref([]);
+const userId = ref(null); // We'll get the user ID from localStorage
 
-const answers = ref(
-  questions.map(() => ({
-    level: null,
-    futureLevel: null,
-    comment: "",
-  }))
-);
+const questions = computed(() => {
+  return categories.value.flatMap(category => 
+    category.questions.map(question => ({...question, categoryName: category.name}))
+  );
+});
 
-// เช็คว่าเคยประเมินหรือยัง
+const answers = ref([]);
+
 onMounted(async () => {
-  const token = localStorage.getItem("access_token");
-  if (!token) {
-    alert("กรุณาเข้าสู่ระบบใหม่อีกครั้ง");
-    router.push("/login");
-    return;
-  }
-
   try {
-    const res = await axios.get(`/api/assessment/check/${email}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (res.data.hasSubmitted) {
-      alert("คุณได้ทำแบบประเมินไปแล้ว ไม่สามารถทำซ้ำได้");
-      router.push("/");
+    // Get user ID from localStorage
+    const userData = JSON.parse(localStorage.getItem('user') || '{}');
+    if (userData && userData.id) {
+      userId.value = userData.id;
+    } else {
+      // If no user data in localStorage, redirect to login
+      alert("กรุณาเข้าสู่ระบบก่อนทำแบบประเมิน");
+      router.push('/');
+      return;
     }
-  } catch (err) {
-    console.error("เกิดข้อผิดพลาดในการตรวจสอบสถานะ", err);
+    
+    const response = await axios.get('http://localhost:5000/api/assessment');
+    categories.value = response.data;
+    answers.value = questions.value.map(() => ({
+      level: null,
+      futureLevel: null,
+      comment: "",
+    }));
+  } catch (error) {
+    console.error('Error fetching assessment data:', error);
   }
 });
 
 function goBackOrHome() {
   if (currentIndex.value === 0) {
-    router.push("/home");
+    router.push('/home');
   } else {
     currentIndex.value--;
   }
 }
 
-function goBack() {
-  if (currentIndex.value > 0) currentIndex.value--;
+async function submitAnswer(questionId, currentScore, expectedScore, comment) {
+  try {
+    const response = await axios.post('http://localhost:5000/api/assessment/answer', {
+      userId: userId.value,
+      questionId: questionId,
+      currentScore: currentScore,
+      expectedScore: expectedScore,
+      comment: comment
+    });
+    
+    console.log('Answer submitted:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error submitting answer:', error);
+    throw error;
+  }
+}
+
+async function submitAllAnswers() {
+  try {
+    // Submit all answers
+    for (let i = 0; i < questions.value.length; i++) {
+      const answer = answers.value[i];
+      const question = questions.value[i];
+      
+      if (answer.level !== null && answer.futureLevel !== null) {
+        await submitAnswer(
+          question.id,
+          answer.level,
+          answer.futureLevel,
+          answer.comment
+        );
+      }
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error submitting all answers:', error);
+    throw error;
+  }
 }
 
 async function goNext() {
+  // Validate the current question before doing anything
   const currentAnswer = answers.value[currentIndex.value];
   if (currentAnswer.level === null || currentAnswer.futureLevel === null || currentAnswer.comment.trim() === '') {
     showValidationAlert.value = true;
@@ -326,37 +354,51 @@ async function goNext() {
     return;
   }
 
-  if (currentIndex.value < questions.length - 1) {
+  // Submit the current answer to the backend
+  try {
+    await submitAnswer(
+      questions.value[currentIndex.value].id,
+      currentAnswer.level,
+      currentAnswer.futureLevel,
+      currentAnswer.comment
+    );
+  } catch (error) {
+    alert("เกิดข้อผิดพลาดในการบันทึกคำตอบ กรุณาลองใหม่อีกครั้ง");
+    return;
+  }
+
+  // If it's not the last question, just go to the next one
+  if (currentIndex.value < questions.value.length - 1) {
     currentIndex.value++;
   } else {
-    const token = localStorage.getItem("access_token");
-    const currentScores = answers.value.map((a) => a.level);
-    const futureScores = answers.value.map((a) => a.futureLevel);
-    const comments = answers.value.map((a) => a.comment);
+    // It IS the last question, so this is a submission attempt.
+    // Now, check if ALL questions are answered.
+    const allAnswered = answers.value.every(
+      ans => ans.level !== null && ans.futureLevel !== null && ans.comment.trim() !== ''
+    );
 
-    loading.value = true;
-    try {
-      // ส่งคะแนนปัจจุบันพร้อม comment
-      await axios.post(
-        "/api/assessment/current",
-        { email, answers: currentScores, comments },
-        { headers: { Authorization: `Bearer ${token}` } }
+    if (allAnswered) {
+      // Submit all answers
+      try {
+        await submitAllAnswers();
+        alert("ส่งแบบประเมินเรียบร้อยแล้ว ขอบคุณค่ะ");
+        console.log("คำตอบทั้งหมด:", answers.value);
+        // Refresh the user list to show updated status
+        if (window.refreshUsersList) {
+          window.refreshUsersList();
+        }
+        router.push('/home');
+      } catch (error) {
+        alert("เกิดข้อผิดพลาดในการบันทึกคำตอบทั้งหมด กรุณาลองใหม่อีกครั้ง");
+      }
+    } else {
+      // If not all are answered, navigate to the first unanswered question.
+      const firstUnansweredIndex = answers.value.findIndex(
+        ans => ans.level === null || ans.futureLevel === null || ans.comment.trim() === ''
       );
-
-      // ส่งคะแนนอนาคต
-      await axios.post(
-        "/api/assessment/future",
-        { email, answers: futureScores },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      alert("ส่งแบบประเมินเรียบร้อยแล้ว ขอบคุณค่ะ");
-      router.push("/home");
-    } catch (error) {
-      console.error("ส่งข้อมูลล้มเหลว", error);
-      alert("เกิดข้อผิดพลาดในการส่งข้อมูล");
-    } finally {
-      loading.value = false;
+      if (firstUnansweredIndex !== -1) {
+        currentIndex.value = firstUnansweredIndex;
+      }
     }
   }
 }
