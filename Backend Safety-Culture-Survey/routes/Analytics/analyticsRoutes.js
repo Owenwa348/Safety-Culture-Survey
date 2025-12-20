@@ -4,7 +4,8 @@ const router = express.Router();
 const { 
   getAggregatedSurveyData,
   getDemographicAnalysis,
-  getTrendAnalysis
+  getTrendAnalysis,
+  getUserCompletionStatus
 } = require('../../controllers/Analytics/analyticsController');
 
 // Get aggregated data for graphs
@@ -15,5 +16,8 @@ router.get('/demographics', getDemographicAnalysis);
 
 // Get trend analysis
 router.get('/trends', getTrendAnalysis);
+
+// Get user completion status
+router.get('/completion-status', getUserCompletionStatus);
 
 module.exports = router;

@@ -137,8 +137,57 @@ const getTrendAnalysis = async (req, res) => {
   }
 };
 
+const getUserCompletionStatus = async (req, res) => {
+  try {
+    // 1. Get all potential users from the Excel list.
+    const potentialUsers = await prisma.user_excel.findMany({
+      select: {
+        email_user: true,
+        company_user: true,
+      }
+    });
+
+    // 2. Get all registered users and their status.
+    const registeredUsers = await prisma.user.findMany({
+      select: {
+        email_user: true,
+        surveyStatus: true, // not_started, in_progress, done
+      }
+    });
+
+    // 3. Create a map for quick lookup of registered users' status.
+    const registeredUserMap = new Map(
+      registeredUsers.map(u => [u.email_user, u.surveyStatus])
+    );
+
+    // 4. Determine the status for each potential user.
+    const usersWithStatus = potentialUsers.map(potentialUser => {
+      const surveyStatus = registeredUserMap.get(potentialUser.email_user);
+      
+      let finalStatus = 'not_registered'; // Default status
+      if (surveyStatus) {
+        finalStatus = surveyStatus; // Use status from User table if registered
+      }
+
+      return {
+        id: potentialUser.email_user, // Use email as a unique ID
+        name: potentialUser.email_user.split('@')[0], // Use part of email as name for now
+        area: potentialUser.company_user,
+        status: finalStatus, // 'done', 'in_progress', 'not_started', 'not_registered'
+      };
+    });
+
+    res.status(200).json(usersWithStatus);
+
+  } catch (error) {
+    console.error('Error fetching user completion status:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 module.exports = {
   getAggregatedSurveyData,
   getDemographicAnalysis,
-  getTrendAnalysis
+  getTrendAnalysis,
+  getUserCompletionStatus
 };
