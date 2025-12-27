@@ -185,9 +185,144 @@ const getUserCompletionStatus = async (req, res) => {
   }
 };
 
+// ดึงข้อมูลสำหรับกราฟแนวนอน (แยกตามคะแนน 1-5)
+const getSurveyDataForChart = async (req, res) => {
+  try {
+    const { questionId, companyId = 'combined', year = new Date().getFullYear() } = req.query;
+    
+    if (!questionId) {
+      return res.status(400).json({ error: 'questionId เป็นข้อมูลบังคับ' });
+    }
+
+    // ดึงข้อมูล question และ category
+    const question = await prisma.question.findUnique({
+      where: { id: parseInt(questionId) },
+      include: {
+        category: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      }
+    });
+
+    if (!question) {
+      return res.status(404).json({ error: 'ไม่พบคำถามนี้' });
+    }
+
+    // สร้าง where condition
+    const where = {
+      questionId: parseInt(questionId),
+      user: {}
+    };
+
+    // ถ้าไม่ใช่ combined ให้กรองตามบริษัท
+    if (companyId !== 'combined') {
+      where.user.company_user = companyId;
+    }
+
+    // กรองตามปี
+    const startOfYear = new Date(year, 0, 1);
+    const endOfYear = new Date(year, 11, 31, 23, 59, 59);
+    where.createdAt = {
+      gte: startOfYear,
+      lte: endOfYear
+    };
+
+    // ดึงข้อมูลทั้งหมดสำหรับคำถามนี้
+    const surveyAnswers = await prisma.surveyAnswer.findMany({
+      where,
+      select: {
+        currentScore: true,
+        expectedScore: true,
+        user: {
+          select: {
+            company_user: true
+          }
+        }
+      }
+    });
+
+    // นับจำนวนคำตอบแต่ละระดับ (1-5)
+    const current = [0, 0, 0, 0, 0]; // index 0-4 สำหรับคะแนน 1-5
+    const future = [0, 0, 0, 0, 0];
+
+    surveyAnswers.forEach(answer => {
+      if (answer.currentScore >= 1 && answer.currentScore <= 5) {
+        current[answer.currentScore - 1]++;
+      }
+      if (answer.expectedScore >= 1 && answer.expectedScore <= 5) {
+        future[answer.expectedScore - 1]++;
+      }
+    });
+
+    // ดึงรายชื่อบริษัทสำหรับใช้ในการแสดงผล
+    let companies = [];
+    if (companyId === 'combined') {
+      const distinctCompanies = await prisma.user.findMany({
+        distinct: ['company_user'],
+        select: {
+          company_user: true
+        }
+      });
+      companies = distinctCompanies.map(c => ({
+        id: c.company_user,
+        name: c.company_user
+      }));
+    } else {
+      companies = [{
+        id: companyId,
+        name: companyId
+      }];
+    }
+
+    res.status(200).json({
+      questionId: parseInt(questionId),
+      questionNumber: question.order || 0,
+      questionText: question.text,
+      category: question.category,
+      companyId,
+      companies,
+      current,
+      future,
+      totalResponses: surveyAnswers.length,
+      year
+    });
+
+  } catch (error) {
+    console.error('เกิดข้อผิดพลาดในการดึงข้อมูลกราฟ:', error);
+    res.status(500).json({ error: 'เซิร์ฟเวอร์ขัดข้อง', message: error.message });
+  }
+};
+
+// ดึงรายชื่อบริษัททั้งหมด
+const getCompanies = async (req, res) => {
+  try {
+    const companies = await prisma.user.findMany({
+      distinct: ['company_user'],
+      select: {
+        company_user: true
+      }
+    });
+
+    const result = companies.map(c => ({
+      id: c.company_user,
+      name: c.company_user
+    }));
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error('เกิดข้อผิดพลาดในการดึงรายชื่อบริษัท:', error);
+    res.status(500).json({ error: 'เซิร์ฟเวอร์ขัดข้อง' });
+  }
+};
+
 module.exports = {
   getAggregatedSurveyData,
   getDemographicAnalysis,
   getTrendAnalysis,
-  getUserCompletionStatus
+  getUserCompletionStatus,
+  getSurveyDataForChart,
+  getCompanies
 };

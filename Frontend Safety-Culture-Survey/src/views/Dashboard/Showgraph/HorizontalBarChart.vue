@@ -11,17 +11,36 @@
           การเปรียบเทียบผลการกระจายตัวของข้อมูลตามระดับแต่ละหมวดหมู่ระหว่างปัจจุบันและอนาคต
         </p>
         
+        <!-- Loading State -->
+        <div v-if="loading" class="text-center py-4">
+          <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+          <p class="mt-2 text-sm text-gray-600">กำลังโหลดข้อมูล...</p>
+        </div>
+
+        <!-- Error State -->
+        <div v-if="error" class="bg-red-50 border border-red-200 rounded-md p-4 mb-4">
+          <p class="text-sm text-red-800">{{ error }}</p>
+          <button 
+            @click="fetchData" 
+            class="mt-2 text-sm text-red-600 hover:text-red-800 underline"
+          >
+            ลองใหม่อีกครั้ง
+          </button>
+        </div>
+        
         <!-- Filters -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div v-if="!loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div class="flex flex-col gap-1.5">
             <label class="text-sm font-medium text-gray-700">บริษัท</label>
             <select 
               v-model="selectedCompany" 
-              class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-gray-900 focus:border-gray-900 bg-white transition-all select-custom"
+              @change="onCompanyChange"
+              class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-gray-900 focus:border-gray-900 bg-white transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml,%3csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20fill=%27none%27%20viewBox=%270%200%2020%2020%27%3e%3cpath%20stroke=%27%236b7280%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%20stroke-width=%271.5%27%20d=%27M6%208l4%204%204-4%27/%3e%3c/svg%3e')] bg-[length:1.25em_1.25em] bg-[right_0.5rem_center] bg-no-repeat pr-10 hover:border-gray-400"
             >
-              <option value="combined">Verte Group</option>
-              <option value="v1">Verte Smart Solution</option>
-              <option value="v2">Verte Security</option>
+              <option value="combined">บริษัททั้งหมด</option>
+              <option v-for="company in companies" :key="company.id" :value="company.id">
+                {{ company.name }}
+              </option>
             </select>
           </div>
 
@@ -30,10 +49,10 @@
             <select 
               v-model="selectedCategory" 
               @change="onCategoryChange"
-              class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-gray-900 focus:border-gray-900 bg-white transition-all select-custom"
+              class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-gray-900 focus:border-gray-900 bg-white transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml,%3csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20fill=%27none%27%20viewBox=%270%200%2020%2020%27%3e%3cpath%20stroke=%27%236b7280%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%20stroke-width=%271.5%27%20d=%27M6%208l4%204%204-4%27/%3e%3c/svg%3e')] bg-[length:1.25em_1.25em] bg-[right_0.5rem_center] bg-no-repeat pr-10 hover:border-gray-400"
             >
-              <option v-for="(label, index) in chartLabels" :key="index" :value="index">
-                {{ index + 1 }}. {{ label }}
+              <option v-for="(category, index) in categories" :key="category.id" :value="index">
+                {{ index + 1 }}. {{ category.name }}
               </option>
             </select>
           </div>
@@ -42,9 +61,10 @@
             <label class="text-sm font-medium text-gray-700">คำถาม</label>
             <select 
               v-model="selectedQuestion" 
-              class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-gray-900 focus:border-gray-900 bg-white transition-all select-custom"
+              @change="onQuestionChange"
+              class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-gray-900 focus:border-gray-900 bg-white transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml,%3csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20fill=%27none%27%20viewBox=%270%200%2020%2020%27%3e%3cpath%20stroke=%27%236b7280%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%20stroke-width=%271.5%27%20d=%27M6%208l4%204%204-4%27/%3e%3c/svg%3e')] bg-[length:1.25em_1.25em] bg-[right_0.5rem_center] bg-no-repeat pr-10 hover:border-gray-400"
             >
-              <option v-for="(question, index) in availableQuestions" :key="index" :value="question.id">
+              <option v-for="question in availableQuestions" :key="question.id" :value="question.id">
                 {{ question.number }} {{ question.text }}
               </option>
             </select>
@@ -54,7 +74,7 @@
             <label class="text-sm font-medium text-gray-700">แสดงข้อมูล</label>
             <select 
               v-model="selectedView" 
-              class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-gray-900 focus:border-gray-900 bg-white transition-all select-custom"
+              class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-gray-900 focus:border-gray-900 bg-white transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml,%3csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20fill=%27none%27%20viewBox=%270%200%2020%2020%27%3e%3cpath%20stroke=%27%236b7280%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%20stroke-width=%271.5%27%20d=%27M6%208l4%204%204-4%27/%3e%3c/svg%3e')] bg-[length:1.25em_1.25em] bg-[right_0.5rem_center] bg-no-repeat pr-10 hover:border-gray-400"
             >
               <option value="both">เปรียบเทียบ (ปัจจุบัน กับ อนาคต)</option>
               <option value="current">ปัจจุบัน</option>
@@ -65,10 +85,10 @@
       </div>
 
       <!-- Chart -->
-      <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div v-if="!loading && chartData" class="bg-white rounded-lg shadow-sm border border-gray-200">
         <div class="px-6 py-5 border-b border-gray-200">
           <h2 class="text-lg font-semibold text-gray-900 mb-1">
-            {{ selectedCategory + 1 }}. {{ chartLabels[selectedCategory] }}
+            {{ selectedCategory + 1 }}. {{ categories[selectedCategory]?.name }}
           </h2>
           <p class="text-sm text-gray-600 mb-3">
             {{ getCompanyName }} · การกระจายของคะแนนในแต่ละระดับ (1-5)
@@ -97,7 +117,7 @@
           <div class="relative">
             <div class="flex">
               <!-- Y-axis Labels -->
-              <div class="w-12 flex flex-col-reverse justify-between pt-2" style="height: 400px;">
+              <div class="w-12 flex flex-col-reverse justify-between pt-2 h-[400px]">
                 <div v-for="score in [1, 2, 3, 4, 5]" :key="score" 
                      class="text-right pr-3 text-sm font-medium text-gray-700 h-20 flex items-center justify-end">
                   {{ score }}
@@ -107,12 +127,12 @@
               <!-- Chart Area -->
               <div class="flex-1 relative">
                 <!-- Grid Lines -->
-                <div class="absolute inset-0 flex flex-col-reverse justify-between pt-2" style="height: 400px;">
+                <div class="absolute inset-0 flex flex-col-reverse justify-between pt-2 h-[400px]">
                   <div v-for="i in 6" :key="i" class="border-t border-gray-200"></div>
                 </div>
 
                 <!-- Bars -->
-                <div class="relative flex flex-col-reverse justify-between pt-2" style="height: 400px;">
+                <div class="relative flex flex-col-reverse justify-between pt-2 h-[400px]">
                   <div v-for="score in [1, 2, 3, 4, 5]" :key="score" 
                        class="h-20 flex flex-col justify-center px-2"
                        :class="selectedView === 'both' ? 'gap-1.5' : 'gap-0'">
@@ -120,22 +140,22 @@
                     <div v-if="selectedView === 'both' || selectedView === 'future'"
                       class="bg-emerald-500 rounded transition-all duration-200 flex items-center"
                       :class="selectedView === 'both' ? 'h-7' : 'h-14'"
-                      :style="{ width: getBarWidth(futureData[score - 1]) }"
+                      :style="{ width: getBarWidth(chartData.future[score - 1]) }"
                     >
-                      <span v-if="futureData[score - 1] > 0" 
+                      <span v-if="chartData.future[score - 1] > 0" 
                             class="text-white text-xs font-medium ml-2">
-                        {{ futureData[score - 1] }}
+                        {{ chartData.future[score - 1] }}
                       </span>
                     </div>
                     <!-- Current Bar -->
                     <div v-if="selectedView === 'both' || selectedView === 'current'"
                       class="bg-blue-500 rounded transition-all duration-200 flex items-center"
                       :class="selectedView === 'both' ? 'h-7' : 'h-14'"
-                      :style="{ width: getBarWidth(currentData[score - 1]) }"
+                      :style="{ width: getBarWidth(chartData.current[score - 1]) }"
                     >
-                      <span v-if="currentData[score - 1] > 0" 
+                      <span v-if="chartData.current[score - 1] > 0" 
                             class="text-white text-xs font-medium ml-2">
-                        {{ currentData[score - 1] }}
+                        {{ chartData.current[score - 1] }}
                       </span>
                     </div>
                   </div>
@@ -160,160 +180,164 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 
+// =======================================
+// API Configuration
+// =======================================
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+
+// =======================================
+// State Management
+// =======================================
 const currentYear = new Date().getFullYear();
+const loading = ref(false);
+const error = ref(null);
 
-const chartLabels = [
-  'Leadership & Commitment',
-  'Policy & Strategic Objectives',
-  'Organization Resource & Documentation',
-  'Evaluation & Risk Management',
-  'Implementation & Operation Control',
-  'Monitoring & Measurement',
-  'Audit & Review',
-];
-
-const allQuestions = [
-  // Category 0: Leadership & Commitment (3 ข้อ)
-  { id: 0, category: 0, number: '1', text: 'ผู้บริหารระดับสูงมีความมุ่งมั่นในการดำเนินงานตามมาตรฐาน ISO หรือไม่?' },
-  { id: 1, category: 0, number: '2', text: 'องค์กรมีการสื่อสารนโยบายและทิศทางไปยังพนักงานทุกระดับหรือไม่?' },
-  { id: 2, category: 0, number: '3', text: 'ผู้บริหารมีส่วนร่วมในการทบทวนและปรับปรุงระบบการจัดการหรือไม่?' },
-  
-  // Category 1: Policy & Strategic Objectives (3 ข้อ)
-  { id: 3, category: 1, number: '4', text: 'องค์กรมีนโยบายที่ชัดเจนและสอดคล้องกับวัตถุประสงค์เชิงกลยุทธ์หรือไม่?' },
-  { id: 4, category: 1, number: '5', text: 'มีการทบทวนและปรับปรุงนโยบายอย่างสม่ำเสมอหรือไม่?' },
-  { id: 5, category: 1, number: '6', text: 'วัตถุประสงค์เชิงกลยุทธ์สามารถวัดผลได้และมีการติดตามหรือไม่?' },
-  
-  // Category 2: Organization Resource & Documentation (3 ข้อ)
-  { id: 6, category: 2, number: '7', text: 'องค์กรมีทรัพยากรที่เพียงพอสำหรับการดำเนินงานตามระบบหรือไม่?' },
-  { id: 7, category: 2, number: '8', text: 'เอกสารและข้อมูลมีการจัดเก็บและควบคุมอย่างเป็นระบบหรือไม่?' },
-  { id: 8, category: 2, number: '9', text: 'พนักงานได้รับการฝึกอบรมและพัฒนาทักษะอย่างเหมาะสมหรือไม่?' },
-  
-  // Category 3: Evaluation & Risk Management (3 ข้อ)
-  { id: 9, category: 3, number: '10', text: 'องค์กรมีกระบวนการประเมินความเสี่ยงที่เป็นระบบหรือไม่?' },
-  { id: 10, category: 3, number: '11', text: 'มีการวิเคราะห์และจัดการความเสี่ยงอย่างต่อเนื่องหรือไม่?' },
-  { id: 11, category: 3, number: '12', text: 'มีแผนรองรับและมาตรการป้องกันความเสี่ยงที่มีประสิทธิภาพหรือไม่?' },
-  
-  // Category 4: Implementation & Operation Control (3 ข้อ)
-  { id: 12, category: 4, number: '13', text: 'กระบวนการปฏิบัติงานมีการควบคุมและติดตามอย่างเหมาะสมหรือไม่?' },
-  { id: 13, category: 4, number: '14', text: 'มีการกำหนดหน้าที่ความรับผิดชอบที่ชัดเจนหรือไม่?' },
-  { id: 14, category: 4, number: '15', text: 'การดำเนินงานเป็นไปตามแผนและมาตรฐานที่กำหนดหรือไม่?' },
-  
-  // Category 5: Monitoring & Measurement (3 ข้อ)
-  { id: 15, category: 5, number: '16', text: 'องค์กรมีการติดตามและวัดผลการดำเนินงานอย่างสม่ำเสมอหรือไม่?' },
-  { id: 16, category: 5, number: '17', text: 'ตัวชี้วัดที่ใช้มีความเหมาะสมและสามารถสะท้อนผลการดำเนินงานหรือไม่?' },
-  { id: 17, category: 5, number: '18', text: 'มีการวิเคราะห์ข้อมูลเพื่อนำไปสู่การปรับปรุงหรือไม่?' },
-  
-  // Category 6: Audit & Review (2 ข้อ)
-  { id: 18, category: 6, number: '19', text: 'มีการตรวจประเมินภายในอย่างเป็นระบบและสม่ำเสมอหรือไม่?' },
-  { id: 19, category: 6, number: '20', text: 'ผู้บริหารมีการทบทวนระบบการจัดการและปรับปรุงอย่างต่อเนื่องหรือไม่?' },
-];
+const companies = ref([]);
+const categories = ref([]);
+const questions = ref([]);
+const surveyData = ref(null);
 
 const selectedCompany = ref('combined');
 const selectedCategory = ref(0);
-const selectedQuestion = ref(0);
+const selectedQuestion = ref(null);
 const selectedView = ref('both');
 
+// =======================================
+// API Functions
+// =======================================
+
+// Fetch companies list
+const fetchCompanies = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/analytics/companies`);
+    if (!response.ok) throw new Error('Failed to fetch companies');
+    const data = await response.json();
+    companies.value = data;
+  } catch (err) {
+    console.error('Error fetching companies:', err);
+    throw err;
+  }
+};
+
+// Fetch categories list
+const fetchCategories = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/categories`);
+    if (!response.ok) throw new Error('Failed to fetch categories');
+    const data = await response.json();
+    // Sort by id
+    categories.value = data.sort((a, b) => a.id - b.id);
+  } catch (err) {
+    console.error('Error fetching categories:', err);
+    throw err;
+  }
+};
+
+// Fetch questions list
+const fetchQuestions = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/questions`);
+    if (!response.ok) throw new Error('Failed to fetch questions');
+    const data = await response.json();
+    // Add number field and sort
+    const questionsWithNumbers = data.map((q, index) => ({
+      ...q,
+      number: `Q${index + 1}`
+    }));
+    questions.value = questionsWithNumbers;
+  } catch (err) {
+    console.error('Error fetching questions:', err);
+    throw err;
+  }
+};
+
+// Fetch survey data for specific question and company
+const fetchSurveyData = async (questionId, companyId) => {
+  try {
+    const params = new URLSearchParams({
+      questionId: questionId,
+      companyId: companyId || 'combined',
+      year: currentYear
+    });
+    
+    const response = await fetch(`${API_BASE_URL}/analytics/survey-data?${params}`);
+    if (!response.ok) throw new Error('Failed to fetch survey data');
+    const data = await response.json();
+    surveyData.value = data;
+  } catch (err) {
+    console.error('Error fetching survey data:', err);
+    throw err;
+  }
+};
+
+// Fetch all data
+const fetchData = async () => {
+  loading.value = true;
+  error.value = null;
+  
+  try {
+    await Promise.all([
+      fetchCompanies(),
+      fetchCategories(),
+      fetchQuestions()
+    ]);
+    
+    // Set initial question after loading questions
+    if (questions.value.length > 0) {
+      const firstQuestion = questions.value.find(q => q.categoryId === categories.value[0]?.id);
+      if (firstQuestion) {
+        selectedQuestion.value = firstQuestion.id;
+        await fetchSurveyData(firstQuestion.id, selectedCompany.value);
+      }
+    }
+  } catch (err) {
+    error.value = 'เกิดข้อผิดพลาดในการโหลดข้อมูล กรุณาลองใหม่อีกครั้ง';
+  } finally {
+    loading.value = false;
+  }
+};
+
+// =======================================
+// Computed Properties
+// =======================================
+
 const availableQuestions = computed(() => {
-  return allQuestions.filter(q => q.category === selectedCategory.value);
+  if (!categories.value[selectedCategory.value]) return [];
+  const categoryId = categories.value[selectedCategory.value].id;
+  return questions.value.filter(q => q.categoryId === categoryId);
 });
 
 const selectedQuestionText = computed(() => {
-  const question = allQuestions.find(q => q.id === selectedQuestion.value);
+  const question = questions.value.find(q => q.id === selectedQuestion.value);
   return question ? `${question.number} ${question.text}` : '';
 });
 
-const onCategoryChange = () => {
-  const firstQuestion = availableQuestions.value[0];
-  if (firstQuestion) {
-    selectedQuestion.value = firstQuestion.id;
-  }
-};
-
-const generateCurrentData = (company, questionId) => {
-  const patterns = [
-    [16, 20, 18, 8, 3],
-    [18, 22, 20, 4, 1],
-    [20, 21, 18, 5, 2],
-    [19, 24, 19, 6, 2],
-    [17, 23, 20, 7, 3],
-    [15, 21, 22, 6, 1],
-    [19, 20, 19, 5, 2],
-    [18, 23, 18, 6, 2],
-  ];
-  const multiplier = company === 'v1' ? 1 : 1.05;
-  const pattern = patterns[questionId % patterns.length];
-  return pattern.map(v => Math.round(v * multiplier));
-};
-
-const generateFutureData = (company, questionId) => {
-  const patterns = [
-    [2, 2, 5, 29, 30],
-    [1, 2, 6, 28, 28],
-    [1, 3, 5, 29, 28],
-    [2, 2, 6, 30, 30],
-    [1, 3, 5, 31, 29],
-    [2, 2, 4, 28, 30],
-    [1, 3, 5, 30, 28],
-    [2, 2, 5, 29, 29],
-  ];
-  const multiplier = company === 'v1' ? 1 : 1.05;
-  const pattern = patterns[questionId % patterns.length];
-  return pattern.map(v => Math.round(v * multiplier));
-};
-
-const rawCurrentData = {
-  v1: Array.from({ length: 20 }, (_, i) => ({
-    scores: generateCurrentData('v1', i)
-  })),
-  v2: Array.from({ length: 20 }, (_, i) => ({
-    scores: generateCurrentData('v2', i)
-  }))
-};
-
-const rawFutureData = {
-  v1: Array.from({ length: 20 }, (_, i) => ({
-    scores: generateFutureData('v1', i)
-  })),
-  v2: Array.from({ length: 20 }, (_, i) => ({
-    scores: generateFutureData('v2', i)
-  }))
-};
-
-const currentData = computed(() => {
-  const qId = selectedQuestion.value;
-  if (selectedCompany.value === 'combined') {
-    const v1Data = rawCurrentData.v1[qId].scores;
-    const v2Data = rawCurrentData.v2[qId].scores;
-    return v1Data.map((v, i) => v + v2Data[i]);
-  }
-  return rawCurrentData[selectedCompany.value][qId].scores;
-});
-
-const futureData = computed(() => {
-  const qId = selectedQuestion.value;
-  if (selectedCompany.value === 'combined') {
-    const v1Data = rawFutureData.v1[qId].scores;
-    const v2Data = rawFutureData.v2[qId].scores;
-    return v1Data.map((v, i) => v + v2Data[i]);
-  }
-  return rawFutureData[selectedCompany.value][qId].scores;
-});
-
 const getCompanyName = computed(() => {
-  const names = {
-    'combined': 'Verte Group',
-    'v1': 'Verte Smart Solution',
-    'v2': 'Verte Security'
+  if (selectedCompany.value === 'combined') return 'บริษัททั้งหมด';
+  const company = companies.value.find(c => c.id === selectedCompany.value);
+  return company ? company.name : '';
+});
+
+const chartData = computed(() => {
+  if (!surveyData.value) return null;
+  
+  return {
+    current: surveyData.value.current || [0, 0, 0, 0, 0],
+    future: surveyData.value.future || [0, 0, 0, 0, 0]
   };
-  return names[selectedCompany.value];
 });
 
 const maxValue = computed(() => {
-  const allValues = [...currentData.value, ...futureData.value];
+  if (!chartData.value) return 40;
+  const allValues = [...chartData.value.current, ...chartData.value.future];
   return Math.max(...allValues, 40);
 });
+
+// =======================================
+// Methods
+// =======================================
 
 const getBarWidth = (value) => {
   if (value === 0) return '0%';
@@ -321,24 +345,46 @@ const getBarWidth = (value) => {
   const width = (value / maxValue.value) * maxWidth;
   return `${Math.min(width, maxWidth)}%`;
 };
+
+const onCategoryChange = async () => {
+  const firstQuestion = availableQuestions.value[0];
+  if (firstQuestion) {
+    selectedQuestion.value = firstQuestion.id;
+    await onQuestionChange();
+  }
+};
+
+const onQuestionChange = async () => {
+  if (selectedQuestion.value) {
+    loading.value = true;
+    try {
+      await fetchSurveyData(selectedQuestion.value, selectedCompany.value);
+    } catch (err) {
+      error.value = 'เกิดข้อผิดพลาดในการโหลดข้อมูล';
+    } finally {
+      loading.value = false;
+    }
+  }
+};
+
+const onCompanyChange = async () => {
+  if (selectedQuestion.value) {
+    loading.value = true;
+    try {
+      await fetchSurveyData(selectedQuestion.value, selectedCompany.value);
+    } catch (err) {
+      error.value = 'เกิดข้อผิดพลาดในการโหลดข้อมูล';
+    } finally {
+      loading.value = false;
+    }
+  }
+};
+
+// =======================================
+// Lifecycle Hooks
+// =======================================
+
+onMounted(() => {
+  fetchData();
+});
 </script>
-
-<style scoped>
-.select-custom {
-  cursor: pointer;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-  background-position: right 0.5rem center;
-  background-repeat: no-repeat;
-  background-size: 1.25em 1.25em;
-  padding-right: 2.5rem;
-}
-
-.select-custom:hover {
-  border-color: #9ca3af;
-}
-
-.select-custom:focus {
-  outline: none;
-}
-</style>
