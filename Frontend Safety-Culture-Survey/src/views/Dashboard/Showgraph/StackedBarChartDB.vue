@@ -5,66 +5,119 @@
     <div class="border-b border-gray-200 px-5 py-4">
       <h3 class="text-lg font-bold text-gray-800">กราฟผลการประเมินรายข้อ (บริษัท)</h3>
       <p class="text-sm text-gray-600 mt-1">การวิเคราะห์การกระจายตัวของข้อมูลตามระดับแต่ละข้อ</p>
+      <!-- Company Name Display -->
+      <div v-if="selectedAreaName" class="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
+        <span class="text-sm font-medium text-blue-900">🏢 บริษัท: {{ selectedAreaName }}</span>
+      </div>
     </div>
 
-    <!-- Controls -->
-    <div class="px-5 py-4 border-b border-gray-200">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">เลือกพื้นที่</label>
-          <select 
-            v-model="selectedArea" 
-            class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option v-for="area in areas" :key="area.id" :value="area.id">
-              {{ area.name }}
-            </option>
-          </select>
+    <!-- Loading State -->
+    <div v-if="loading" class="px-5 py-8 text-center">
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <p class="mt-2 text-sm text-gray-600">กำลังโหลดข้อมูล...</p>
+    </div>
+
+    <!-- Error State -->
+    <div v-if="error" class="px-5 py-4">
+      <div class="bg-red-50 border border-red-200 rounded-md p-4">
+        <p class="text-sm text-red-800">{{ error }}</p>
+        <button 
+          @click="fetchData" 
+          class="mt-2 text-sm text-red-600 hover:text-red-800 underline"
+        >
+          ลองใหม่อีกครั้ง
+        </button>
+      </div>
+    </div>
+
+    <template v-if="!loading && !error">
+      <!-- Controls -->
+      <div class="px-5 py-4 border-b border-gray-200">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">เลือกพื้นที่</label>
+            <select 
+              v-model="selectedArea" 
+              @change="onAreaChange"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer appearance-none bg-white bg-[url('data:image/svg+xml,%3csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20fill=%27none%27%20viewBox=%270%200%2020%2020%27%3e%3cpath%20stroke=%27%236b7280%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%20stroke-width=%271.5%27%20d=%27M6%208l4%204%204-4%27/%3e%3c/svg%3e')] bg-[length:1.25em_1.25em] bg-[right_0.5rem_center] bg-no-repeat pr-10 hover:border-gray-400 transition-all"
+            >
+              <option value="combined">บริษัททั้งหมด</option>
+              <option v-for="area in areas" :key="area.id" :value="area.id">
+                {{ area.name }}
+              </option>
+            </select>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">ช่วงเวลา</label>
+            <select 
+              v-model="selectedTimeframe" 
+              @change="onTimeframeChange"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer appearance-none bg-white bg-[url('data:image/svg+xml,%3csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20fill=%27none%27%20viewBox=%270%200%2020%2020%27%3e%3cpath%20stroke=%27%236b7280%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%20stroke-width=%271.5%27%20d=%27M6%208l4%204%204-4%27/%3e%3c/svg%3e')] bg-[length:1.25em_1.25em] bg-[right_0.5rem_center] bg-no-repeat pr-10 hover:border-gray-400 transition-all"
+            >
+              <option value="comparison">เปรียบเทียบ (ปัจจุบัน vs อนาคต)</option>
+              <option value="current">ปัจจุบัน</option>
+              <option value="future">อนาคต</option>
+            </select>
+          </div>
         </div>
-        
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">ช่วงเวลา</label>
-          <select 
-            v-model="selectedTimeframe" 
-            class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="comparison">เปรียบเทียบ (ปัจจุบัน vs อนาคต)</option>
-            <option value="current">ปัจจุบัน</option>
-            <option value="future">อนาคต</option>
-          </select>
+
+        <!-- Summary -->
+        <div class="mt-4 pt-4 border-t border-gray-200 text-sm text-gray-600">
+          <span class="font-medium">กำลังแสดง:</span>
+          <span class="ml-2">{{ selectedAreaName }}</span>
+          <span class="mx-2">•</span>
+          <span>{{ selectedTimeframeLabel }}</span>
         </div>
       </div>
 
-      <!-- Summary -->
-      <div class="mt-4 pt-4 border-t border-gray-200 text-sm text-gray-600">
-        <span class="font-medium">กำลังแสดง:</span>
-        <span class="ml-2">{{ selectedAreaName }}</span>
-        <span class="mx-2">•</span>
-        <span>{{ selectedTimeframeLabel }}</span>
+      <!-- Chart -->
+      <div class="px-5 py-5">
+        <div :class="selectedTimeframe === 'comparison' ? 'h-[600px]' : 'h-[500px]'">
+          <Bar v-if="chartData" :data="chartData" :options="chartOptions" />
+        </div>
       </div>
-    </div>
 
-    <!-- Chart -->
-    <div class="px-5 py-5">
-      <div :class="selectedTimeframe === 'comparison' ? 'h-[600px]' : 'h-[500px]'">
-        <Bar :data="chartData" :options="chartOptions" />
+      <!-- Info for comparison mode -->
+      <div v-if="selectedTimeframe === 'comparison'" class="px-5 pb-5">
+        <div class="bg-blue-50 border border-blue-200 rounded-md p-3">
+          <p class="text-sm text-blue-900">
+            <span class="font-medium">คำแนะนำ:</span> 
+            แท่งซ้าย (สีเข้ม) = ข้อมูลปัจจุบัน • แท่งขวา (สีอ่อน) = ข้อมูลคาดการณ์อนาคต
+          </p>
+        </div>
       </div>
-    </div>
+       <!-- Categories Display Below Chart -->
+      <div v-if="categories.length > 0" class="px-5 pb-5 border-t border-gray-200">
+        <div class="mt-5">
+          <h4 class="text-sm font-bold text-gray-800 mb-3">📋 หมวดหมู่คำถาม</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div 
+              v-for="(category, index) in categories" 
+              :key="category.id"
+              class="p-3 border border-gray-200 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors"
+            >
+              <div class="flex items-start">
+                <span class="inline-flex items-center justify-center h-6 w-6 rounded-full bg-blue-600 text-white text-xs font-semibold mr-3 flex-shrink-0">
+                  {{ index + 1 }}
+                </span>
+                <div class="flex-1">
+                  <h5 class="text-sm font-medium text-gray-900">{{ category.name }}</h5>
+                  <p class="text-xs text-gray-600 mt-1">คำถาม: {{ category.questionCount }} ข้อ</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-    <!-- Info for comparison mode -->
-    <div v-if="selectedTimeframe === 'comparison'" class="px-5 pb-5">
-      <div class="bg-blue-50 border border-blue-200 rounded-md p-3">
-        <p class="text-sm text-blue-900">
-          <span class="font-medium">คำแนะนำ:</span> 
-          แท่งซ้าย (สีเข้ม) = ข้อมูลปัจจุบัน • แท่งขวา (สีอ่อน) = ข้อมูลคาดการณ์อนาคต
-        </p>
-      </div>
-    </div>
+
+    </template>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { Bar } from 'vue-chartjs';
 import {
   Chart as ChartJS,
@@ -78,67 +131,110 @@ import ChartDataLabels from 'chartjs-plugin-datalabels';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend, ChartDataLabels);
 
-// Mock data
-const areas = ref([
-  { id: 'combined', name: 'Verte Group' },
-  { id: 'area1', name: 'Verte Smart Solution' },
-  { id: 'area2', name: 'Verte Security' }
-]);
+// =======================================
+// API Configuration
+// =======================================
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
-const levelLabels = ['ระดับ 1', 'ระดับ 2', 'ระดับ 3', 'ระดับ 4', 'ระดับ 5'];
-const chartLabels = [
-  'A:Comms with workforce', 'B:Commitment level of w/f', 'C:Rewards of good HSE', 'D:Who causes accidents',
-  'E:Profit & HSE', 'F:Contractor management', 'G:Competency & training', 'H:Size of HSE Dept.',
-  'I:Work planning', 'J:Worksite safety management', 'K:Purpose of procedures', 'L:Incident reporting',
-  'M:Hazard reporting', 'N:What after accident', 'O:Who checks HSE day-day',
-  'P:How HSE meetings feel', 'Q:Audits & reviews', 'R:Benchmarking',
-];
+// =======================================
+// State Management
+// =======================================
+const loading = ref(false);
+const error = ref(null);
 
-// ข้อมูลปัจจุบัน - Verte Smart Solution
-const currentDataArea1 = [
-  [10, 10, 10, 60, 40, 30, 10, 50, 40, 60, 70, 80, 30, 40, 50, 70, 60, 50],
-  [20, 10, 30, 50, 10, 80, 50, 10, 10, 10, 20, 20, 10, 20, 20, 10, 40, 30],
-  [20, 25, 30, 18, 15, 20, 25, 25, 18, 20, 28, 26, 21, 25, 26, 24, 10, 10],
-  [25, 20, 5, 28, 30, 25, 15, 22, 35, 28, 20, 25, 25, 20, 30, 28, 10, 10],
-  [10, 7, 10, 10, 12, 5, 20, 10, 8, 15, 12, 9, 18, 15, 5, 8, 10, 10]
-];
-
-// ข้อมูลปัจจุบัน - Verte Security
-const currentDataArea2 = [
-  [8, 4, 7, 3, 3, 4, 8, 5, 5, 4, 6, 6, 3, 3, 4, 6, 5, 5],
-  [1, 1, 2, 4, 1, 6, 5, 1, 1, 1, 1, 1, 1, 2, 3, 1, 2, 2],
-  [18, 20, 25, 15, 12, 20, 22, 20, 17, 20, 25, 23, 19, 22, 23, 20, 10, 10],
-  [20, 18, 4, 22, 25, 22, 12, 20, 30, 22, 18, 22, 22, 18, 28, 22, 10, 10],
-  [8, 6, 8, 9, 10, 4, 18, 8, 7, 12, 10, 8, 15, 13, 4, 7, 8, 8]
-];
-
-// ข้อมูลอนาคต - Verte Smart Solution
-const futureDataArea1 = [
-  [8, 8, 8, 45, 30, 22, 8, 38, 30, 45, 52, 60, 22, 30, 38, 52, 45, 38],
-  [15, 8, 22, 38, 8, 60, 38, 8, 8, 8, 15, 15, 8, 15, 15, 8, 30, 22],
-  [25, 30, 35, 22, 18, 25, 30, 30, 22, 25, 33, 31, 26, 30, 31, 29, 15, 15],
-  [35, 30, 8, 38, 40, 35, 22, 32, 45, 38, 30, 35, 35, 30, 40, 38, 18, 18],
-  [18, 15, 18, 18, 22, 12, 32, 18, 15, 25, 22, 18, 28, 25, 12, 15, 18, 18]
-];
-
-// ข้อมูลอนาคต - Verte Security
-const futureDataArea2 = [
-  [6, 3, 5, 2, 2, 3, 6, 4, 4, 3, 4, 4, 2, 2, 3, 4, 4, 4],
-  [1, 1, 1, 3, 1, 4, 4, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1],
-  [25, 28, 35, 22, 18, 28, 32, 28, 25, 28, 35, 33, 28, 32, 33, 28, 18, 18],
-  [28, 26, 6, 32, 35, 32, 18, 28, 42, 32, 26, 32, 32, 26, 40, 32, 18, 18],
-  [15, 12, 15, 18, 20, 8, 32, 15, 12, 22, 20, 15, 28, 25, 8, 12, 15, 15]
-];
+const areas = ref([]);
+const categories = ref([]);
+const chartDataRaw = ref(null);
 
 const selectedArea = ref('combined');
 const selectedTimeframe = ref('comparison');
+
+const levelLabels = ['ระดับ 1', 'ระดับ 2', 'ระดับ 3', 'ระดับ 4', 'ระดับ 5'];
 
 // สีแบบเดียวกับ StackedBar.vue
 const colors = ['#7B341E', '#E53E3E', '#ED8936', '#ECC94B', '#38A169'];
 const colorsLight = ['#B5826F', '#fca5a5', '#fdba74', '#fde68a', '#86efac'];
 
+// =======================================
+// API Functions
+// =======================================
+
+// Fetch areas/companies list
+const fetchAreas = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/analytics/companies`);
+    if (!response.ok) throw new Error('Failed to fetch areas');
+    const data = await response.json();
+    areas.value = data;
+  } catch (err) {
+    console.error('Error fetching areas:', err);
+    throw err;
+  }
+};
+
+// Fetch categories/questions list
+const fetchCategories = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/categories`);
+    if (!response.ok) throw new Error('Failed to fetch categories');
+    const data = await response.json();
+    categories.value = data;
+  } catch (err) {
+    console.error('Error fetching categories:', err);
+    throw err;
+  }
+};
+
+// Fetch stacked chart data
+const fetchChartData = async (areaId, timeframe) => {
+  try {
+    const params = new URLSearchParams({
+      areaId: areaId || 'combined',
+      timeframe: timeframe || 'comparison',
+      year: new Date().getFullYear()
+    });
+    
+    const response = await fetch(`${API_BASE_URL}/analytics/stacked-chart-data?${params}`);
+    if (!response.ok) throw new Error('Failed to fetch chart data');
+    const data = await response.json();
+    chartDataRaw.value = data;
+    
+    // อัปเดต categories จากข้อมูล API
+    if (data.categories) {
+      categories.value = data.categories;
+    }
+  } catch (err) {
+    console.error('Error fetching chart data:', err);
+    throw err;
+  }
+};
+// Fetch all data
+const fetchData = async () => {
+  loading.value = true;
+  error.value = null;
+  
+  try {
+    await Promise.all([
+      fetchAreas(),
+      fetchCategories()
+    ]);
+    
+    await fetchChartData(selectedArea.value, selectedTimeframe.value);
+  } catch (err) {
+    error.value = 'เกิดข้อผิดพลาดในการโหลดข้อมูล กรุณาลองใหม่อีกครั้ง';
+  } finally {
+    loading.value = false;
+  }
+};
+
+// =======================================
+// Computed Properties
+// =======================================
+
 const selectedAreaName = computed(() => {
-  return areas.value.find(a => a.id === selectedArea.value)?.name || '';
+  if (selectedArea.value === 'combined') return 'บริษัททั้งหมด';
+  const area = areas.value.find(a => a.id === selectedArea.value);
+  return area ? area.name : '';
 });
 
 const selectedTimeframeLabel = computed(() => {
@@ -151,40 +247,60 @@ const selectedTimeframeLabel = computed(() => {
 });
 
 const chartData = computed(() => {
-  let currentData, futureData;
+  if (!chartDataRaw.value) return null;
+
+  const { current, future, categories: categoriesList } = chartDataRaw.value;
+
+  // รวมข้อมูลแต่ละหมวดหมู่ (รวมคำถามทั้งหมดของแต่ละหมวดให้เป็นค่าเดียว)
+  const categoryLabels = categoriesList.map(cat => cat.name);
   
-  // เลือกข้อมูลตามพื้นที่
-  if (selectedArea.value === 'area1') {
-    currentData = currentDataArea1;
-    futureData = futureDataArea1;
-  } else if (selectedArea.value === 'area2') {
-    currentData = currentDataArea2;
-    futureData = futureDataArea2;
-  } else {
-    currentData = currentDataArea1.map((row, i) =>
-      row.map((v, j) => v + (currentDataArea2[i]?.[j] ?? 0))
-    );
-    futureData = futureDataArea1.map((row, i) =>
-      row.map((v, j) => v + (futureDataArea2[i]?.[j] ?? 0))
-    );
-  }
+  // รวมข้อมูล current สำหรับแต่ละหมวดหมู่
+  const aggregatedCurrent = [[], [], [], [], []];
+  const aggregatedFuture = [[], [], [], [], []];
+  let questionIndex = 0;
+
+  categoriesList.forEach(category => {
+    for (let level = 0; level < 5; level++) {
+      let categorySum = 0;
+      for (let q = 0; q < category.questionCount; q++) {
+        if (current[level] && current[level][questionIndex + q]) {
+          categorySum += current[level][questionIndex + q];
+        }
+      }
+      aggregatedCurrent[level].push(categorySum);
+    }
+    questionIndex += category.questionCount;
+  });
+
+  questionIndex = 0;
+  categoriesList.forEach(category => {
+    for (let level = 0; level < 5; level++) {
+      let categorySum = 0;
+      for (let q = 0; q < category.questionCount; q++) {
+        if (future[level] && future[level][questionIndex + q]) {
+          categorySum += future[level][questionIndex + q];
+        }
+      }
+      aggregatedFuture[level].push(categorySum);
+    }
+    questionIndex += category.questionCount;
+  });
 
   // สร้าง datasets ตามช่วงเวลา
   if (selectedTimeframe.value === 'comparison') {
-    // คำนวณ % สำหรับแต่ละบล็อก
-    const currentTotalPerCategory = chartLabels.map((_, j) =>
-      currentData.reduce((sum, level) => sum + level[j], 0)
+    const currentTotalPerCategory = categoryLabels.map((_, j) =>
+      aggregatedCurrent.reduce((sum, level) => sum + level[j], 0)
     );
     
-    const futureTotalPerCategory = chartLabels.map((_, j) =>
-      futureData.reduce((sum, level) => sum + level[j], 0)
+    const futureTotalPerCategory = categoryLabels.map((_, j) =>
+      aggregatedFuture.reduce((sum, level) => sum + level[j], 0)
     );
 
-    const currentDatasets = currentData.map((data, i) => {
+    const currentDatasets = aggregatedCurrent.map((data, i) => {
       return {
         label: `${levelLabels[i]}`,
         data: data.map((v, j) => currentTotalPerCategory[j] ? (v * 100 / currentTotalPerCategory[j]) : 0),
-        rawData: data, // เก็บข้อมูลจริงไว้สำหรับ tooltip
+        rawData: data,
         totalPerCategory: currentTotalPerCategory,
         backgroundColor: colors[i],
         borderColor: 'rgba(255, 255, 255, 0.3)',
@@ -195,11 +311,11 @@ const chartData = computed(() => {
       };
     });
 
-    const futureDatasets = futureData.map((data, i) => {
+    const futureDatasets = aggregatedFuture.map((data, i) => {
       return {
         label: `${levelLabels[i]}`,
         data: data.map((v, j) => futureTotalPerCategory[j] ? (v * 100 / futureTotalPerCategory[j]) : 0),
-        rawData: data, // เก็บข้อมูลจริงไว้สำหรับ tooltip
+        rawData: data,
         totalPerCategory: futureTotalPerCategory,
         backgroundColor: colorsLight[i],
         borderColor: 'rgba(255, 255, 255, 0.3)',
@@ -211,22 +327,22 @@ const chartData = computed(() => {
     });
 
     return {
-      labels: chartLabels,
+      labels: categoryLabels,
       datasets: [...currentDatasets, ...futureDatasets]
     };
   } else {
-    const selectedData = selectedTimeframe.value === 'current' ? currentData : futureData;
-    const totalPerCategory = chartLabels.map((_, j) =>
+    const selectedData = selectedTimeframe.value === 'current' ? aggregatedCurrent : aggregatedFuture;
+    const totalPerCategory = categoryLabels.map((_, j) =>
       selectedData.reduce((sum, level) => sum + level[j], 0)
     );
 
     return {
-      labels: chartLabels,
+      labels: categoryLabels,
       datasets: selectedData.map((data, i) => {
         return {
           label: levelLabels[i],
           data: data.map((v, j) => totalPerCategory[j] ? (v * 100 / totalPerCategory[j]) : 0),
-          rawData: data, // เก็บข้อมูลจริงไว้สำหรับ tooltip
+          rawData: data,
           totalPerCategory: totalPerCategory,
           backgroundColor: colors[i],
           borderColor: 'rgba(255, 255, 255, 0.3)',
@@ -349,7 +465,6 @@ const chartOptions = computed(() => {
             const chart = legend.chart;
             const datasetIndex = legendItem.datasetIndex;
             
-            // ซ่อน/แสดงเฉพาะ dataset ที่คลิก
             if (chart.data.datasets[datasetIndex]) {
               chart.data.datasets[datasetIndex].hidden = !chart.data.datasets[datasetIndex].hidden;
             }
@@ -376,7 +491,6 @@ const chartOptions = computed(() => {
           family: 'inherit'
         },
         formatter: (_, ctx) => {
-          // แสดงตัวเลขจริง (raw data)
           return ctx.dataset.rawData[ctx.dataIndex];
         },
         anchor: 'center',
@@ -433,10 +547,38 @@ const chartOptions = computed(() => {
     }
   };
 });
-</script>
 
-<style scoped>
-select {
-  transition: all 0.2s ease;
-}
-</style>
+// =======================================
+// Methods
+// =======================================
+
+const onAreaChange = async () => {
+  loading.value = true;
+  try {
+    await fetchChartData(selectedArea.value, selectedTimeframe.value);
+  } catch (err) {
+    error.value = 'เกิดข้อผิดพลาดในการโหลดข้อมูล';
+  } finally {
+    loading.value = false;
+  }
+};
+
+const onTimeframeChange = async () => {
+  loading.value = true;
+  try {
+    await fetchChartData(selectedArea.value, selectedTimeframe.value);
+  } catch (err) {
+    error.value = 'เกิดข้อผิดพลาดในการโหลดข้อมูล';
+  } finally {
+    loading.value = false;
+  }
+};
+
+// =======================================
+// Lifecycle Hooks
+// =======================================
+
+onMounted(() => {
+  fetchData();
+});
+</script>

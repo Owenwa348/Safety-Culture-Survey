@@ -318,11 +318,148 @@ const getCompanies = async (req, res) => {
   }
 };
 
+// ดึงข้อมูลสำหรับ Stacked Bar Chart พร้อมชื่อบริษัยและหมวดหมู่
+const getStackedChartData = async (req, res) => {
+  try {
+    const { areaId = 'combined', timeframe = 'comparison', year = new Date().getFullYear() } = req.query;
+
+    // ดึงทุกหมวดหมู่พร้อมคำถาม
+    const categories = await prisma.category.findMany({
+      include: {
+        questions: {
+          orderBy: { order: 'asc' }
+        }
+      },
+      orderBy: { id: 'asc' }
+    });
+
+    if (categories.length === 0) {
+      return res.status(404).json({ error: 'ไม่พบหมวดหมู่' });
+    }
+
+    // รวบรวม questionIds ทั้งหมด
+    const questionIds = categories.flatMap(cat => cat.questions.map(q => q.id));
+
+    if (questionIds.length === 0) {
+      return res.status(404).json({ error: 'ไม่พบคำถาม' });
+    }
+
+    // สร้าง where condition
+    const where = {
+      questionId: { in: questionIds },
+      user: {}
+    };
+
+    // ถ้าไม่ใช่ combined ให้กรองตามบริษัท
+    if (areaId !== 'combined') {
+      where.user.company_user = areaId;
+    }
+
+    // กรองตามปี
+    const startOfYear = new Date(year, 0, 1);
+    const endOfYear = new Date(year, 11, 31, 23, 59, 59);
+    where.createdAt = {
+      gte: startOfYear,
+      lte: endOfYear
+    };
+
+    // ดึงข้อมูลการตอบแบบประเมิน
+    const surveyAnswers = await prisma.surveyAnswer.findMany({
+      where,
+      select: {
+        questionId: true,
+        currentScore: true,
+        expectedScore: true
+      }
+    });
+
+    // สร้าง object เพื่อนับคำตอบแต่ละระดับ
+    const dataByQuestion = {};
+    
+    categories.forEach(category => {
+      category.questions.forEach(question => {
+        dataByQuestion[question.id] = {
+          current: [0, 0, 0, 0, 0], // คะแนน 1-5
+          future: [0, 0, 0, 0, 0]
+        };
+      });
+    });
+
+    // นับคำตอบแต่ละระดับ
+    surveyAnswers.forEach(answer => {
+      if (dataByQuestion[answer.questionId]) {
+        if (answer.currentScore >= 1 && answer.currentScore <= 5) {
+          dataByQuestion[answer.questionId].current[answer.currentScore - 1]++;
+        }
+        if (answer.expectedScore >= 1 && answer.expectedScore <= 5) {
+          dataByQuestion[answer.questionId].future[answer.expectedScore - 1]++;
+        }
+      }
+    });
+
+    // จัดเตรียมข้อมูลสำหรับกราฟ (แยกตามระดับ 1-5)
+    const current = [[], [], [], [], []]; // ระดับ 1-5
+    const future = [[], [], [], [], []];
+    const labels = [];
+
+    categories.forEach(category => {
+      category.questions.forEach(question => {
+        labels.push(`Q${question.order || question.id}: ${category.name}`);
+        
+        const questionData = dataByQuestion[question.id];
+        for (let level = 0; level < 5; level++) {
+          current[level].push(questionData.current[level]);
+          future[level].push(questionData.future[level]);
+        }
+      });
+    });
+
+    // ดึงรายชื่อบริษัท
+    let areas = [];
+    if (areaId === 'combined') {
+      const distinctAreas = await prisma.user.findMany({
+        distinct: ['company_user'],
+        select: { company_user: true }
+      });
+      areas = distinctAreas.map(a => ({
+        id: a.company_user,
+        name: a.company_user
+      }));
+    } else {
+      areas = [{ id: areaId, name: areaId }];
+    }
+
+    // ดึงข้อมูล categories สำหรับแสดงข้างล่างกราฟ
+    const categoriesForDisplay = categories.map(cat => ({
+      id: cat.id,
+      name: cat.name,
+      questionCount: cat.questions.length
+    }));
+
+    res.status(200).json({
+      labels, // Q1: Category Name, Q2: Category Name, ...
+      current,
+      future,
+      areas,
+      categories: categoriesForDisplay,
+      areaId,
+      timeframe,
+      year,
+      totalResponses: surveyAnswers.length
+    });
+
+  } catch (error) {
+    console.error('เกิดข้อผิดพลาดในการดึงข้อมูล Stacked Chart:', error);
+    res.status(500).json({ error: 'เซิร์ฟเวอร์ขัดข้อง', message: error.message });
+  }
+};
+
 module.exports = {
   getAggregatedSurveyData,
   getDemographicAnalysis,
   getTrendAnalysis,
   getUserCompletionStatus,
   getSurveyDataForChart,
-  getCompanies
+  getCompanies,
+  getStackedChartData
 };

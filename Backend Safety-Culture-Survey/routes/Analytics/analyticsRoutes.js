@@ -7,7 +7,8 @@ const {
   getTrendAnalysis,
   getUserCompletionStatus,
   getSurveyDataForChart,
-  getCompanies
+  getCompanies,
+  getStackedChartData
 } = require('../../controllers/Analytics/analyticsController');
 
 // Get aggregated data for graphs
@@ -27,5 +28,8 @@ router.get('/survey-data', getSurveyDataForChart);
 
 // Get list of companies
 router.get('/companies', getCompanies);
+
+// Get stacked chart data (ตามหมวดหมู่ทั้งหมด)
+router.get('/stacked-chart-data', getStackedChartData);
 
 module.exports = router;
