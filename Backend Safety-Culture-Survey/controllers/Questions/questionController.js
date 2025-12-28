@@ -5,21 +5,38 @@ const prisma = new PrismaClient()
 // ดึงคำถามทั้งหมด (พร้อม options)
 const getQuestions = async (req, res) => {
   try {
-    // Get all questions ordered by order field
     let questions;
+    const includeOptions = {
+      options: true,
+      surveyAnswers: {
+        where: {
+          comment: {
+            not: null,
+            not: ''
+          }
+        },
+        select: {
+          comment: true,
+          user: {
+            select: {
+              name_user: true
+            }
+          }
+        }
+      }
+    };
+
     try {
       questions = await prisma.question.findMany({
-        include: { options: true },
+        include: includeOptions,
         orderBy: { order: 'asc' }
       });
     } catch (orderError) {
-      // If order field doesn't exist, fall back to ordering by id
       console.log('Order field not found, falling back to ID ordering');
       const questionsById = await prisma.question.findMany({
-        include: { options: true },
+        include: includeOptions,
         orderBy: { id: 'asc' }
       });
-      // Add a default order value for frontend compatibility
       questions = questionsById.map((q, index) => ({
         ...q,
         order: q.order !== undefined ? q.order : index
