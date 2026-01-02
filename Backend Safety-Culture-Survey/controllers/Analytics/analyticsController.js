@@ -454,6 +454,32 @@ const getStackedChartData = async (req, res) => {
   }
 };
 
+const getAssessmentYears = async (req, res) => {
+  try {
+    // ใช้ query ดิบเพื่อนับจำนวนปีที่มีข้อมูล
+    const years = await prisma.surveyAnswer.findMany({
+      distinct: ['createdAt'],
+      select: {
+        createdAt: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    // ใช้ Set เพื่อให้ได้ปีที่ไม่ซ้ำกัน
+    const distinctYears = [
+      ...new Set(years.map((y) => new Date(y.createdAt).getFullYear())),
+    ];
+
+    res.status(200).json(distinctYears);
+  } catch (error) {
+    console.error('เกิดข้อผิดพลาดในการดึงปีประเมิน:', error);
+    res.status(500).json({ error: 'เซิร์ฟเวอร์ขัดข้อง' });
+  }
+};
+
+
 module.exports = {
   getAggregatedSurveyData,
   getDemographicAnalysis,
@@ -461,5 +487,6 @@ module.exports = {
   getUserCompletionStatus,
   getSurveyDataForChart,
   getCompanies,
-  getStackedChartData
+  getStackedChartData,
+  getAssessmentYears
 };

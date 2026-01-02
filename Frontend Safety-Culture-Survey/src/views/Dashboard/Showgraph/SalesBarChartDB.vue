@@ -1,12 +1,27 @@
 <!-- SalesBarChartDB.vue -->
 <template>
   <div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
-    <div class="max-w-7xl mx-auto">
+    <!-- Loading State -->
+    <div v-if="loading" class="flex items-center justify-center min-h-screen">
+      <div class="text-center">
+        <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto"></div>
+        <p class="mt-4 text-gray-600 font-semibold">กำลังโหลดข้อมูล...</p>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div v-else class="max-w-7xl mx-auto">
       <!-- Header Card -->
       <div class="bg-white rounded-xl shadow-md mb-6 overflow-hidden">
         <div class="bg-gradient-to-r px-8 py-6">
-          <h1 class="text-2xl font-bold mb-2">ผลการประเมินบริษัท Verte Group ประจำปี 2025</h1>
+          <h1 class="text-2xl font-bold mb-2">ผลการประเมินบริษัท ประจำปี {{ currentYear }}</h1>
           <p>การวิเคราะห์ผลการประเมินตามตำแหน่งและพื้นที่การดำเนินงาน</p>
+          
+          <!-- Error Warning -->
+          <div v-if="error" class="mt-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-3 text-sm rounded">
+            <p class="font-semibold">⚠️ ใช้ข้อมูลตัวอย่าง</p>
+            <p class="text-xs mt-1">ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์: {{ error }}</p>
+          </div>
         </div>
         
         <!-- Filters -->
@@ -18,7 +33,7 @@
                 v-model="selectedVersion" 
                 class="px-4 py-2.5 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"
               >
-                <option value="combined">Verte Group</option>
+                <option value="combined">บริษัททั้งหมด</option>
                 <option value="v1">Verte Smart Solution</option>
                 <option value="v2">Verte Security</option>
               </select>
@@ -116,13 +131,11 @@
         <!-- Footer Summary -->
         <div class="px-8 py-5 bg-gradient-to-r from-gray-50 to-blue-50 border-t">
           <div class="space-y-4">
-            <!-- แถวแรก: จำนวนกลุ่มและหมวดหมู่ -->
             <div class="flex items-center space-x-6 text-sm text-gray-700">
               <span class="font-semibold">จำนวนกลุ่ม: <span class="text-blue-600">{{ chartData.datasets.length }}</span></span>
               <span class="font-semibold">จำนวนหมวดหมู่: <span class="text-blue-600">{{ chartLabels.length }}</span></span>
             </div>
             
-            <!-- แถวที่สอง: คำอธิบายสี -->
             <div class="flex flex-wrap items-center gap-4 text-sm">
               <div class="flex items-center space-x-2">
                 <div class="w-3 h-3 bg-green-500 rounded shadow-sm"></div>
@@ -149,7 +162,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -163,6 +176,15 @@ import { Bar } from 'vue-chartjs';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
+// Reactive state
+const selectedVersion = ref("combined");
+const selectedTimePeriod = ref("all");
+const currentData = ref(null);
+const futureData = ref(null);
+const loading = ref(true);
+const error = ref(null);
+const currentYear = new Date().getFullYear();
+
 const chartLabels = [
   'Leadership & Commitment',
   'Policy & Strategic Objectives',
@@ -174,8 +196,8 @@ const chartLabels = [
   'AVG',
 ];
 
-// ข้อมูลปัจจุบัน 
-const currentData = {
+// ข้อมูลสำรอง (Fallback data)
+const fallbackCurrentData = {
   'ผู้บริหารระดับสูง / ผู้จัดการส่วน': {
     v1: [3.85, 3.72, 3.58, 3.45, 3.92, 3.68, 3.55, 3.68],
     v2: [3.95, 3.88, 3.75, 3.62, 4.05, 3.85, 3.68, 3.83]
@@ -194,8 +216,7 @@ const currentData = {
   }
 };
 
-// ข้อมูลอนาคต - เพิ่มขึ้นอย่างชัดเจน
-const futureData = {
+const fallbackFutureData = {
   'ผู้บริหารระดับสูง / ผู้จัดการส่วน': {
     v1: [4.62, 4.55, 4.45, 4.38, 4.72, 4.58, 4.42, 4.53],
     v2: [4.75, 4.68, 4.58, 4.48, 4.85, 4.72, 4.55, 4.66]
@@ -214,22 +235,17 @@ const futureData = {
   }
 };
 
-// แมปชื่อพื้นที่
 const areaNameMap = {
-  'combined': 'Verte Group',
+  'combined': 'บริษัททั้งหมด',
   'v1': 'Verte Smart Solution',
   'v2': 'Verte Security'
 };
 
-// แมปชื่อช่วงเวลา
 const timePeriodMap = {
   'all': 'ทั้งหมด',
   'current': 'ปัจจุบัน',
   'future': 'อนาคต'
 };
-
-const selectedVersion = ref("combined");
-const selectedTimePeriod = ref("all");
 
 const colors = {
   'ผู้บริหารระดับสูง / ผู้จัดการส่วน': '#1e40af',
@@ -242,25 +258,63 @@ const colors = {
   'future_single': '#f59e0b'
 };
 
-// ฟังก์ชันสำหรับคำนวณข้อมูลตามช่วงเวลา
+// ฟังก์ชันดึงข้อมูลจาก Backend
+const fetchData = async () => {
+  try {
+    loading.value = true;
+    error.value = null;
+
+    // เรียก API ทั้ง 2 endpoints พร้อมกัน
+    const [currentResponse, futureResponse] = await Promise.all([
+      fetch('http://localhost:5000/api/evaluation/current'),
+      fetch('http://localhost:5000/api/evaluation/future')
+    ]);
+
+    if (!currentResponse.ok || !futureResponse.ok) {
+      throw new Error('ไม่สามารถดึงข้อมูลจากเซิร์ฟเวอร์ได้');
+    }
+
+    const currentResult = await currentResponse.json();
+    const futureResult = await futureResponse.json();
+
+    currentData.value = currentResult;
+    futureData.value = futureResult;
+  } catch (err) {
+    error.value = err.message;
+    // ใช้ข้อมูลสำรองถ้าเชื่อมต่อไม่ได้
+    currentData.value = fallbackCurrentData;
+    futureData.value = fallbackFutureData;
+  } finally {
+    loading.value = false;
+  }
+};
+
+// ฟังก์ชันคำนวณข้อมูลตามช่วงเวลา
 const getDataForTimePeriod = (timePeriod) => {
+  if (!currentData.value || !futureData.value) return {};
+  
   if (timePeriod === 'current') {
-    return currentData;
+    return currentData.value;
   } else if (timePeriod === 'future') {
-    return futureData;
+    return futureData.value;
   } else {
     const combinedData = {};
-    for (const group in currentData) {
+    for (const group in currentData.value) {
       combinedData[group] = {
-        v1: currentData[group].v1.map((val, idx) => (val + futureData[group].v1[idx]) / 2),
-        v2: currentData[group].v2.map((val, idx) => (val + futureData[group].v2[idx]) / 2)
+        v1: currentData.value[group].v1.map((val, idx) => (val + futureData.value[group].v1[idx]) / 2),
+        v2: currentData.value[group].v2.map((val, idx) => (val + futureData.value[group].v2[idx]) / 2)
       };
     }
     return combinedData;
   }
 };
 
+// Computed สำหรับข้อมูลกราฟ
 const chartData = computed(() => {
+  if (!currentData.value || !futureData.value) {
+    return { labels: chartLabels, datasets: [] };
+  }
+
   const datasets = [];
 
   if (selectedVersion.value === "combined") {
@@ -488,6 +542,11 @@ const chartOptions = {
     }
   }
 };
+
+// เรียกใช้งานตอนโหลดครั้งแรก
+onMounted(() => {
+  fetchData();
+});
 </script>
 
 <style scoped>
@@ -529,5 +588,15 @@ table {
 
 tbody tr:last-child td {
   border-bottom: none;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
 </style>

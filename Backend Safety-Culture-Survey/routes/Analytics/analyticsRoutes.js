@@ -8,7 +8,8 @@ const {
   getUserCompletionStatus,
   getSurveyDataForChart,
   getCompanies,
-  getStackedChartData
+  getStackedChartData,
+  getAssessmentYears
 } = require('../../controllers/Analytics/analyticsController');
 
 // Get aggregated data for graphs
@@ -31,5 +32,8 @@ router.get('/companies', getCompanies);
 
 // Get stacked chart data (ตามหมวดหมู่ทั้งหมด)
 router.get('/stacked-chart-data', getStackedChartData);
+
+// Get available assessment years
+router.get('/assessment-years', getAssessmentYears);
 
 module.exports = router;

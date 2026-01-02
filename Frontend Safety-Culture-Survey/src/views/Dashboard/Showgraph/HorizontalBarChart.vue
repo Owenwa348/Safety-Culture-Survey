@@ -5,7 +5,7 @@
       <!-- Header -->
       <div class="bg-white rounded-lg shadow-sm mb-6 p-6 border border-gray-200">
         <h1 class="text-2xl font-semibold text-gray-900 mb-2">
-          การวิเคราะห์การประเมินประจำปี {{ currentYear }}
+          การวิเคราะห์การประเมินประจำปี {{ selectedYear }}
         </h1>
         <p class="text-sm text-gray-600 mb-6">
           การเปรียบเทียบผลการกระจายตัวของข้อมูลตามระดับแต่ละหมวดหมู่ระหว่างปัจจุบันและอนาคต
@@ -29,57 +29,74 @@
         </div>
         
         <!-- Filters -->
-        <div v-if="!loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div class="flex flex-col gap-1.5">
-            <label class="text-sm font-medium text-gray-700">บริษัท</label>
-            <select 
-              v-model="selectedCompany" 
-              @change="onCompanyChange"
-              class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-gray-900 focus:border-gray-900 bg-white transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml,%3csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20fill=%27none%27%20viewBox=%270%200%2020%2020%27%3e%3cpath%20stroke=%27%236b7280%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%20stroke-width=%271.5%27%20d=%27M6%208l4%204%204-4%27/%3e%3c/svg%3e')] bg-[length:1.25em_1.25em] bg-[right_0.5rem_center] bg-no-repeat pr-10 hover:border-gray-400"
-            >
-              <option value="combined">บริษัททั้งหมด</option>
-              <option v-for="company in companies" :key="company.id" :value="company.id">
-                {{ company.name }}
-              </option>
-            </select>
+        <div v-if="!loading" class="space-y-4">
+          <!-- Row 1: Year, Company, View -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="flex flex-col gap-1.5">
+              <label class="text-sm font-medium text-gray-700">ปี</label>
+              <select 
+                v-model="selectedYear" 
+                @change="onYearChange"
+                class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white cursor-pointer appearance-none bg-[url('data:image/svg+xml,%3csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20fill=%27none%27%20viewBox=%270%200%2020%2020%27%3e%3cpath%20stroke=%27%236b7280%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%20stroke-width=%271.5%27%20d=%27M6%208l4%204%204-4%27/%3e%3c/svg%3e')] bg-[length:1.25em_1.25em] bg-[right_0.5rem_center] bg-no-repeat pr-10"
+              >
+                <option v-for="year in availableYears" :key="year" :value="year">
+                  {{ year }}
+                </option>
+              </select>
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <label class="text-sm font-medium text-gray-700">บริษัท</label>
+              <select 
+                v-model="selectedCompany" 
+                @change="onCompanyChange"
+                class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white cursor-pointer appearance-none bg-[url('data:image/svg+xml,%3csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20fill=%27none%27%20viewBox=%270%200%2020%2020%27%3e%3cpath%20stroke=%27%236b7280%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%20stroke-width=%271.5%27%20d=%27M6%208l4%204%204-4%27/%3e%3c/svg%3e')] bg-[length:1.25em_1.25em] bg-[right_0.5rem_center] bg-no-repeat pr-10"
+              >
+                <option value="combined">บริษัททั้งหมด</option>
+                <option v-for="company in companies" :key="company.id" :value="company.id">
+                  {{ company.name }}
+                </option>
+              </select>
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <label class="text-sm font-medium text-gray-700">แสดงข้อมูล</label>
+              <select 
+                v-model="selectedView" 
+                class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white cursor-pointer appearance-none bg-[url('data:image/svg+xml,%3csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20fill=%27none%27%20viewBox=%270%200%2020%2020%27%3e%3cpath%20stroke=%27%236b7280%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%20stroke-width=%271.5%27%20d=%27M6%208l4%204%204-4%27/%3e%3c/svg%3e')] bg-[length:1.25em_1.25em] bg-[right_0.5rem_center] bg-no-repeat pr-10"
+              >
+                <option value="both">เปรียบเทียบ (ปัจจุบัน กับ อนาคต)</option>
+                <option value="current">ปัจจุบัน</option>
+                <option value="future">อนาคต</option>
+              </select>
+            </div>
           </div>
 
-          <div class="flex flex-col gap-1.5">
-            <label class="text-sm font-medium text-gray-700">หมวดหมู่</label>
-            <select 
-              v-model="selectedCategory" 
-              @change="onCategoryChange"
-              class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-gray-900 focus:border-gray-900 bg-white transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml,%3csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20fill=%27none%27%20viewBox=%270%200%2020%2020%27%3e%3cpath%20stroke=%27%236b7280%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%20stroke-width=%271.5%27%20d=%27M6%208l4%204%204-4%27/%3e%3c/svg%3e')] bg-[length:1.25em_1.25em] bg-[right_0.5rem_center] bg-no-repeat pr-10 hover:border-gray-400"
-            >
-              <option v-for="(category, index) in categories" :key="category.id" :value="index">
-                {{ index + 1 }}. {{ category.name }}
-              </option>
-            </select>
-          </div>
+          <!-- Row 2: Category and Question -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="flex flex-col gap-1.5">
+              <label class="text-sm font-medium text-gray-700">หมวดหมู่</label>
+              <select 
+                v-model="selectedCategory" 
+                @change="onCategoryChange"
+                class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white cursor-pointer appearance-none bg-[url('data:image/svg+xml,%3csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20fill=%27none%27%20viewBox=%270%200%2020%2020%27%3e%3cpath%20stroke=%27%236b7280%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%20stroke-width=%271.5%27%20d=%27M6%208l4%204%204-4%27/%3e%3c/svg%3e')] bg-[length:1.25em_1.25em] bg-[right_0.5rem_center] bg-no-repeat pr-10"
+              >
+                <option v-for="(category, index) in categories" :key="category.id" :value="index">
+                  {{ index + 1 }}. {{ category.name }}
+                </option>
+              </select>
+            </div>
 
-          <div class="flex flex-col gap-1.5 lg:col-span-2">
-            <label class="text-sm font-medium text-gray-700">คำถาม</label>
-            <select 
-              v-model="selectedQuestion" 
-              @change="onQuestionChange"
-              class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-gray-900 focus:border-gray-900 bg-white transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml,%3csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20fill=%27none%27%20viewBox=%270%200%2020%2020%27%3e%3cpath%20stroke=%27%236b7280%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%20stroke-width=%271.5%27%20d=%27M6%208l4%204%204-4%27/%3e%3c/svg%3e')] bg-[length:1.25em_1.25em] bg-[right_0.5rem_center] bg-no-repeat pr-10 hover:border-gray-400"
-            >
-              <option v-for="question in availableQuestions" :key="question.id" :value="question.id">
-                {{ question.number }} {{ question.text }}
-              </option>
-            </select>
-          </div>
-
-          <div class="flex flex-col gap-1.5 lg:col-start-4">
-            <label class="text-sm font-medium text-gray-700">แสดงข้อมูล</label>
-            <select 
-              v-model="selectedView" 
-              class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-gray-900 focus:border-gray-900 bg-white transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml,%3csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20fill=%27none%27%20viewBox=%270%200%2020%2020%27%3e%3cpath%20stroke=%27%236b7280%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%20stroke-width=%271.5%27%20d=%27M6%208l4%204%204-4%27/%3e%3c/svg%3e')] bg-[length:1.25em_1.25em] bg-[right_0.5rem_center] bg-no-repeat pr-10 hover:border-gray-400"
-            >
-              <option value="both">เปรียบเทียบ (ปัจจุบัน กับ อนาคต)</option>
-              <option value="current">ปัจจุบัน</option>
-              <option value="future">อนาคต</option>
-            </select>
+            <div class="flex flex-col gap-1.5">
+              <label class="text-sm font-medium text-gray-700">คำถาม</label>
+              <select 
+                v-model="selectedQuestion" 
+                @change="onQuestionChange"
+                class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white cursor-pointer appearance-none bg-[url('data:image/svg+xml,%3csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20fill=%27none%27%20viewBox=%270%200%2020%2020%27%3e%3cpath%20stroke=%27%236b7280%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%20stroke-width=%271.5%27%20d=%27M6%208l4%204%204-4%27/%3e%3c/svg%3e')] bg-[length:1.25em_1.25em] bg-[right_0.5rem_center] bg-no-repeat pr-10"
+              >
+                <option v-for="question in availableQuestions" :key="question.id" :value="question.id">
+                  {{ question.number }} {{ question.text }}
+                </option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
@@ -190,15 +207,16 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 // =======================================
 // State Management
 // =======================================
-const currentYear = new Date().getFullYear();
 const loading = ref(false);
 const error = ref(null);
 
+const availableYears = ref([]);
 const companies = ref([]);
 const categories = ref([]);
 const questions = ref([]);
 const surveyData = ref(null);
 
+const selectedYear = ref(new Date().getFullYear());
 const selectedCompany = ref('combined');
 const selectedCategory = ref(0);
 const selectedQuestion = ref(null);
@@ -207,6 +225,21 @@ const selectedView = ref('both');
 // =======================================
 // API Functions
 // =======================================
+// Fetch available assessment years
+const fetchYears = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/analytics/assessment-years`);
+    if (!response.ok) throw new Error('Failed to fetch years');
+    const data = await response.json();
+    availableYears.value = data;
+    if (data.length > 0) {
+      selectedYear.value = data[0]; // Default to the most recent year
+    }
+  } catch (err) {
+    console.error('Error fetching years:', err);
+    throw err;
+  }
+};
 
 // Fetch companies list
 const fetchCompanies = async () => {
@@ -254,20 +287,32 @@ const fetchQuestions = async () => {
 };
 
 // Fetch survey data for specific question and company
-const fetchSurveyData = async (questionId, companyId) => {
+const fetchSurveyData = async (questionId, companyId, year) => {
+  if (!questionId || !year) {
+    surveyData.value = null;
+    return;
+  }
   try {
     const params = new URLSearchParams({
       questionId: questionId,
       companyId: companyId || 'combined',
-      year: currentYear
+      year: year
     });
     
     const response = await fetch(`${API_BASE_URL}/analytics/survey-data?${params}`);
-    if (!response.ok) throw new Error('Failed to fetch survey data');
+    if (!response.ok) {
+        surveyData.value = null; // Clear data on error
+        const errorData = await response.json().catch(() => null);
+        if (response.status === 404) {
+            throw new Error('ไม่พบข้อมูลสำหรับคำถามและบริษัทที่เลือกในปีนี้');
+        }
+        throw new Error(errorData?.message || 'Failed to fetch survey data');
+    }
     const data = await response.json();
     surveyData.value = data;
   } catch (err) {
     console.error('Error fetching survey data:', err);
+    surveyData.value = null; // Clear data on error
     throw err;
   }
 };
@@ -279,21 +324,22 @@ const fetchData = async () => {
   
   try {
     await Promise.all([
+      fetchYears(),
       fetchCompanies(),
       fetchCategories(),
       fetchQuestions()
     ]);
     
     // Set initial question after loading questions
-    if (questions.value.length > 0) {
+    if (questions.value.length > 0 && categories.value.length > 0) {
       const firstQuestion = questions.value.find(q => q.categoryId === categories.value[0]?.id);
       if (firstQuestion) {
         selectedQuestion.value = firstQuestion.id;
-        await fetchSurveyData(firstQuestion.id, selectedCompany.value);
+        await fetchSurveyData(firstQuestion.id, selectedCompany.value, selectedYear.value);
       }
     }
   } catch (err) {
-    error.value = 'เกิดข้อผิดพลาดในการโหลดข้อมูล กรุณาลองใหม่อีกครั้ง';
+    error.value = err.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูล กรุณาลองใหม่อีกครั้ง';
   } finally {
     loading.value = false;
   }
@@ -311,7 +357,7 @@ const availableQuestions = computed(() => {
 
 const selectedQuestionText = computed(() => {
   const question = questions.value.find(q => q.id === selectedQuestion.value);
-  return question ? `${question.number} ${question.text}` : '';
+  return question ? `${question.number} ${question.text}` : 'กรุณาเลือกคำถาม';
 });
 
 const getCompanyName = computed(() => {
@@ -321,7 +367,7 @@ const getCompanyName = computed(() => {
 });
 
 const chartData = computed(() => {
-  if (!surveyData.value) return null;
+  if (!surveyData.value) return { current: [0,0,0,0,0], future: [0,0,0,0,0]};
   
   return {
     current: surveyData.value.current || [0, 0, 0, 0, 0],
@@ -332,7 +378,8 @@ const chartData = computed(() => {
 const maxValue = computed(() => {
   if (!chartData.value) return 40;
   const allValues = [...chartData.value.current, ...chartData.value.future];
-  return Math.max(...allValues, 40);
+  const max = Math.max(...allValues);
+  return max > 0 ? Math.ceil(max / 5) * 5 : 40; // Round up to nearest 5, default 40
 });
 
 // =======================================
@@ -346,38 +393,41 @@ const getBarWidth = (value) => {
   return `${Math.min(width, maxWidth)}%`;
 };
 
+const handleDataFetch = async () => {
+    if (selectedQuestion.value) {
+        loading.value = true;
+        error.value = null;
+        try {
+            await fetchSurveyData(selectedQuestion.value, selectedCompany.value, selectedYear.value);
+        } catch (err) {
+            error.value = err.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูล';
+        } finally {
+            loading.value = false;
+        }
+    }
+}
+
+const onYearChange = async () => {
+    await handleDataFetch();
+}
+
 const onCategoryChange = async () => {
   const firstQuestion = availableQuestions.value[0];
   if (firstQuestion) {
     selectedQuestion.value = firstQuestion.id;
-    await onQuestionChange();
+    await handleDataFetch();
+  } else {
+    selectedQuestion.value = null;
+    surveyData.value = null;
   }
 };
 
 const onQuestionChange = async () => {
-  if (selectedQuestion.value) {
-    loading.value = true;
-    try {
-      await fetchSurveyData(selectedQuestion.value, selectedCompany.value);
-    } catch (err) {
-      error.value = 'เกิดข้อผิดพลาดในการโหลดข้อมูล';
-    } finally {
-      loading.value = false;
-    }
-  }
+  await handleDataFetch();
 };
 
 const onCompanyChange = async () => {
-  if (selectedQuestion.value) {
-    loading.value = true;
-    try {
-      await fetchSurveyData(selectedQuestion.value, selectedCompany.value);
-    } catch (err) {
-      error.value = 'เกิดข้อผิดพลาดในการโหลดข้อมูล';
-    } finally {
-      loading.value = false;
-    }
-  }
+  await handleDataFetch();
 };
 
 // =======================================
