@@ -65,7 +65,7 @@ const fetchQuestions = async () => {
   try {
     const response = await axios.get('http://localhost:5000/api/questions');
     // แปลงข้อมูลคำถามเป็นรูปแบบ "Q{ลำดับ}: {ข้อความ}"
-    fullLabels.value = response.data.map(q => `Q${q.order || q.id}: ${q.text}`);
+    fullLabels.value = response.data.map((q, index) => `Q${index + 1}: ${q.text}`);
   } catch (error) {
     console.error('เกิดข้อผิดพลาดในการดึงข้อมูลคำถาม:', error);
   }
