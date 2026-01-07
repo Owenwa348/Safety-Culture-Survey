@@ -479,6 +479,96 @@ const getAssessmentYears = async (req, res) => {
   }
 };
 
+const getQuestionResultsData = async (req, res) => {
+  try {
+    const { company = 'All', position = 'All', year } = req.query;
+
+    if (!year) {
+      return res.status(400).json({ error: 'Year is a required parameter.' });
+    }
+
+    // 1. Define query conditions
+    const where = {
+      createdAt: {
+        gte: new Date(parseInt(year), 0, 1),
+        lt: new Date(parseInt(year) + 1, 0, 1),
+      },
+      user: {},
+    };
+
+    if (company && company !== 'All') {
+      where.user.company_user = company;
+    }
+    if (position && position !== 'All') {
+      where.user.position_user = position;
+    }
+
+    // 2. Fetch all questions to ensure order and completeness
+    const allQuestions = await prisma.question.findMany({
+      orderBy: {
+        order: 'asc',
+      },
+      select: {
+        id: true,
+      }
+    });
+    const questionIds = allQuestions.map(q => q.id);
+
+    // 3. Fetch aggregated data
+    const surveyAnswers = await prisma.surveyAnswer.findMany({
+      where: {
+        ...where,
+        questionId: { in: questionIds }
+      },
+      select: {
+        questionId: true,
+        currentScore: true,
+        expectedScore: true,
+      },
+    });
+
+    // 4. Initialize data structure
+    const dataByQuestion = new Map(questionIds.map(id => [
+      id,
+      {
+        current: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+        future: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+      }
+    ]));
+
+    // 5. Process answers
+    for (const answer of surveyAnswers) {
+      const questionData = dataByQuestion.get(answer.questionId);
+      if (questionData) {
+        if (answer.currentScore) {
+          questionData.current[answer.currentScore]++;
+        }
+        if (answer.expectedScore) {
+          questionData.future[answer.expectedScore]++;
+        }
+      }
+    }
+
+    // 6. Format for frontend (array ordered by questions)
+    const currentScoreCounts = [];
+    const futureScoreCounts = [];
+    for (const id of questionIds) {
+      const data = dataByQuestion.get(id);
+      currentScoreCounts.push(data.current);
+      futureScoreCounts.push(data.future);
+    }
+    
+    res.status(200).json({
+      current: currentScoreCounts,
+      future: futureScoreCounts,
+    });
+
+  } catch (error) {
+    console.error('Error fetching question results data:', error);
+    res.status(500).json({ error: 'Internal Server Error', message: error.message });
+  }
+};
+
 
 module.exports = {
   getAggregatedSurveyData,
@@ -488,5 +578,6 @@ module.exports = {
   getSurveyDataForChart,
   getCompanies,
   getStackedChartData,
-  getAssessmentYears
+  getAssessmentYears,
+  getQuestionResultsData
 };

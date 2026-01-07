@@ -9,7 +9,8 @@ const {
   getSurveyDataForChart,
   getCompanies,
   getStackedChartData,
-  getAssessmentYears
+  getAssessmentYears,
+  getQuestionResultsData
 } = require('../../controllers/Analytics/analyticsController');
 
 // Get aggregated data for graphs
@@ -35,5 +36,8 @@ router.get('/stacked-chart-data', getStackedChartData);
 
 // Get available assessment years
 router.get('/assessment-years', getAssessmentYears);
+
+// Get data formatted for the QuestionResults.vue component
+router.get('/question-results', getQuestionResultsData);
 
 module.exports = router;

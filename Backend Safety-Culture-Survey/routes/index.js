@@ -1,4 +1,5 @@
 const excelUploadRouter = require('./UploadExcel/excelUploadRoutes');
+const companyRoutes = require('./Company/companyRoutes');
 const adminAuthRoutes = require('./Admin/adminAuthRoutes');
 const superAdminRoutes = require('./SuperAdmin/superAdminRoutes');
 const departmentRoutes = require('./Department/departmentRoutes');
@@ -15,6 +16,7 @@ const dataManagementRoutes = require('./SuperAdmin/dataManagementRoutes');
 
 const registerRoutes = (app) => {
   app.use('/excel-upload', excelUploadRouter);
+  app.use('/api/companies', companyRoutes);
   app.use('/api/admin', adminAuthRoutes);
   app.use('/api/departments', departmentRoutes);
   app.use('/api/experiences', experienceRoutes);
