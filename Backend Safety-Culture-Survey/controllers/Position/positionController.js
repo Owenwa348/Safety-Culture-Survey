@@ -40,11 +40,38 @@ const updatePosition = async (req, res) => {
     if (!name || !name.trim())
       return res.status(400).json({ message: 'ชื่อเป็นข้อมูลบังคับ' })
 
-    const updated = await prisma.position.update({
-      where: { id: parseInt(id) },
-      data: { name: name.trim() },
-    })
-    res.status(200).json(updated)
+    const positionId = parseInt(id);
+
+    // Find the position to get the old name
+    const existingPosition = await prisma.position.findUnique({
+      where: { id: positionId },
+    });
+
+    if (!existingPosition) {
+      return res.status(404).json({ message: "ไม่พบตำแหน่งที่ต้องการแก้ไข" });
+    }
+
+    const oldName = existingPosition.name;
+    const newName = name.trim();
+
+    // If the name is not changing, no need to update users
+    if (oldName === newName) {
+      return res.status(200).json(existingPosition);
+    }
+
+    // Use a transaction to update both position and related users
+    const [updatedPosition] = await prisma.$transaction([
+      prisma.position.update({
+        where: { id: positionId },
+        data: { name: newName },
+      }),
+      prisma.user.updateMany({
+        where: { position_user: oldName },
+        data: { position_user: newName },
+      }),
+    ]);
+
+    res.status(200).json(updatedPosition)
   } catch (error) {
     console.error('updatePosition error:', error)
     res.status(500).json({ message: 'Internal server error' })
