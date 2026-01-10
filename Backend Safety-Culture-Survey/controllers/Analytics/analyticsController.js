@@ -569,6 +569,167 @@ const getQuestionResultsData = async (req, res) => {
   }
 };
 
+// Get all raw data for the workgroup evaluation page
+const getWorkGroupRawData = async (req, res) => {
+  try {
+    const { year, company } = req.query;
+
+    const where = {};
+    if (year && year !== 'null' && year !== 'undefined') {
+      where.createdAt = {
+        gte: new Date(parseInt(year), 0, 1),
+        lt: new Date(parseInt(year) + 1, 0, 1),
+      };
+    }
+
+    const userWhere = {};
+    // This maps the frontend's 'v1'/'v2' to actual company names if needed
+    if (company && company !== 'both' && company !== 'all') {
+      const companies = await prisma.user.findMany({
+        distinct: ['company_user'],
+        select: { company_user: true },
+        orderBy: { company_user: 'asc' } // Ensure consistent order
+      });
+      
+      let companyName = '';
+      if (company === 'v1' && companies.length > 0) companyName = companies[0].company_user;
+      if (company === 'v2' && companies.length > 1) companyName = companies[1].company_user;
+
+      if (companyName) userWhere.company_user = companyName;
+    }
+
+    if (Object.keys(userWhere).length > 0) {
+      where.user = userWhere;
+    }
+
+    const answers = await prisma.surveyAnswer.findMany({
+      where,
+      select: {
+        currentScore: true,
+        expectedScore: true,
+        user: {
+          select: {
+            position_user: true,
+            job_field_user: true,
+            work_group_user: true,
+            company_user: true, // For v1/v2 distinction if not filtered
+          }
+        }
+      }
+    });
+
+    // We also need company names for the version mapping
+    const companies = await prisma.user.findMany({
+        distinct: ['company_user'],
+        select: { company_user: true },
+        orderBy: { company_user: 'asc' }
+      });
+    const companyMap = {};
+    if (companies.length > 0) companyMap[companies[0].company_user] = 'v1';
+    if (companies.length > 1) companyMap[companies[1].company_user] = 'v2';
+
+    // Format data for frontend
+    const formattedData = answers.map(a => ({
+        currentScore: a.currentScore,
+        expectedScore: a.expectedScore,
+        position: a.user?.position_user,
+        jobField: a.user?.job_field_user,
+        workGroup: a.user?.work_group_user,
+        version: a.user ? companyMap[a.user.company_user] : null
+    })).filter(d => d.position && d.jobField && d.workGroup && d.version);
+
+    res.status(200).json(formattedData);
+
+  } catch (error) {
+    console.error('Error fetching workgroup raw data:', error);
+    res.status(500).json({ error: 'Internal Server Error', message: error.message });
+  }
+};
+
+
+const getWorkGroupEvaluationData = async (req, res) => {
+  const {
+    year,
+    positionId,
+    departmentId,
+    workGroupId,
+    company,
+  } = req.query;
+
+  try {
+      const userWhere = {};
+
+      if (positionId && positionId !== 'all') {
+          const position = await prisma.position.findUnique({ where: { id: parseInt(positionId) } });
+          if (position) {
+              userWhere.position_user = position.name;
+          }
+      }
+
+      if (departmentId && departmentId !== 'all') {
+          const department = await prisma.department.findUnique({ where: { id: parseInt(departmentId) } });
+          if (department) {
+              userWhere.job_field_user = department.name;
+          }
+      }
+
+      if (workGroupId && workGroupId !== 'all' && workGroupId.length > 0) {
+          const ids = workGroupId.split(',').map(id => parseInt(id, 10)).filter(id => !isNaN(id));
+          if (ids.length > 0) {
+              const workGroups = await prisma.workGroup.findMany({ where: { id: { in: ids } } });
+              if (workGroups.length > 0) {
+                  userWhere.work_group_user = { in: workGroups.map(wg => wg.name) };
+              }
+          }
+      }
+      
+      if (company && company !== 'both' && company !== 'all') {
+           const companies = await prisma.user.findMany({
+              distinct: ['company_user'],
+              select: { company_user: true },
+              orderBy: { company_user: 'asc' }
+          });
+          let companyName = '';
+          if (company === 'v1' && companies.length > 0) companyName = companies[0].company_user;
+          if (company === 'v2' && companies.length > 1) companyName = companies[1].company_user;
+          if (companyName) {
+              userWhere.company_user = companyName;
+          }
+      }
+
+      const surveyAnswerWhere = { user: userWhere };
+
+      if (year && year !== 'null' && year !== 'undefined') {
+          surveyAnswerWhere.createdAt = {
+              gte: new Date(parseInt(year), 0, 1),
+              lt: new Date(parseInt(year) + 1, 0, 1),
+          };
+      }
+
+      const answers = await prisma.surveyAnswer.findMany({
+          where: surveyAnswerWhere,
+          select: {
+              currentScore: true,
+              expectedScore: true,
+              user: {
+                  select: {
+                      position_user: true,
+                      job_field_user: true,
+                      work_group_user: true,
+                      company_user: true,
+                  }
+              }
+          }
+      });
+      
+      res.status(200).json(answers);
+
+  } catch (error) {
+      console.error('Error fetching workgroup evaluation data:', error);
+      res.status(500).json({ error: 'Internal Server Error', message: error.message });
+  }
+}
+
 
 module.exports = {
   getAggregatedSurveyData,
@@ -579,5 +740,7 @@ module.exports = {
   getCompanies,
   getStackedChartData,
   getAssessmentYears,
-  getQuestionResultsData
+  getQuestionResultsData,
+  getWorkGroupRawData,
+  getWorkGroupEvaluationData
 };

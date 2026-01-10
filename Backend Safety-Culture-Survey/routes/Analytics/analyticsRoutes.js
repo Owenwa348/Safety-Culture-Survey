@@ -10,7 +10,9 @@ const {
   getCompanies,
   getStackedChartData,
   getAssessmentYears,
-  getQuestionResultsData
+  getQuestionResultsData,
+  getWorkGroupRawData,
+  getWorkGroupEvaluationData
 } = require('../../controllers/Analytics/analyticsController');
 
 // Get aggregated data for graphs
@@ -39,5 +41,11 @@ router.get('/assessment-years', getAssessmentYears);
 
 // Get data formatted for the QuestionResults.vue component
 router.get('/question-results', getQuestionResultsData);
+
+// Get raw data for the WorkGroupEvaluationResults page
+router.get('/workgroup-raw-data', getWorkGroupRawData);
+
+// Get filtered data for the WorkGroupEvaluationResults page
+router.get('/workgroup-evaluation', getWorkGroupEvaluationData);
 
 module.exports = router;
