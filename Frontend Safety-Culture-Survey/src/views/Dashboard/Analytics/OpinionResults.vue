@@ -21,7 +21,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-center">
           <div class="p-4">
             <div class="text-2xl font-bold text-blue-600 mb-1">
-              {{ evaluateOpinions.length }}
+              {{ questions.length }}
             </div>
             <div class="text-sm text-gray-600">คำถามทั้งหมด</div>
           </div>
@@ -48,13 +48,13 @@
                 @change="handleQuestionSelect"
                 class="w-full px-4 py-3 pl-11 pr-10 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none bg-white cursor-pointer hover:border-gray-400 text-gray-700 font-medium"
               >
-                <option value="">แสดงทั้งหมด ({{ evaluateOpinions.length }} ข้อ)</option>
+                <option value="">แสดงทั้งหมด ({{ questions.length }} ข้อ)</option>
                 <option
-                  v-for="item in evaluateOpinions"
+                  v-for="item in questions"
                   :key="item.id"
                   :value="item.id"
                 >
-                  ข้อ {{ item.id }}: {{ truncateText(item.question, 70) }}
+                  ข้อ {{ item.id }}: {{ truncateText(item.text, 70) }}
                 </option>
               </select>
               <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
@@ -112,7 +112,7 @@
         <div
           v-for="item in filteredOpinions"
           :key="item.id"
-          :ref="`question-${item.id}`"
+          :ref="el => questionRefs[item.id] = el"
           class="bg-white rounded-lg shadow-sm border-2 border-gray-200 hover:shadow-lg transition-all scroll-mt-24"
           :class="{ 'ring-2 ring-blue-500 shadow-lg border-blue-300': highlightedQuestion === item.id }"
         >
@@ -132,7 +132,7 @@
                   </span>
                 </div>
                 <p class="text-base text-gray-800 leading-relaxed font-medium">
-                  {{ item.question }}
+                  {{ item.text }}
                 </p>
               </div>
               <button
@@ -200,100 +200,110 @@
   </div>
 </template>
 
-<script>
-import { evaluateOpinions } from './EvaluateOpinion.js'
-import NavbarDashboard from '../../../components/NavbarDashboard.vue'
+<script setup>
+import { ref, onMounted, computed, nextTick } from 'vue';
+import axios from 'axios';
+import NavbarDashboard from '../../../components/NavbarDashboard.vue';
 
-export default {
-  name: 'OpinionResults',
-  components: {
-    NavbarDashboard
-  },
-  data() {
-    return {
-      evaluateOpinions: evaluateOpinions,
-      expandedQuestions: [],
-      selectedQuestion: '',
-      highlightedQuestion: null
-    }
-  },
-  computed: {
-    totalOpinions() {
-      return this.evaluateOpinions.reduce((total, item) => total + item.opinions.length, 0)
-    },
-    allExpanded() {
-      return this.expandedQuestions.length === this.filteredOpinions.length && this.filteredOpinions.length > 0
-    },
-    filteredOpinions() {
-      if (!this.selectedQuestion) {
-        return this.evaluateOpinions
-      }
-      return this.evaluateOpinions.filter(item => item.id === this.selectedQuestion)
-    }
-  },
-  methods: {
-    toggleQuestion(questionId) {
-      const index = this.expandedQuestions.indexOf(questionId)
-      if (index > -1) {
-        this.expandedQuestions.splice(index, 1)
-      } else {
-        this.expandedQuestions.push(questionId)
-      }
-    },
-    toggleAllQuestions() {
-      if (this.allExpanded) {
-        this.expandedQuestions = []
-      } else {
-        this.expandedQuestions = this.evaluateOpinions.map(item => item.id)
-      }
-    },
-    getInitials(name) {
-      return name.split(' ').map(word => word.charAt(0)).join('')
-    },
-    handleQuestionSelect() {
-      if (!this.selectedQuestion) {
-        // แสดงทั้งหมด - ไม่เปิดข้อใดๆ
-        this.expandedQuestions = []
-        this.highlightedQuestion = null
-        return
-      }
+const questions = ref([]);
+const expandedQuestions = ref([]);
+const selectedQuestion = ref('');
+const highlightedQuestion = ref(null);
+const questionRefs = ref({});
 
-      const questionId = this.selectedQuestion
-      
-      // เปิดเฉพาะข้อที่เลือก
-      this.expandedQuestions = [questionId]
-      
-      // Highlight คำถาม
-      this.highlightedQuestion = questionId
-
-      // Scroll ไปยังคำถาม
-      this.$nextTick(() => {
-        const element = this.$refs[`question-${questionId}`]
-        if (element && element[0]) {
-          element[0].scrollIntoView({ behavior: 'smooth', block: 'center' })
-          
-          // ลบ highlight หลัง 2 วินาที
-          setTimeout(() => {
-            this.highlightedQuestion = null
-          }, 2000)
-        }
-      })
-    },
-    truncateText(text, maxLength) {
-      if (text.length <= maxLength) return text
-      return text.substring(0, maxLength) + '...'
-    },
-    getCurrentQuestionOpinions() {
-      if (!this.selectedQuestion) return 0
-      const question = this.evaluateOpinions.find(item => item.id === this.selectedQuestion)
-      return question ? question.opinions.length : 0
-    }
-  },
-  mounted() {
-    // ไม่เปิดข้อใดๆ เป็นค่าเริ่มต้น - ให้ผู้ใช้เลือกเอง
-    this.expandedQuestions = []
+const fetchQuestions = async () => {
+  try {
+    const response = await axios.get('http://localhost:5000/api/questions');
+    questions.value = response.data.map(q => ({
+      ...q,
+      opinions: q.surveyAnswers.map(sa => ({
+        name: sa.user ? sa.user.name_user : 'ไม่ระบุชื่อ',
+        comment: sa.comment
+      }))
+    }));
+  } catch (error) {
+    console.error('Error fetching questions:', error);
+    questions.value = [
+      { id: 1, text: 'เกิดข้อผิดพลาดในการโหลดคำถาม', opinions: [] }
+    ];
   }
-}
+};
+
+onMounted(() => {
+  fetchQuestions();
+  expandedQuestions.value = []; // เริ่มต้นโดยไม่เปิดข้อใดๆ
+});
+
+const totalOpinions = computed(() => {
+  return questions.value.reduce((total, item) => total + item.opinions.length, 0);
+});
+
+const allExpanded = computed(() => {
+  return expandedQuestions.value.length === filteredOpinions.value.length && filteredOpinions.value.length > 0;
+});
+
+const filteredOpinions = computed(() => {
+  if (!selectedQuestion.value) {
+    return questions.value;
+  }
+  return questions.value.filter(item => item.id === selectedQuestion.value);
+});
+
+const toggleQuestion = (questionId) => {
+  const index = expandedQuestions.value.indexOf(questionId);
+  if (index > -1) {
+    expandedQuestions.value.splice(index, 1);
+  } else {
+    expandedQuestions.value.push(questionId);
+  }
+};
+
+const toggleAllQuestions = () => {
+  if (allExpanded.value) {
+    expandedQuestions.value = [];
+  } else {
+    expandedQuestions.value = questions.value.map(item => item.id);
+  }
+};
+
+const getInitials = (name) => {
+  if (!name) return '';
+  return name.split(' ').map(word => word.charAt(0)).join('');
+};
+
+const handleQuestionSelect = () => {
+  if (!selectedQuestion.value) {
+    expandedQuestions.value = [];
+    highlightedQuestion.value = null;
+    return;
+  }
+
+  const questionId = selectedQuestion.value;
+  expandedQuestions.value = [questionId];
+  highlightedQuestion.value = questionId;
+
+  nextTick(() => {
+    const element = questionRefs.value[questionId];
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => {
+        highlightedQuestion.value = null;
+      }, 2000);
+    }
+  });
+};
+
+const truncateText = (text, maxLength) => {
+  if (!text) return '';
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + '...';
+};
+
+const getCurrentQuestionOpinions = () => {
+  if (!selectedQuestion.value) return 0;
+  const question = questions.value.find(item => item.id === selectedQuestion.value);
+  return question ? question.opinions.length : 0;
+};
 </script>
 
 <style scoped>
@@ -305,7 +315,6 @@ export default {
   scroll-margin-top: 6rem;
 }
 
-/* Custom select dropdown arrow */
 select {
   background-image: none;
 }

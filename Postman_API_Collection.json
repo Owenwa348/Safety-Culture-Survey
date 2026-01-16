@@ -1,0 +1,140 @@
+{
+  "info": {
+    "name": "Safety Culture Survey - Analytics API",
+    "description": "API endpoints for fetching survey data and analytics",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Companies",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/analytics/companies",
+          "host": ["{{base_url}}"],
+          "path": ["api", "analytics", "companies"]
+        },
+        "description": "ดึงรายชื่อบริษัททั้งหมด"
+      }
+    },
+    {
+      "name": "Categories",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/categories",
+          "host": ["{{base_url}}"],
+          "path": ["api", "categories"]
+        },
+        "description": "ดึงหมวดหมู่คำถามทั้งหมด"
+      }
+    },
+    {
+      "name": "Questions",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/questions",
+          "host": ["{{base_url}}"],
+          "path": ["api", "questions"]
+        },
+        "description": "ดึงคำถามทั้งหมด"
+      }
+    },
+    {
+      "name": "Survey Data - All Companies",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/analytics/survey-data?questionId=1&companyId=combined&year=2025",
+          "host": ["{{base_url}}"],
+          "path": ["api", "analytics", "survey-data"],
+          "query": [
+            {
+              "key": "questionId",
+              "value": "1",
+              "description": "ID ของคำถาม"
+            },
+            {
+              "key": "companyId",
+              "value": "combined",
+              "description": "ID ของบริษัท (combined = ทั้งหมด)"
+            },
+            {
+              "key": "year",
+              "value": "2025",
+              "description": "ปี (optional)"
+            }
+          ]
+        },
+        "description": "ดึงข้อมูลการประเมินแยกตามคะแนน (1-5) สำหรับคำถาม 1 ทั้งบริษัท"
+      }
+    },
+    {
+      "name": "Survey Data - Specific Company",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/analytics/survey-data?questionId=1&companyId=Siemens&year=2025",
+          "host": ["{{base_url}}"],
+          "path": ["api", "analytics", "survey-data"],
+          "query": [
+            {
+              "key": "questionId",
+              "value": "1"
+            },
+            {
+              "key": "companyId",
+              "value": "Siemens",
+              "description": "ตัวอย่าง: Siemens, PTT"
+            },
+            {
+              "key": "year",
+              "value": "2025"
+            }
+          ]
+        },
+        "description": "ดึงข้อมูลการประเมินสำหรับบริษัท Siemens"
+      }
+    },
+    {
+      "name": "Survey Data - Different Question",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/analytics/survey-data?questionId=5&companyId=combined&year=2025",
+          "host": ["{{base_url}}"],
+          "path": ["api", "analytics", "survey-data"],
+          "query": [
+            {
+              "key": "questionId",
+              "value": "5",
+              "description": "เปลี่ยนเป็น question ID ที่ต้องการ"
+            },
+            {
+              "key": "companyId",
+              "value": "combined"
+            },
+            {
+              "key": "year",
+              "value": "2025"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ]
+}

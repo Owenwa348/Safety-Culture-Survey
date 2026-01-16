@@ -50,11 +50,38 @@ const updateDepartment = async (req, res) => {
       return res.status(400).json({ message: 'ชื่อสายงานเป็นข้อมูลบังคับ' })
     }
 
-    const updated = await prisma.department.update({
-      where: { id: parseInt(id) },
-      data: { name: name.trim() },
-    })
-    res.status(200).json(updated)
+    const departmentId = parseInt(id);
+
+    // Find the department to get the old name
+    const existingDepartment = await prisma.department.findUnique({
+      where: { id: departmentId },
+    });
+
+    if (!existingDepartment) {
+      return res.status(404).json({ message: "ไม่พบสายงานที่ต้องการแก้ไข" });
+    }
+
+    const oldName = existingDepartment.name;
+    const newName = name.trim();
+
+    // If the name is not changing, no need to update users
+    if (oldName === newName) {
+      return res.status(200).json(existingDepartment);
+    }
+
+    // Use a transaction to update both department and related users
+    const [updatedDepartment] = await prisma.$transaction([
+      prisma.department.update({
+        where: { id: departmentId },
+        data: { name: newName },
+      }),
+      prisma.user.updateMany({
+        where: { job_field_user: oldName },
+        data: { job_field_user: newName },
+      }),
+    ]);
+    
+    res.status(200).json(updatedDepartment)
   } catch (error) {
     console.error('updateDepartment error:', error)
     res.status(500).json({ message: 'Internal server error' })

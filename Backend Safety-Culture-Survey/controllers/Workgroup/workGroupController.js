@@ -40,11 +40,38 @@ const updateWorkGroup = async (req, res) => {
     if (!name || !name.trim())
       return res.status(400).json({ message: 'ชื่อเป็นข้อมูลบังคับ' })
 
-    const updated = await prisma.workGroup.update({
-      where: { id: parseInt(id) },
-      data: { name: name.trim() },
-    })
-    res.status(200).json(updated)
+    const workGroupId = parseInt(id);
+
+    // Find the workGroup to get the old name
+    const existingWorkGroup = await prisma.workGroup.findUnique({
+      where: { id: workGroupId },
+    });
+
+    if (!existingWorkGroup) {
+      return res.status(404).json({ message: "ไม่พบกลุ่มงานที่ต้องการแก้ไข" });
+    }
+
+    const oldName = existingWorkGroup.name;
+    const newName = name.trim();
+
+    // If the name is not changing, no need to update users
+    if (oldName === newName) {
+      return res.status(200).json(existingWorkGroup);
+    }
+
+    // Use a transaction to update both workGroup and related users
+    const [updatedWorkGroup] = await prisma.$transaction([
+      prisma.workGroup.update({
+        where: { id: workGroupId },
+        data: { name: newName },
+      }),
+      prisma.user.updateMany({
+        where: { work_group_user: oldName },
+        data: { work_group_user: newName },
+      }),
+    ]);
+
+    res.status(200).json(updatedWorkGroup)
   } catch (error) {
     console.error('updateWorkGroup error:', error)
     res.status(500).json({ message: 'Internal server error' })

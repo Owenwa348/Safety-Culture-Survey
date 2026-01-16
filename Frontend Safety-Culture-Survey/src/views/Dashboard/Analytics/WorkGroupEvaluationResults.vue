@@ -1,33 +1,120 @@
 <!-- WorkGroupEvaluationResults.vue -->
 <script setup>
 import { ref, computed, onMounted, watch } from "vue";
+import axios from 'axios';
 import BetChart from "../Showgraph/BetChart.vue";
 import NavbarDashboard from '../../../components/NavbarDashboard.vue';
-import { 
-  departments, 
-  unitsByDepartment, 
-  workGroups, 
-  evaluationData 
-} from './WorkGroupbasedata.js';
 
 // ============================================
 // SECTION 1: STATE MANAGEMENT
 // ============================================
+const positions = ref([]);
+const departments = ref([]);
+const workGroups = ref([]);
+const years = ref([]);
 const selectedDepartment = ref("all");
-const selectedUnit = ref("all");
-const selectedGroups = ref(["all"]);
-const selectedVersion = ref("both");
+const selectedUnit = ref("all"); // Corresponds to departmentId
+const selectedGroups = ref(["all"]); // Corresponds to workGroupId
+const selectedVersion = ref("both"); // Corresponds to company
 const selectedPeriod = ref("both");
+const selectedYear = ref(null);
 const versionOptions = ref([]);
 
+const evaluationResults = ref([]); // To store data from the API
+const isLoading = ref(false);
+
 // ============================================
-// SECTION 2: HELPER FUNCTIONS
+// SECTION 2: API & HELPER FUNCTIONS
 // ============================================
 
 /**
+ * Fetches evaluation data from the API based on current filters.
+ */
+const fetchEvaluationData = async () => {
+  if (!selectedYear.value) return;
+  isLoading.value = true;
+  try {
+    const params = new URLSearchParams({
+      year: selectedYear.value,
+      positionId: selectedDepartment.value, // `selectedDepartment` in frontend is `position` in backend
+      departmentId: selectedUnit.value, // `selectedUnit` in frontend is `department` in backend
+      workGroupId: selectedGroups.value.join(','),
+      company: selectedVersion.value,
+    });
+    
+    const response = await axios.get(`http://localhost:5000/api/analytics/workgroup-evaluation?${params.toString()}`);
+    evaluationResults.value = response.data;
+  } catch (error) {
+    console.error('Error fetching evaluation data:', error);
+    evaluationResults.value = []; // Clear data on error
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+/**
+ * Fetches positions from the API.
+ */
+const fetchPositions = async () => {
+  try {
+    const response = await axios.get('http://localhost:5000/api/positions');
+    positions.value = [{ id: 'all', name: 'ทั้งหมด' }, ...response.data];
+  } catch (error) {
+    console.error('Error fetching positions:', error);
+    positions.value = [{ id: 'all', name: 'ทั้งหมด' }];
+  }
+};
+
+/**
+ * Fetches departments from the API.
+ */
+const fetchDepartments = async () => {
+  try {
+    const response = await axios.get('http://localhost:5000/api/departments');
+    departments.value = [{ id: 'all', name: 'ทั้งหมด' }, ...response.data];
+  } catch (error) {
+    console.error('Error fetching departments:', error);
+    departments.value = [{ id: 'all', name: 'ทั้งหมด' }];
+  }
+};
+
+/**
+ * Fetches work groups from the API.
+ */
+const fetchWorkGroups = async () => {
+  try {
+    const response = await axios.get('http://localhost:5000/api/workgroups');
+    workGroups.value = [{ id: 'all', name: 'ทั้งหมด' }, ...response.data];
+  } catch (error) {
+    console.error('Error fetching work groups:', error);
+    workGroups.value = [{ id: 'all', name: 'ทั้งหมด' }];
+  }
+};
+
+/**
+ * Fetches available assessment years from the API.
+ */
+const fetchAssessmentYears = async () => {
+  try {
+    const response = await axios.get('http://localhost:5000/api/analytics/assessment-years');
+    if (response.data && response.data.length > 0) {
+      years.value = response.data;
+      selectedYear.value = response.data[0];
+    } else {
+      const currentYear = new Date().getFullYear();
+      years.value = [currentYear];
+      selectedYear.value = currentYear;
+    }
+  } catch (error) {
+    console.error('Error fetching assessment years:', error);
+    const currentYear = new Date().getFullYear();
+    years.value = [currentYear];
+    selectedYear.value = currentYear;
+  }
+};
+
+/**
  * ตรวจสอบว่าควรรวม version นี้หรือไม่
- * @param {string} version - v1 หรือ v2
- * @returns {boolean}
  */
 const shouldInclude = (version) => {
   return selectedVersion.value === version || selectedVersion.value === "both";
@@ -35,8 +122,6 @@ const shouldInclude = (version) => {
 
 /**
  * ตรวจสอบว่าควรรวม period นี้หรือไม่
- * @param {string} period - current หรือ future
- * @returns {boolean}
  */
 const shouldIncludePeriod = (period) => {
   return selectedPeriod.value === period || selectedPeriod.value === "both";
@@ -44,8 +129,6 @@ const shouldIncludePeriod = (period) => {
 
 /**
  * คำนวณค่าเฉลี่ยจาก array ของคะแนน
- * @param {Array} scores - array ของคะแนน
- * @returns {number}
  */
 const calculateAverage = (scores) => {
   if (!Array.isArray(scores) || scores.length === 0) return 0;
@@ -55,18 +138,33 @@ const calculateAverage = (scores) => {
 };
 
 /**
- * ดึงข้อมูล version options จาก API (Mock)
+ * Fetches company options from the API.
  */
 const fetchVersionOptions = async () => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve([
-        { id: 'both', name: 'verte group' },
-        { id: 'v1', name: 'verte smart solution' },
-        { id: 'v2', name: 'verte security' }
-      ]);
-    }, 100);
-  });
+  try {
+    const response = await axios.get('http://localhost:5000/api/companies');
+    const companyNames = response.data;
+
+    const options = [
+      { id: 'both', name: 'บริษัททั้งหมด' },
+    ];
+
+    if (companyNames.length > 0) {
+      options.push({ id: 'v1', name: companyNames[0] });
+    }
+    if (companyNames.length > 1) {
+      options.push({ id: 'v2', name: companyNames[1] });
+    }
+    
+    return options;
+  } catch (error) {
+    console.error('Error fetching companies:', error);
+    return [
+      { id: 'both', name: 'บริษัททั้งหมด' },
+      { id: 'v1', name: 'Company A (Error)' },
+      { id: 'v2', name: 'Company B (Error)' }
+    ];
+  }
 };
 
 // ============================================
@@ -77,504 +175,120 @@ const fetchVersionOptions = async () => {
  * สายงานที่สามารถเลือกได้ตามตำแหน่งที่เลือก
  */
 const availableUnits = computed(() => {
-  if (selectedDepartment.value === "all") {
-    const allUnits = new Set();
-    Object.keys(unitsByDepartment).forEach(dept => {
-      unitsByDepartment[dept].forEach(unit => {
-        allUnits.add(JSON.stringify(unit));
-      });
-    });
-    return Array.from(allUnits).map(u => JSON.parse(u));
-  }
-  return unitsByDepartment[selectedDepartment.value] || [];
+  return departments.value;
 });
 
 /**
  * กลุ่มงานที่สามารถเลือกได้ตามตำแหน่งและสายงานที่เลือก
  */
 const availableWorkGroups = computed(() => {
-  if (selectedDepartment.value === "all" && selectedUnit.value === "all") {
-    return workGroups;
-  }
-  
-  if (selectedDepartment.value === "all" && selectedUnit.value !== "all") {
-    const availableGroups = [{ id: 'all', name: 'ทั้งหมด' }];
-    const groupSet = new Set();
-    
-    Object.keys(evaluationData).forEach(deptKey => {
-      const dept = evaluationData[deptKey];
-      if (dept[selectedUnit.value]) {
-        Object.keys(dept[selectedUnit.value]).forEach(groupKey => {
-          groupSet.add(groupKey);
-        });
-      }
-    });
-    
-    workGroups.forEach(group => {
-      if (group.id !== 'all' && groupSet.has(group.id)) {
-        availableGroups.push(group);
-      }
-    });
-    
-    return availableGroups;
-  }
-  
-  if (selectedUnit.value === "all") {
-    return workGroups;
-  }
-  
-  const dept = evaluationData[selectedDepartment.value];
-  if (!dept) return workGroups;
-  
-  const unit = dept[selectedUnit.value];
-  if (!unit) return workGroups;
-  
-  const availableGroups = [{ id: 'all', name: 'ทั้งหมด' }];
-  workGroups.forEach(group => {
-    if (group.id !== 'all' && unit[group.id]) {
-      availableGroups.push(group);
-    }
-  });
-  
-  return availableGroups;
+  return workGroups.value;
 });
 
 /**
  * ข้อมูลสำหรับแสดงกราฟ
  */
 const chartData = computed(() => {
-  const datasets = [];
+  const data = evaluationResults.value;
+  if (!data || data.length === 0) return { labels: [], datasets: [] };
+
+  const groupedData = new Map();
   let labels = [];
+  const datasets = [];
 
-  // CASE 1: เลือกตำแหน่ง = "ทั้งหมด"
-  if (selectedDepartment.value === "all") {
-    
-    // CASE 1.1: เลือกสายงานเฉพาะ
-    if (selectedUnit.value !== "all") {
-      
-      // CASE 1.1.1: เลือกกลุ่มงาน = "ทั้งหมด"
-      if (selectedGroups.value.includes('all')) {
-        const availableGroupsList = workGroups.filter(g => g.id !== 'all');
-        labels = availableGroupsList.map(g => g.name);
-        
-        const getWorkGroupAverages = (period) => {
-          return availableGroupsList.map(group => {
-            const scores = [];
-            
-            Object.keys(evaluationData).forEach(deptKey => {
-              const deptData = evaluationData[deptKey];
-              if (!deptData || !deptData[selectedUnit.value]) return;
-              
-              const groupData = deptData[selectedUnit.value][group.id];
-              if (groupData) {
-                if (shouldInclude("v1") && groupData.v1?.[period]) {
-                  scores.push(...groupData.v1[period]);
-                }
-                if (shouldInclude("v2") && groupData.v2?.[period]) {
-                  scores.push(...groupData.v2[period]);
-                }
-              }
-            });
-            
-            return calculateAverage(scores);
-          });
-        };
-        
-        if (shouldIncludePeriod("current")) {
-          datasets.push({
-            label: "ปัจจุบัน",
-            backgroundColor: "#1e40af",
-            data: getWorkGroupAverages("current")
-          });
-        }
-        
-        if (shouldIncludePeriod("future")) {
-          datasets.push({
-            label: "อนาคต",
-            backgroundColor: "#3b82f6",
-            data: getWorkGroupAverages("future")
-          });
-        }
-      } 
-      // CASE 1.1.2: เลือกกลุ่มงานเฉพาะ
-      else {
-        labels = selectedGroups.value.map(groupId => {
-          const group = workGroups.find(g => g.id === groupId);
-          return group ? group.name : groupId;
-        });
-        
-        const getSelectedGroupsAverages = (period) => {
-          return selectedGroups.value.map(groupId => {
-            const scores = [];
-            
-            Object.keys(evaluationData).forEach(deptKey => {
-              const deptData = evaluationData[deptKey];
-              if (!deptData || !deptData[selectedUnit.value]) return;
-              
-              const groupData = deptData[selectedUnit.value][groupId];
-              if (groupData) {
-                if (shouldInclude("v1") && groupData.v1?.[period]) {
-                  scores.push(...groupData.v1[period]);
-                }
-                if (shouldInclude("v2") && groupData.v2?.[period]) {
-                  scores.push(...groupData.v2[period]);
-                }
-              }
-            });
-            
-            return calculateAverage(scores);
-          });
-        };
-        
-        if (shouldIncludePeriod("current")) {
-          datasets.push({
-            label: "ปัจจุบัน",
-            backgroundColor: "#1e40af",
-            data: getSelectedGroupsAverages("current")
-          });
-        }
-        
-        if (shouldIncludePeriod("future")) {
-          datasets.push({
-            label: "อนาคต",
-            backgroundColor: "#3b82f6",
-            data: getSelectedGroupsAverages("future")
-          });
-        }
-      }
-    } 
-    // CASE 1.2: เลือกสายงาน = "ทั้งหมด" -> แสดงกราฟเป็นสายงานเสมอ
-    else {
-      // รวมสายงานทั้งหมดจากทุกตำแหน่ง
-      const allUnitsMap = new Map();
-      Object.keys(evaluationData).forEach(deptKey => {
-        Object.keys(evaluationData[deptKey]).forEach(unitKey => {
-          if (!allUnitsMap.has(unitKey)) {
-            const unitInfo = availableUnits.value.find(u => u.id === unitKey);
-            if (unitInfo) {
-              allUnitsMap.set(unitKey, unitInfo.name);
-            }
-          }
-        });
-      });
-      
-      const unitsList = Array.from(allUnitsMap.entries());
-      labels = unitsList.map(([id, name]) => name);
-      
-      const getUnitAverages = (period) => {
-        return unitsList.map(([unitId]) => {
-          const scores = [];
-          
-          Object.keys(evaluationData).forEach(deptKey => {
-            const deptData = evaluationData[deptKey];
-            if (!deptData || !deptData[unitId]) return;
-            
-            // กำหนดกลุ่มงานที่จะนับ
-            const groupsToUse = selectedGroups.value.includes('all') 
-              ? Object.keys(deptData[unitId])
-              : selectedGroups.value;
-            
-            groupsToUse.forEach(groupKey => {
-              const groupData = deptData[unitId][groupKey];
-              if (groupData) {
-                if (shouldInclude("v1") && groupData.v1?.[period]) {
-                  scores.push(...groupData.v1[period]);
-                }
-                if (shouldInclude("v2") && groupData.v2?.[period]) {
-                  scores.push(...groupData.v2[period]);
-                }
-              }
-            });
-          });
-          
-          return calculateAverage(scores);
-        });
-      };
-      
-      if (shouldIncludePeriod("current")) {
-        datasets.push({
-          label: "ปัจจุบัน",
-          backgroundColor: "#1e40af",
-          data: getUnitAverages("current")
-        });
-      }
-      
-      if (shouldIncludePeriod("future")) {
-        datasets.push({
-          label: "อนาคต",
-          backgroundColor: "#3b82f6",
-          data: getUnitAverages("future")
-        });
-      }
-    }
-    
-    return { labels, datasets };
+  // Determine the primary dimension for the x-axis (labels)
+  const groupByUnit = selectedUnit.value === 'all' && selectedDepartment.value !== 'all';
+  const groupByDepartment = selectedDepartment.value === 'all';
+
+  let dimensionKey;
+  let dimensionSource;
+
+  if (groupByDepartment) {
+    // When "All Positions" is selected, group by department (สายงาน)
+    dimensionKey = 'job_field_user';
+    dimensionSource = departments.value.filter(d => d.id !== 'all');
+  } else if (groupByUnit) {
+    // When a specific position is selected but "All Departments" is selected, group by department (สายงาน)
+    dimensionKey = 'job_field_user';
+    dimensionSource = departments.value.filter(u => u.id !== 'all');
+  } else {
+    // When a specific department (สายงาน) is selected, group by workgroup (กลุ่มงาน)
+    dimensionKey = 'work_group_user';
+    dimensionSource = selectedGroups.value.includes('all')
+      ? workGroups.value.filter(g => g.id !== 'all')
+      : workGroups.value.filter(g => selectedGroups.value.includes(g.id));
   }
+  
+  labels = dimensionSource.map(item => item.name);
 
-  // CASE 2: เลือกตำแหน่งเฉพาะ และเลือกสายงาน = "ทั้งหมด"
-  if (selectedUnit.value === "all") {
-    const units = unitsByDepartment[selectedDepartment.value] || [];
-    labels = units.map(u => u.name);
-    
-    const getUnitAverages = (period) => {
-      return units.map(unitObj => {
-        const scores = [];
-        const unit = evaluationData[selectedDepartment.value]?.[unitObj.id];
-        
-        if (!unit) return 0;
-        
-        const groupsToUse = selectedGroups.value.includes('all') 
-          ? Object.keys(unit)
-          : selectedGroups.value;
-        
-        groupsToUse.forEach(groupId => {
-          const group = unit[groupId];
-          if (group) {
-            if (shouldInclude("v1") && group.v1?.[period]) {
-              scores.push(...group.v1[period]);
-            }
-            if (shouldInclude("v2") && group.v2?.[period]) {
-              scores.push(...group.v2[period]);
-            }
-          }
-        });
-        
-        return calculateAverage(scores);
-      });
-    };
-    
-    if (shouldIncludePeriod("current")) {
-      datasets.push({
-        label: "ปัจจุบัน",
-        backgroundColor: "#1e40af",
-        data: getUnitAverages("current")
-      });
-    }
-    
-    if (shouldIncludePeriod("future")) {
-      datasets.push({
-        label: "อนาคต",
-        backgroundColor: "#3b82f6",
-        data: getUnitAverages("future")
-      });
-    }
-    
-    return { labels, datasets };
-  }
-
-  // CASE 3: เลือกกลุ่มงาน = "ทั้งหมด"
-  if (selectedGroups.value.includes('all')) {
-    const unit = evaluationData[selectedDepartment.value]?.[selectedUnit.value];
-    if (!unit) return { labels: [], datasets: [] };
-    
-    const groupIds = Object.keys(unit);
-    labels = groupIds.map(groupId => {
-      const group = workGroups.find(g => g.id === groupId);
-      return group ? group.name : groupId;
-    });
-    
-    const getGroupAverages = (period) => {
-      return groupIds.map(groupId => {
-        const group = unit[groupId];
-        const scores = [];
-        
-        if (group) {
-          if (shouldInclude("v1") && group.v1?.[period]) {
-            scores.push(...group.v1[period]);
-          }
-          if (shouldInclude("v2") && group.v2?.[period]) {
-            scores.push(...group.v2[period]);
-          }
-        }
-        
-        return calculateAverage(scores);
-      });
-    };
-    
-    if (shouldIncludePeriod("current")) {
-      datasets.push({
-        label: "ปัจจุบัน",
-        backgroundColor: "#1e40af",
-        data: getGroupAverages("current")
-      });
-    }
-    
-    if (shouldIncludePeriod("future")) {
-      datasets.push({
-        label: "อนาคต",
-        backgroundColor: "#3b82f6",
-        data: getGroupAverages("future")
-      });
-    }
-    
-    return { labels, datasets };
-  }
-
-  // CASE 4: เลือกเฉพาะบางกลุ่มงาน
-  labels = selectedGroups.value.map(groupId => {
-    const group = workGroups.find(g => g.id === groupId);
-    return group ? group.name : groupId;
+  // Initialize map with all possible labels to maintain order
+  labels.forEach(label => {
+    groupedData.set(label, { current: [], future: [] });
   });
-  
-  const getSelectedGroupsAverages = (period) => {
-    return selectedGroups.value.map(groupId => {
-      const unit = evaluationData[selectedDepartment.value]?.[selectedUnit.value];
-      if (!unit) return 0;
-      
-      const group = unit[groupId];
-      const scores = [];
-      
-      if (group) {
-        if (shouldInclude("v1") && group.v1?.[period]) {
-          scores.push(...group.v1[period]);
+
+  // Group scores from results
+  data.forEach(item => {
+    if (item.user) {
+        const groupName = item.user[dimensionKey];
+        if (groupedData.has(groupName)) {
+            const group = groupedData.get(groupName);
+            if(item.currentScore) group.current.push(item.currentScore);
+            if(item.expectedScore) group.future.push(item.expectedScore);
         }
-        if (shouldInclude("v2") && group.v2?.[period]) {
-          scores.push(...group.v2[period]);
-        }
-      }
-      
-      return calculateAverage(scores);
-    });
-  };
-  
+    }
+  });
+
+  // Calculate averages and build datasets
+  const currentScores = [];
+  const futureScores = [];
+
+  labels.forEach(label => {
+    const scores = groupedData.get(label);
+    currentScores.push(calculateAverage(scores.current));
+    futureScores.push(calculateAverage(scores.future));
+  });
+
   if (shouldIncludePeriod("current")) {
     datasets.push({
       label: "ปัจจุบัน",
       backgroundColor: "#1e40af",
-      data: getSelectedGroupsAverages("current")
+      data: currentScores
     });
   }
-  
+
   if (shouldIncludePeriod("future")) {
     datasets.push({
       label: "อนาคต",
       backgroundColor: "#3b82f6",
-      data: getSelectedGroupsAverages("future")
+      data: futureScores
     });
   }
-
+  
   return { labels, datasets };
 });
+
 
 /**
  * สรุปข้อมูลที่เลือก
  */
 const dataSummary = computed(() => {
-  const deptName = departments.find(d => d.id === selectedDepartment.value)?.name || "";
+  const deptName = positions.value.find(d => d.id === selectedDepartment.value)?.name || "ทั้งหมด";
   
-  let unitName = "ทั้งหมด";
-  if (selectedUnit.value !== "all") {
-    if (selectedDepartment.value === "all") {
-      const unit = availableUnits.value.find(u => u.id === selectedUnit.value);
-      unitName = unit?.name || selectedUnit.value;
-    } else {
-      const unit = unitsByDepartment[selectedDepartment.value]?.find(u => u.id === selectedUnit.value);
-      unitName = unit?.name || selectedUnit.value;
-    }
-  }
+  const unitName = departments.value.find(u => u.id === selectedUnit.value)?.name || "ทั้งหมด";
   
-  let groupNames = "";
-  if (selectedGroups.value.includes('all')) {
-    groupNames = "ทั้งหมด";
-  } else {
+  let groupNames = "ทั้งหมด";
+  if (!selectedGroups.value.includes('all')) {
     groupNames = selectedGroups.value
-      .map(id => workGroups.find(g => g.id === id)?.name)
+      .map(id => workGroups.value.find(g => g.id === id)?.name)
       .filter(Boolean)
-      .join(", ");
+      .join(", ") || "ไม่มี";
   }
   
-  let total = 0;
-
-  if (selectedDepartment.value === "all") {
-    if (selectedUnit.value === "all") {
-      Object.keys(evaluationData).forEach(deptKey => {
-        Object.keys(evaluationData[deptKey]).forEach(unitKey => {
-          const groupsToCount = selectedGroups.value.includes('all') 
-            ? Object.keys(evaluationData[deptKey][unitKey])
-            : selectedGroups.value;
-          
-          groupsToCount.forEach(groupKey => {
-            const group = evaluationData[deptKey][unitKey][groupKey];
-            if (group) {
-              if (shouldInclude("v1")) {
-                if (shouldIncludePeriod("current") && group.v1?.current) total += group.v1.current.length;
-                if (shouldIncludePeriod("future") && group.v1?.future) total += group.v1.future.length;
-              }
-              if (shouldInclude("v2")) {
-                if (shouldIncludePeriod("current") && group.v2?.current) total += group.v2.current.length;
-                if (shouldIncludePeriod("future") && group.v2?.future) total += group.v2.future.length;
-              }
-            }
-          });
-        });
-      });
-    } else {
-      Object.keys(evaluationData).forEach(deptKey => {
-        const unit = evaluationData[deptKey][selectedUnit.value];
-        if (unit) {
-          const groupsToCount = selectedGroups.value.includes('all') ? Object.keys(unit) : selectedGroups.value;
-          groupsToCount.forEach(groupKey => {
-            const group = unit[groupKey];
-            if (group) {
-              if (shouldInclude("v1")) {
-                if (shouldIncludePeriod("current") && group.v1?.current) total += group.v1.current.length;
-                if (shouldIncludePeriod("future") && group.v1?.future) total += group.v1.future.length;
-              }
-              if (shouldInclude("v2")) {
-                if (shouldIncludePeriod("current") && group.v2?.current) total += group.v2.current.length;
-                if (shouldIncludePeriod("future") && group.v2?.future) total += group.v2.future.length;
-              }
-            }
-          });
-        }
-      });
-    }
-  } else if (selectedUnit.value === "all") {
-    const units = unitsByDepartment[selectedDepartment.value] || [];
-    units.forEach(unitObj => {
-      const unit = evaluationData[selectedDepartment.value]?.[unitObj.id];
-      if (unit) {
-        const groupsToCount = selectedGroups.value.includes('all') ? Object.keys(unit) : selectedGroups.value;
-        groupsToCount.forEach(groupKey => {
-          const group = unit[groupKey];
-          if (group) {
-            if (shouldInclude("v1")) {
-              if (shouldIncludePeriod("current") && group.v1?.current) total += group.v1.current.length;
-              if (shouldIncludePeriod("future") && group.v1?.future) total += group.v1.future.length;
-            }
-            if (shouldInclude("v2")) {
-              if (shouldIncludePeriod("current") && group.v2?.current) total += group.v2.current.length;
-              if (shouldIncludePeriod("future") && group.v2?.future) total += group.v2.future.length;
-            }
-          }
-        });
-      }
-    });
-  } else {
-    const unit = evaluationData[selectedDepartment.value]?.[selectedUnit.value];
-    if (unit) {
-      const groupsToCount = selectedGroups.value.includes('all') ? Object.keys(unit) : selectedGroups.value;
-      groupsToCount.forEach(groupKey => {
-        const group = unit[groupKey];
-        if (group) {
-          if (shouldInclude("v1")) {
-            if (shouldIncludePeriod("current") && group.v1?.current) total += group.v1.current.length;
-            if (shouldIncludePeriod("future") && group.v1?.future) total += group.v1.future.length;
-          }
-          if (shouldInclude("v2")) {
-            if (shouldIncludePeriod("current") && group.v2?.current) total += group.v2.current.length;
-            if (shouldIncludePeriod("future") && group.v2?.future) total += group.v2.future.length;
-          }
-        }
-      });
-    }
-  }
-
   return { 
     department: deptName,
     unit: unitName,
     group: groupNames,
-    total 
+    total: evaluationResults.value.length
   };
 });
 
@@ -584,7 +298,6 @@ const dataSummary = computed(() => {
 
 /**
  * จัดการการเปลี่ยนแปลงของ checkbox กลุ่มงาน
- * @param {string} groupId - ID ของกลุ่มงาน
  */
 const handleGroupChange = (groupId) => {
   if (groupId === 'all') {
@@ -610,13 +323,13 @@ const handleGroupChange = (groupId) => {
 // SECTION 5: WATCHERS
 // ============================================
 
-// Reset selections when department changes
+watch([selectedDepartment, selectedUnit, selectedGroups, selectedVersion, selectedYear], fetchEvaluationData, { deep: true });
+
 watch(selectedDepartment, () => {
   selectedUnit.value = "all";
   selectedGroups.value = ["all"];
 });
 
-// Reset group selection when unit changes
 watch(selectedUnit, () => {
   selectedGroups.value = ["all"];
 });
@@ -626,7 +339,16 @@ watch(selectedUnit, () => {
 // ============================================
 
 onMounted(async () => {
+  await fetchPositions();
+  await fetchDepartments();
+  await fetchWorkGroups();
+  await fetchAssessmentYears();
   versionOptions.value = await fetchVersionOptions();
+  
+  // Initial data fetch
+  if (selectedYear.value) {
+    await fetchEvaluationData();
+  }
 });
 </script>
 
@@ -648,34 +370,33 @@ onMounted(async () => {
 
         <!-- Filter Section -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
-          <div class="border-b border-gray-200 bg-gray-50 px-6 py-4 rounded-t-lg">
-            <h2 class="text-base font-semibold text-gray-800 flex items-center">
-              <svg class="w-5 h-5 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-3.5 rounded-t-lg">
+            <h2 class="text-sm font-semibold text-gray-800 flex items-center">
+              <svg class="w-4 h-4 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
               </svg>
-              เลือกเงื่อนไขการแสดงผล
+              เงื่อนไขการแสดงผล
             </h2>
           </div>
           
-          <div class="p-6">
-            <!-- Row 1: ตำแหน่ง, สายงาน -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+          <div class="p-5">
+            <!-- Row 1: ตำแหน่ง, สายงาน, พื้นที่ -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
               <!-- ตำแหน่ง -->
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  ตำแหน่ง
-                  <span class="text-red-500 ml-1">*</span>
+                <label class="block text-xs font-medium text-gray-700 mb-1.5">
+                  ตำแหน่ง <span class="text-red-500">*</span>
                 </label>
                 <div class="relative">
                   <select 
                     v-model="selectedDepartment"
-                    class="w-full px-4 py-2.5 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors text-sm appearance-none"
+                    class="w-full px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white transition-all text-sm appearance-none hover:border-gray-400"
                   >
-                    <option v-for="dept in departments" :key="dept.id" :value="dept.id">
-                      {{ dept.name }}
+                    <option v-for="pos in positions" :key="pos.id" :value="pos.id">
+                      {{ pos.name }}
                     </option>
                   </select>
-                  <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+                  <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                     </svg>
@@ -685,21 +406,39 @@ onMounted(async () => {
 
               <!-- สายงาน -->
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  สายงาน
-                  <span class="text-red-500 ml-1">*</span>
+                <label class="block text-xs font-medium text-gray-700 mb-1.5">
+                  สายงาน <span class="text-red-500">*</span>
                 </label>
                 <div class="relative">
                   <select 
                     v-model="selectedUnit"
-                    class="w-full px-4 py-2.5 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors text-sm appearance-none"
+                    class="w-full px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white transition-all text-sm appearance-none hover:border-gray-400"
                   >
-                    <option value="all">ทั้งหมด</option>
                     <option v-for="unit in availableUnits" :key="unit.id" :value="unit.id">
                       {{ unit.name }}
                     </option>
                   </select>
-                  <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+                  <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              <!-- พื้นที่ -->
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1.5">พื้นที่</label>
+                <div class="relative">
+                  <select 
+                    v-model="selectedVersion"
+                    class="w-full px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white transition-all text-sm appearance-none hover:border-gray-400"
+                  >
+                    <option v-for="option in versionOptions" :key="option.id" :value="option.id">
+                      {{ option.name }}
+                    </option>
+                  </select>
+                  <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                     </svg>
@@ -708,102 +447,98 @@ onMounted(async () => {
               </div>
             </div>
 
-            <!-- Row 2: กลุ่มงาน (Checkbox) -->
-            <div class="mb-5">
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                กลุ่มงาน
-                <span class="text-gray-500 text-xs font-normal ml-1">(เลือกได้หลายรายการ)</span>
+            <!-- Row 2: ช่วงเวลา, ปี -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <!-- ช่วงเวลา -->
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1.5">ช่วงเวลา</label>
+                <div class="relative">
+                  <select 
+                    v-model="selectedPeriod"
+                    class="w-full px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white transition-all text-sm appearance-none hover:border-gray-400"
+                  >
+                    <option value="both">ปัจจุบันและอนาคต</option>
+                    <option value="current">เฉพาะปัจจุบัน</option>
+                    <option value="future">เฉพาะอนาคต</option>
+                  </select>
+                  <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ปี -->
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1.5">ปี</label>
+                <div class="relative">
+                  <select 
+                    v-model="selectedYear"
+                    class="w-full px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white transition-all text-sm appearance-none hover:border-gray-400"
+                  >
+                    <option v-for="year in years" :key="year" :value="year">
+                      {{ year }}
+                    </option>
+                  </select>
+                  <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Row 3: กลุ่มงาน (Compact Checkboxes) -->
+            <div class="mb-4">
+              <label class="block text-xs font-medium text-gray-700 mb-2">
+                กลุ่มงาน <span class="text-gray-500 text-xs font-normal">(เลือกได้หลายรายการ)</span>
               </label>
-              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2">
                 <label 
                   v-for="group in availableWorkGroups" 
                   :key="group.id"
-                  class="relative flex items-center px-4 py-3 border rounded-md cursor-pointer transition-all"
+                  class="relative flex items-center px-3 py-2 border rounded-lg cursor-pointer transition-all"
                   :class="{ 
-                    'border-blue-500 bg-blue-50': selectedGroups.includes(group.id),
-                    'border-gray-300 bg-white hover:border-gray-400': !selectedGroups.includes(group.id)
+                    'border-blue-500 bg-blue-50 ring-1 ring-blue-500': selectedGroups.includes(group.id),
+                    'border-gray-300 bg-white hover:border-blue-300 hover:bg-gray-50': !selectedGroups.includes(group.id)
                   }"
                 >
                   <input
                     type="checkbox"
                     :checked="selectedGroups.includes(group.id)"
                     @change="handleGroupChange(group.id)"
-                    class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                    class="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 flex-shrink-0"
                   />
-                  <span class="ml-3 text-sm text-gray-800">{{ group.name }}</span>
-                  <svg v-if="selectedGroups.includes(group.id)" class="w-4 h-4 text-blue-600 ml-auto" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                  </svg>
+                  <span class="ml-2 text-xs text-gray-800 truncate" :title="group.name">{{ group.name }}</span>
                 </label>
               </div>
             </div>
 
-            <!-- Row 3: พื้นที่, ช่วงเวลา -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
-              <!-- พื้นที่ -->
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">พื้นที่</label>
-                <div class="relative">
-                  <select 
-                    v-model="selectedVersion"
-                    class="w-full px-4 py-2.5 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors text-sm appearance-none"
-                  >
-                    <option v-for="option in versionOptions" :key="option.id" :value="option.id">
-                      {{ option.name }}
-                    </option>
-                  </select>
-                  <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                    </svg>
-                  </div>
-                </div>
-              </div>
-
-              <!-- ช่วงเวลา -->
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">ช่วงเวลา</label>
-                <div class="relative">
-                  <select 
-                    v-model="selectedPeriod"
-                    class="w-full px-4 py-2.5 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors text-sm appearance-none"
-                  >
-                    <option value="both">ปัจจุบันและอนาคต</option>
-                    <option value="current">เฉพาะปัจจุบัน</option>
-                    <option value="future">เฉพาะอนาคต</option>
-                  </select>
-                  <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                    </svg>
-                  </div>
-                </div>
-              </div>
-            </div>
-
             <!-- Summary Info -->
-            <div class="bg-gray-50 rounded-lg p-5 border border-gray-200">
-              <h3 class="text-sm font-semibold text-gray-700 mb-3 flex items-center">
-                <svg class="w-4 h-4 mr-2 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+            <div class="bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg p-4 border border-gray-200">
+              <h3 class="text-xs font-semibold text-gray-700 mb-2.5 flex items-center">
+                <svg class="w-3.5 h-3.5 mr-1.5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path>
                   <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"></path>
                 </svg>
                 สรุปเงื่อนไขที่เลือก
               </h3>
-              <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div class="bg-white rounded-md p-3 border border-gray-200">
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+                <div class="bg-white rounded-md p-2.5 border border-gray-200">
                   <p class="text-xs text-gray-500 mb-0.5">ตำแหน่ง</p>
-                  <p class="text-sm font-semibold text-gray-900">{{ dataSummary.department }}</p>
+                  <p class="text-sm font-semibold text-gray-900 truncate" :title="dataSummary.department">{{ dataSummary.department }}</p>
                 </div>
-                <div class="bg-white rounded-md p-3 border border-gray-200">
+                <div class="bg-white rounded-md p-2.5 border border-gray-200">
                   <p class="text-xs text-gray-500 mb-0.5">สายงาน</p>
-                  <p class="text-sm font-semibold text-gray-900">{{ dataSummary.unit }}</p>
+                  <p class="text-sm font-semibold text-gray-900 truncate" :title="dataSummary.unit">{{ dataSummary.unit }}</p>
                 </div>
-                <div class="bg-white rounded-md p-3 border border-gray-200">
+                <div class="bg-white rounded-md p-2.5 border border-gray-200">
                   <p class="text-xs text-gray-500 mb-0.5">กลุ่มงาน</p>
                   <p class="text-sm font-semibold text-gray-900 truncate" :title="dataSummary.group">{{ dataSummary.group }}</p>
                 </div>
-                <div class="bg-white rounded-md p-3 border border-gray-200">
+                <div class="bg-white rounded-md p-2.5 border border-gray-200 ring-2 ring-blue-500">
                   <p class="text-xs text-gray-500 mb-0.5">จำนวนข้อมูล</p>
                   <p class="text-sm font-bold text-blue-600">{{ dataSummary.total }} รายการ</p>
                 </div>
@@ -814,20 +549,20 @@ onMounted(async () => {
 
         <!-- Chart Section -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
-            <h2 class="text-base font-semibold text-gray-800 mb-3 flex items-center">
-              <svg class="w-5 h-5 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-blue-50">
+            <h2 class="text-sm font-semibold text-gray-800 mb-2.5 flex items-center">
+              <svg class="w-4 h-4 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
               </svg>
               แผนภูมิแสดงค่าเฉลี่ยคะแนนการประเมิน
             </h2>
-            <div class="flex items-center gap-6 text-sm">
-              <div class="flex items-center gap-2">
-                <div class="w-4 h-4 bg-blue-800 rounded"></div>
+            <div class="flex items-center gap-4 text-xs">
+              <div class="flex items-center gap-1.5">
+                <div class="w-3 h-3 bg-blue-800 rounded"></div>
                 <span class="text-gray-700">ปัจจุบัน</span>
               </div>
-              <div class="flex items-center gap-2">
-                <div class="w-4 h-4 bg-blue-500 rounded"></div>
+              <div class="flex items-center gap-1.5">
+                <div class="w-3 h-3 bg-blue-500 rounded"></div>
                 <span class="text-gray-700">อนาคต</span>
               </div>
             </div>
@@ -844,20 +579,25 @@ onMounted(async () => {
 <style scoped>
 /* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: #f1f5f9;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 4px;
+  background: #cbd5e1;
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  background: #94a3b8;
+}
+
+/* Smooth transitions */
+select, label {
+  transition: all 0.2s ease;
 }
 </style>

@@ -3,9 +3,17 @@
     <h2 class="text-xl font-semibold text-gray-800 mb-6 text-center">
       เปอร์เซ็นต์การทำแบบประเมิน
     </h2>
-    
+
+    <div v-if="loading" class="text-center">
+      <p>Loading...</p>
+    </div>
+
+    <div v-if="error" class="text-center text-red-500">
+      <p>{{ error }}</p>
+    </div>
+
     <!-- Dynamic Charts based on available areas -->
-    <div class="flex flex-wrap justify-center gap-8" 
+    <div v-if="!loading && !error" class="flex flex-wrap justify-center gap-8" 
          :class="{
            'max-w-2xl mx-auto': availableAreas.length <= 2,
            'max-w-4xl mx-auto': availableAreas.length <= 3,
@@ -23,7 +31,7 @@
         <p class="text-sm text-gray-500 mb-4">{{ getAreaStats(area).total }} คน</p>
         
         <div class="relative inline-block">
-          <!-- Dynamic Pie Chart - แสดงทันทีไม่มี loading -->
+          <!-- Dynamic Pie Chart -->
           <div class="relative">
             <svg width="200" height="200" class="mx-auto">
               <!-- Background Circle -->
@@ -51,7 +59,7 @@
                 transform="rotate(-90 100 100)"
               />
               
-              <!-- Progress Circle for Not Completed (always show when there's incomplete work) -->
+              <!-- Progress Circle for Not Completed -->
               <circle 
                 v-if="getAreaStats(area).percentDone < 100"
                 cx="100" 
@@ -102,7 +110,7 @@
         </div>
       </div>
     </div>
-
+    
     <!-- Debug Info -->
     <div v-if="showDebug" class="mt-8 p-4 bg-gray-100 rounded-lg">
       <h4 class="font-semibold mb-2">ข้อมูลทั้งหมด:</h4>
@@ -120,6 +128,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+import axios from 'axios';
 
 // Props (if needed from parent)
 const props = defineProps({
@@ -127,64 +136,37 @@ const props = defineProps({
   v2Data: Object
 })
 
-// Local data - ไม่มี loading state แล้ว
 const allUsers = ref([])
-const showDebug = ref(true) // Set to true for debugging
+const loading = ref(true)
+const error = ref(null)
+const showDebug = ref(true)
 
 // Circle circumference for SVG
 const circumference = 2 * Math.PI * 80
 
 // Color palette for different areas
 const colorPalette = [
-  { done: '#10b981', notDone: '#ef4444' }, // Green/Red - Verte Smart Solution
-  { done: '#3b82f6', notDone: '#f59e0b' }, // Blue/Orange - Verte Security
-  { done: '#8b5cf6', notDone: '#f97316' }, // Purple/Orange - V3
-  { done: '#06b6d4', notDone: '#ec4899' }, // Cyan/Pink - V4
+  { done: '#10b981', notDone: '#ef4444' }, // Green/Red
+  { done: '#3b82f6', notDone: '#f59e0b' }, // Blue/Orange
+  { done: '#8b5cf6', notDone: '#f97316' }, // Purple/Orange
+  { done: '#06b6d4', notDone: '#ec4899' }, // Cyan/Pink
 ]
 
-// Mock data for demo - ย้ายมาด้านนอก function เพื่อให้เข้าถึงได้ทันที
-const mockUsers = [
-  // Verte Smart Solution
-  { id: 1, name: 'สมชาย ใจดี', area: 'Verte Smart Solution', status: 'done' },
-  { id: 2, name: 'สมหญิง รักงาน', area: 'Verte Smart Solution', status: 'done' },
-  { id: 3, name: 'วิชัย เก่งมาก', area: 'Verte Smart Solution', status: 'done' },
-  { id: 4, name: 'นิรมล สวยงาม', area: 'Verte Smart Solution', status: 'pending' },
-  { id: 5, name: 'ประยุทธ์ มั่นใจ', area: 'Verte Smart Solution', status: 'done' },
-  { id: 6, name: 'สุดา น่ารัก', area: 'Verte Smart Solution', status: 'pending' },
-  { id: 7, name: 'กิตติ ขยัน', area: 'Verte Smart Solution', status: 'done' },
-  { id: 8, name: 'มณี เฉลียว', area: 'Verte Smart Solution', status: 'done' },
-  { id: 9, name: 'ชัยรัตน์ ดีใจ', area: 'Verte Smart Solution', status: 'pending' },
-  { id: 10, name: 'อารีย์ มีสุข', area: 'Verte Smart Solution', status: 'done' },
-  
-  // Verte Security
-  { id: 11, name: 'สมศักดิ์ ปลอดภัย', area: 'Verte Security', status: 'done' },
-  { id: 12, name: 'วันเพ็ญ ระวัง', area: 'Verte Security', status: 'done' },
-  { id: 13, name: 'ธีรพงศ์ เข้มแข็ง', area: 'Verte Security', status: 'done' },
-  { id: 14, name: 'ภัทรา ใส่ใจ', area: 'Verte Security', status: 'done' },
-  { id: 15, name: 'จักรพงษ์ ตั้งใจ', area: 'Verte Security', status: 'pending' },
-  { id: 16, name: 'กนกวรรณ เอาใจใส่', area: 'Verte Security', status: 'done' },
-  { id: 17, name: 'อนุชา รอบคอบ', area: 'Verte Security', status: 'pending' },
-  { id: 18, name: 'สมพร ดูแล', area: 'Verte Security', status: 'done' },
-  { id: 19, name: 'วิทยา เฝ้าระวัง', area: 'Verte Security', status: 'done' },
-  { id: 20, name: 'นันทนา ปกป้อง', area: 'Verte Security', status: 'pending' },
-  { id: 21, name: 'รัชต์ มั่นคง', area: 'Verte Security', status: 'done' },
-  { id: 22, name: 'สิริวรรณ แน่นอน', area: 'Verte Security', status: 'done' },
-  { id: 23, name: 'ธนวัฒน์ เชื่อถือ', area: 'Verte Security', status: 'pending' },
-  { id: 24, name: 'อรุณี แกร่ง', area: 'Verte Security', status: 'done' },
-  { id: 25, name: 'เสกสรร พิทักษ์', area: 'Verte Security', status: 'done' }
-]
-
-// โหลดข้อมูลทันทีตอนสร้าง component
-allUsers.value = mockUsers
-console.log('Data loaded immediately:', allUsers.value)
-
-onMounted(() => {
-  // หากต้องการโหลดข้อมูลจริงจาก API สามารถทำได้ที่นี่
-  console.log('Component mounted, data already available')
-})
+onMounted(async () => {
+  try {
+    const response = await axios.get('http://localhost:5000/api/analytics/completion-status');
+    allUsers.value = response.data;
+  } catch (err) {
+    error.value = 'Failed to fetch data.';
+    console.error(err);
+  } finally {
+    loading.value = false;
+  }
+});
 
 // Get unique areas from data
 const availableAreas = computed(() => {
+  if (!allUsers.value) return [];
   const areas = [...new Set(allUsers.value.map(u => u.area).filter(Boolean))]
   // Sort areas alphabetically
   return areas.sort()
@@ -192,12 +174,14 @@ const availableAreas = computed(() => {
 
 // Get users by area
 function getUsersByArea(area) {
+  if (!allUsers.value) return [];
   return allUsers.value.filter(u => u.area === area)
 }
 
 // Get stats for specific area
 function getAreaStats(area) {
   const users = getUsersByArea(area)
+  if (!users) return { done: 0, total: 0, percentDone: 0 };
   const done = users.filter(u => u.status === 'done').length
   const total = users.length
   const percentDone = total > 0 ? Math.round((done / total) * 100) : 0

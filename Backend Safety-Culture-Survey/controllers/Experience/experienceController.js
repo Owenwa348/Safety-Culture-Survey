@@ -40,11 +40,38 @@ const updateExperience = async (req, res) => {
     if (!name || !name.trim())
       return res.status(400).json({ message: 'ชื่อเป็นข้อมูลบังคับ' })
 
-    const updated = await prisma.experience.update({
-      where: { id: parseInt(id) },
-      data: { name: name.trim() },
-    })
-    res.status(200).json(updated)
+    const experienceId = parseInt(id);
+
+    // Find the experience to get the old name
+    const existingExperience = await prisma.experience.findUnique({
+      where: { id: experienceId },
+    });
+
+    if (!existingExperience) {
+      return res.status(404).json({ message: "ไม่พบประสบการณ์ที่ต้องการแก้ไข" });
+    }
+
+    const oldName = existingExperience.name;
+    const newName = name.trim();
+
+    // If the name is not changing, no need to update users
+    if (oldName === newName) {
+      return res.status(200).json(existingExperience);
+    }
+
+    // Use a transaction to update both experience and related users
+    const [updatedExperience] = await prisma.$transaction([
+      prisma.experience.update({
+        where: { id: experienceId },
+        data: { name: newName },
+      }),
+      prisma.user.updateMany({
+        where: { years_of_service: oldName },
+        data: { years_of_service: newName },
+      }),
+    ]);
+
+    res.status(200).json(updatedExperience)
   } catch (error) {
     console.error('updateExperience error:', error)
     res.status(500).json({ message: 'Internal server error' })

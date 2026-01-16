@@ -1,4 +1,5 @@
 const excelUploadRouter = require('./UploadExcel/excelUploadRoutes');
+const companyRoutes = require('./Company/companyRoutes');
 const adminAuthRoutes = require('./Admin/adminAuthRoutes');
 const superAdminRoutes = require('./SuperAdmin/superAdminRoutes');
 const departmentRoutes = require('./Department/departmentRoutes');
@@ -9,10 +10,13 @@ const categoryRoutes = require('./Category/categoryRoutes');
 const questionRoutes = require('./Questions/questionRoutes');
 const userRoutes = require('./User/userRoutes');
 const assessmentRoutes = require('./Assessment/assessmentRoutes');
+const analyticsRoutes = require('./Analytics/analyticsRoutes');
+const dataManagementRoutes = require('./SuperAdmin/dataManagementRoutes');
 
 
 const registerRoutes = (app) => {
   app.use('/excel-upload', excelUploadRouter);
+  app.use('/api/companies', companyRoutes);
   app.use('/api/admin', adminAuthRoutes);
   app.use('/api/departments', departmentRoutes);
   app.use('/api/experiences', experienceRoutes);
@@ -23,6 +27,8 @@ const registerRoutes = (app) => {
   app.use('/api/super-admins', superAdminRoutes);
   app.use('/api/users', userRoutes);
   app.use('/api/assessment', assessmentRoutes);
+  app.use('/api/analytics', analyticsRoutes);
+  app.use('/api/data-management', dataManagementRoutes);
 };
 
 module.exports = registerRoutes;
