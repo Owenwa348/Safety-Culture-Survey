@@ -14,13 +14,13 @@
       <!-- Header Card -->
       <div class="bg-white rounded-xl shadow-md mb-6 overflow-hidden">
         <div class="bg-gradient-to-r px-8 py-6">
-          <h1 class="text-2xl font-bold mb-2">ผลการประเมินบริษัท ประจำปี {{ currentYear }}</h1>
+          <h1 class="text-2xl font-bold mb-2">ผลการประเมินบริษัท ประจำปี {{ selectedYear }}</h1>
           <p>การวิเคราะห์ผลการประเมินตามตำแหน่งและพื้นที่การดำเนินงาน</p>
           
           <!-- Error Warning -->
           <div v-if="error" class="mt-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-3 text-sm rounded">
-            <p class="font-semibold">⚠️ ใช้ข้อมูลตัวอย่าง</p>
-            <p class="text-xs mt-1">ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์: {{ error }}</p>
+            <p class="font-semibold">⚠️ {{ error.startsWith('ไม่มีข้อมูล') ? 'ไม่มีข้อมูล' : 'ใช้ข้อมูลตัวอย่าง' }}</p>
+            <p class="text-xs mt-1">{{ error }}</p>
           </div>
         </div>
         
@@ -28,14 +28,26 @@
         <div class="px-8 py-5 bg-gray-50 border-b">
           <div class="flex flex-wrap items-center gap-6">
             <div class="flex items-center space-x-3">
+              <label class="text-sm font-semibold text-gray-700">ปี:</label>
+              <select 
+                v-model="selectedYear"
+                class="px-4 py-2.5 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"
+              >
+                <option v-for="year in availableYears" :key="year" :value="year">
+                  {{ year }}
+                </option>
+              </select>
+            </div>
+            <div class="flex items-center space-x-3">
               <label class="text-sm font-semibold text-gray-700">พื้นที่:</label>
               <select 
                 v-model="selectedVersion" 
                 class="px-4 py-2.5 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"
               >
                 <option value="combined">บริษัททั้งหมด</option>
-                <option value="v1">Verte Smart Solution</option>
-                <option value="v2">Verte Security</option>
+                <option v-for="company in companies" :key="company.id" :value="company.id">
+                  {{ company.name }}
+                </option>
               </select>
             </div>
 
@@ -86,7 +98,7 @@
             <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
               <tr>
                 <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider sticky left-0 bg-gray-50 z-10">
-                  กลุ่ม / ตำแหน่ง
+                  {{ tableHeader }}
                 </th>
                 <th 
                   v-for="(label, index) in chartLabels" 
@@ -94,8 +106,8 @@
                   class="px-4 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider"
                   :title="label"
                 >
-                  <div class="truncate">
-                    {{ getShortLabel(label, index) }}
+                  <div class="w-28 mx-auto truncate">
+                    {{ label }}
                   </div>
                 </th>
               </tr>
@@ -162,7 +174,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -183,18 +195,31 @@ const currentData = ref(null);
 const futureData = ref(null);
 const loading = ref(true);
 const error = ref(null);
-const currentYear = new Date().getFullYear();
+const companies = ref([]);
+const categories = ref([]);
+const areaNameMap = ref({
+  'combined': 'บริษัททั้งหมด',
+});
 
-const chartLabels = [
-  'Leadership & Commitment',
-  'Policy & Strategic Objectives',
-  'Organization Resource & Documentation',
-  'Evaluation & Risk Management',
-  'Implementation & Operation Control',
-  'Monitoring & Measurement',
-  'Audit & Review',
-  'AVG',
-];
+const availableYears = ref([]);
+const selectedYear = ref(new Date().getFullYear());
+
+const chartLabels = computed(() => {
+  if (categories.value.length > 0) {
+    return [...categories.value.map(c => c.name), 'AVG'];
+  }
+  // Fallback to hardcoded labels if fetch fails
+  return [
+    'Leadership & Commitment',
+    'Policy & Strategic Objectives',
+    'Organization Resource & Documentation',
+    'Evaluation & Risk Management',
+    'Implementation & Operation Control',
+    'Monitoring & Measurement',
+    'Audit & Review',
+    'AVG',
+  ];
+});
 
 // ข้อมูลสำรอง (Fallback data)
 const fallbackCurrentData = {
@@ -235,12 +260,6 @@ const fallbackFutureData = {
   }
 };
 
-const areaNameMap = {
-  'combined': 'บริษัททั้งหมด',
-  'v1': 'Verte Smart Solution',
-  'v2': 'Verte Security'
-};
-
 const timePeriodMap = {
   'all': 'ทั้งหมด',
   'current': 'ปัจจุบัน',
@@ -258,16 +277,87 @@ const colors = {
   'future_single': '#f59e0b'
 };
 
+const fetchAssessmentYears = async () => {
+  try {
+    const response = await fetch('http://localhost:5000/api/analytics/assessment-years');
+    if (!response.ok) {
+      throw new Error('ไม่สามารถดึงข้อมูลปีได้');
+    }
+    const years = await response.json();
+    availableYears.value = years.sort((a, b) => b - a); // Sort descending
+    if (!availableYears.value.includes(selectedYear.value)) {
+      selectedYear.value = availableYears.value[0] || new Date().getFullYear();
+    }
+  } catch (err) {
+    console.error(err.message);
+    if (availableYears.value.length === 0) {
+      availableYears.value = [new Date().getFullYear()];
+    }
+  }
+};
+
+const fetchCompanies = async () => {
+  try {
+    const response = await fetch('http://localhost:5000/api/companies');
+    if (!response.ok) {
+      throw new Error('ไม่สามารถดึงข้อมูลบริษัทได้');
+    }
+    const companyNames = await response.json();
+    
+    // Sort company names alphabetically to ensure consistent v1, v2 assignment
+    companyNames.sort();
+    
+    const companyOptions = [];
+    const newAreaNameMap = { 'combined': 'บริษัททั้งหมด' };
+
+    companyNames.forEach((name, index) => {
+      const versionId = `v${index + 1}`;
+      companyOptions.push({ id: versionId, name: name });
+      newAreaNameMap[versionId] = name;
+    });
+
+    companies.value = companyOptions;
+    areaNameMap.value = newAreaNameMap;
+
+  } catch (err) {
+    console.error(err.message);
+    // Fallback to hardcoded values if fetch fails
+    companies.value = [
+      { id: 'v1', name: 'Verte Smart Solution' },
+      { id: 'v2', name: 'Verte Security' }
+    ];
+    areaNameMap.value = {
+      'combined': 'บริษัททั้งหมด',
+      'v1': 'Verte Smart Solution',
+      'v2': 'Verte Security'
+    };
+  }
+};
+
+const fetchCategories = async () => {
+  try {
+    const response = await fetch('http://localhost:5000/api/categories');
+    if (!response.ok) {
+      throw new Error('ไม่สามารถดึงข้อมูลหมวดหมู่ได้');
+    }
+    categories.value = await response.json();
+  } catch (err) {
+    console.error(err.message);
+    // On error, categories.value will be empty, and the chartLabels computed will use the fallback.
+  }
+};
+
+
 // ฟังก์ชันดึงข้อมูลจาก Backend
 const fetchData = async () => {
+  error.value = null;
+  loading.value = true;
   try {
-    loading.value = true;
-    error.value = null;
-
+    const yearQuery = `?year=${selectedYear.value}`;
     // เรียก API ทั้ง 2 endpoints พร้อมกัน
     const [currentResponse, futureResponse] = await Promise.all([
-      fetch('http://localhost:5000/api/evaluation/current'),
-      fetch('http://localhost:5000/api/evaluation/future')
+      fetch(`http://localhost:5000/api/analytics/evaluation/current${yearQuery}`),
+      fetch(`http://localhost:5000/api/analytics/evaluation/future${yearQuery}`)
     ]);
 
     if (!currentResponse.ok || !futureResponse.ok) {
@@ -279,6 +369,13 @@ const fetchData = async () => {
 
     currentData.value = currentResult;
     futureData.value = futureResult;
+
+    if (Object.keys(currentResult).length === 0) {
+       error.value = `ไม่มีข้อมูลสำหรับปี ${selectedYear.value}`;
+       currentData.value = fallbackCurrentData;
+       futureData.value = fallbackFutureData;
+    }
+
   } catch (err) {
     error.value = err.message;
     // ใช้ข้อมูลสำรองถ้าเชื่อมต่อไม่ได้
@@ -312,147 +409,123 @@ const getDataForTimePeriod = (timePeriod) => {
 // Computed สำหรับข้อมูลกราฟ
 const chartData = computed(() => {
   if (!currentData.value || !futureData.value) {
-    return { labels: chartLabels, datasets: [] };
+    return { labels: chartLabels.value, datasets: [] };
   }
 
   const datasets = [];
+  const timePeriod = selectedTimePeriod.value;
+  const version = selectedVersion.value;
 
-  if (selectedVersion.value === "combined") {
-    if (selectedTimePeriod.value === 'all') {
-      const currentCombined = getDataForTimePeriod('current');
-      const futureCombined = getDataForTimePeriod('future');
+  // Show breakdown by position for 'current' or 'future' time periods
+  if (timePeriod === 'current' || timePeriod === 'future') {
+    const rawData = (timePeriod === 'current') ? currentData.value : futureData.value;
+    
+    for (const group in rawData) { // group is position name
+      let dataPoints = [];
       
+      if (version === 'combined') {
+        const v1Data = rawData[group].v1 || [];
+        const v2Data = rawData[group].v2 || [];
+        const maxLength = Math.max(v1Data.length, v2Data.length, chartLabels.value.length);
+        for (let i = 0; i < maxLength; i++) {
+          const v1 = v1Data[i] || 0;
+          const v2 = v2Data[i] || 0;
+          if (v1 > 0 && v2 > 0) {
+            dataPoints.push((v1 + v2) / 2);
+          } else {
+            dataPoints.push(v1 || v2);
+          }
+        }
+      } else {
+        // Specific version (e.g., 'v1') is selected
+        dataPoints = rawData[group][version] || [];
+      }
+      
+      if (dataPoints.length > 0) {
+        datasets.push({
+          label: `${areaNameMap.value[version]} / ${selectedYear.value}`,
+          backgroundColor: colors[group] || '#a8a29e',
+          data: dataPoints,
+        });
+      }
+    }
+  } else { // 'all' - for comparing current vs future (aggregated view)
+    if (version === "combined") {
+      const currentCombined = currentData.value;
+      const futureCombined = futureData.value;
       const totalGroups = Object.keys(currentCombined).length;
-      const currentDataPoints = chartLabels.map((_, i) => {
+
+      const currentDataPoints = chartLabels.value.map((_, i) => {
         let sum = 0;
         for (const group in currentCombined) {
-          const v1 = currentCombined[group].v1[i];
-          const v2 = currentCombined[group].v2[i];
-          const avg = (v1 + v2) / 2;
+          const v1 = currentCombined[group].v1?.[i] || 0;
+          const v2 = currentCombined[group].v2?.[i] || 0;
+          const avg = (v1 > 0 && v2 > 0) ? (v1 + v2) / 2 : (v1 || v2);
           sum += avg;
         }
-        return sum / totalGroups;
+        return totalGroups > 0 ? sum / totalGroups : 0;
       });
 
-      const futureDataPoints = chartLabels.map((_, i) => {
+      const futureDataPoints = chartLabels.value.map((_, i) => {
         let sum = 0;
         for (const group in futureCombined) {
-          const v1 = futureCombined[group].v1[i];
-          const v2 = futureCombined[group].v2[i];
-          const avg = (v1 + v2) / 2;
+          const v1 = futureCombined[group].v1?.[i] || 0;
+          const v2 = futureCombined[group].v2?.[i] || 0;
+          const avg = (v1 > 0 && v2 > 0) ? (v1 + v2) / 2 : (v1 || v2);
           sum += avg;
         }
-        return sum / totalGroups;
+        return totalGroups > 0 ? sum / totalGroups : 0;
       });
 
       datasets.push({
-        label: `ปัจจุบัน (${areaNameMap[selectedVersion.value]})`,
+        label: `ค่าเฉลี่ยของปัจจุบัน (${areaNameMap.value[version]}) ปี ${selectedYear.value}`,
         backgroundColor: colors.all_current,
         data: currentDataPoints,
       });
 
       datasets.push({
-        label: `อนาคต (${areaNameMap[selectedVersion.value]})`,
+        label: `ค่าเฉลี่ยของอนาคต (${areaNameMap.value[version]}) ปี ${selectedYear.value}`,
         backgroundColor: colors.all_future,
         data: futureDataPoints,
       });
-    } else {
-      const rawData = getDataForTimePeriod(selectedTimePeriod.value);
-      const totalGroups = Object.keys(rawData).length;
-      const data = chartLabels.map((_, i) => {
-        let sum = 0;
-        for (const group in rawData) {
-          const v1 = rawData[group].v1[i];
-          const v2 = rawData[group].v2[i];
-          const avg = (v1 + v2) / 2;
-          sum += avg;
-        }
-        return sum / totalGroups;
-      });
 
-      const barColor = selectedTimePeriod.value === 'future' ? colors.future_single : colors.all_combined;
-
-      datasets.push({
-        label: `รวมทุกกลุ่ม (${areaNameMap[selectedVersion.value]} - ${timePeriodMap[selectedTimePeriod.value]})`,
-        backgroundColor: barColor,
-        data,
-      });
-    }
-  } else {
-    if (selectedTimePeriod.value === 'all') {
-      const currentRawData = getDataForTimePeriod('current');
-      const futureRawData = getDataForTimePeriod('future');
-      
+    } else { // 'all' for a specific version
+      const currentRawData = currentData.value;
+      const futureRawData = futureData.value;
       const totalGroups = Object.keys(currentRawData).length;
 
-      const currentDataPoints = chartLabels.map((_, i) => {
+      const currentDataPoints = chartLabels.value.map((_, i) => {
         let sum = 0;
         for (const group in currentRawData) {
-          const value = selectedVersion.value === 'v1' ? currentRawData[group].v1[i] : currentRawData[group].v2[i];
-          sum += value;
+          sum += currentRawData[group][version]?.[i] || 0;
         }
-        return sum / totalGroups;
+        return totalGroups > 0 ? sum / totalGroups : 0;
       });
 
-      const futureDataPoints = chartLabels.map((_, i) => {
+      const futureDataPoints = chartLabels.value.map((_, i) => {
         let sum = 0;
         for (const group in futureRawData) {
-          const value = selectedVersion.value === 'v1' ? futureRawData[group].v1[i] : futureRawData[group].v2[i];
-          sum += value;
+          sum += futureRawData[group][version]?.[i] || 0;
         }
-        return sum / totalGroups;
+        return totalGroups > 0 ? sum / totalGroups : 0;
       });
 
       datasets.push({
-        label: `ปัจจุบัน (${areaNameMap[selectedVersion.value]})`,
+        label: `ค่าเฉลี่ย ปัจจุบัน ${selectedYear.value} (${areaNameMap.value[version]})`,
         backgroundColor: colors.all_current,
         data: currentDataPoints,
       });
 
       datasets.push({
-        label: `อนาคต (${areaNameMap[selectedVersion.value]})`,
+        label: `ค่าเฉลี่ย อนาคต ${selectedYear.value} (${areaNameMap.value[version]})`,
         backgroundColor: colors.all_future,
         data: futureDataPoints,
-      });
-    } else {
-      const rawData = getDataForTimePeriod(selectedTimePeriod.value);
-      const totalGroups = Object.keys(rawData).length;
-      
-      const dataPoints = chartLabels.map((_, i) => {
-        let sum = 0;
-        for (const group in rawData) {
-          const value = selectedVersion.value === 'v1' ? rawData[group].v1[i] : rawData[group].v2[i];
-          sum += value;
-        }
-        return sum / totalGroups;
-      });
-
-      const barColor = selectedTimePeriod.value === 'future' ? colors.future_single : colors.all_combined;
-
-      datasets.push({
-        label: `รวมทุกตำแหน่ง (${areaNameMap[selectedVersion.value]} - ${timePeriodMap[selectedTimePeriod.value]})`,
-        backgroundColor: barColor,
-        data: dataPoints,
       });
     }
   }
 
-  return { labels: chartLabels, datasets };
+  return { labels: chartLabels.value, datasets };
 });
-
-const getShortLabel = (label, index) => {
-  const shortLabels = [
-    'L&C',
-    'P&SO',
-    'ORD',
-    'E&RM',
-    'I&OC',
-    'M&M',
-    'A&R',
-    'AVG'
-  ];
-  return shortLabels[index] || label;
-};
 
 const formatScore = (score) => {
   return typeof score === 'number' ? score.toFixed(2) : '0.00';
@@ -465,12 +538,19 @@ const getScoreClass = (score) => {
   return 'text-red-700 bg-red-50';
 };
 
+const tableHeader = computed(() => {
+  if (selectedTimePeriod.value === 'all') {
+    return 'ช่วงเวลา / บริษัท / ปี';
+  }
+  return 'บริษัท / ปี';
+});
+
 const getTableDescription = computed(() => {
-  const area = areaNameMap[selectedVersion.value];
+  const area = areaNameMap.value[selectedVersion.value];
   const time = timePeriodMap[selectedTimePeriod.value];
   
   if (selectedVersion.value === 'combined') {
-    return `รวมทุกพื้นที่ (${area} - ${time})`;
+    return `รวมทุกบริษัท (${area} - ${time})`;
   } else {
     return `ทุกตำแหน่งใน ${area} - ${time}`;
   }
@@ -543,9 +623,22 @@ const chartOptions = {
   }
 };
 
+watch(selectedYear, (newYear, oldYear) => {
+  if (newYear !== oldYear) {
+    fetchData();
+  }
+});
+
 // เรียกใช้งานตอนโหลดครั้งแรก
-onMounted(() => {
-  fetchData();
+onMounted(async () => {
+  loading.value = true;
+  await fetchAssessmentYears();
+  await Promise.all([
+    fetchCompanies(),
+    fetchCategories(),
+    fetchData()
+  ]);
+  loading.value = false;
 });
 </script>
 

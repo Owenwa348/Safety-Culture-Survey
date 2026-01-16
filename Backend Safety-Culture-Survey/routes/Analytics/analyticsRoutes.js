@@ -12,7 +12,8 @@ const {
   getAssessmentYears,
   getQuestionResultsData,
   getWorkGroupRawData,
-  getWorkGroupEvaluationData
+  getWorkGroupEvaluationData,
+  getEvaluationData
 } = require('../../controllers/Analytics/analyticsController');
 
 // Get aggregated data for graphs
@@ -47,5 +48,10 @@ router.get('/workgroup-raw-data', getWorkGroupRawData);
 
 // Get filtered data for the WorkGroupEvaluationResults page
 router.get('/workgroup-evaluation', getWorkGroupEvaluationData);
+
+// Get evaluation data for SalesBarChartDB
+router.get('/evaluation/current', getEvaluationData('current'));
+router.get('/evaluation/future', getEvaluationData('future'));
+
 
 module.exports = router;

@@ -730,6 +730,116 @@ const getWorkGroupEvaluationData = async (req, res) => {
   }
 }
 
+const getEvaluationData = (scoreType) => async (req, res) => {
+  try {
+    const { year } = req.query;
+    const scoreField = scoreType === 'current' ? 'currentScore' : 'expectedScore';
+
+    // 1. Get companies and create mapping v1, v2
+    const companies = await prisma.user.findMany({
+      distinct: ['company_user'],
+      select: { company_user: true },
+      orderBy: { company_user: 'asc' },
+    });
+    const companyMap = {};
+    companies.forEach((c, i) => {
+      if (c.company_user) {
+        companyMap[c.company_user] = `v${i + 1}`;
+      }
+    });
+
+    // 2. Get categories in the order expected by the frontend
+    const categories = await prisma.category.findMany({
+      orderBy: { id: 'asc' },
+    });
+    const categoryOrder = categories.map(c => c.id);
+
+    // 3. Define the query WHERE clause
+    const where = {};
+    if (year && year !== 'null' && year !== 'undefined') {
+      where.createdAt = {
+        gte: new Date(parseInt(year), 0, 1),
+        lt: new Date(parseInt(year) + 1, 0, 1),
+      };
+    }
+    
+    // 4. Fetch all relevant answers
+    const answers = await prisma.surveyAnswer.findMany({
+      where,
+      select: {
+        [scoreField]: true,
+        user: {
+          select: {
+            position_user: true,
+            company_user: true,
+          },
+        },
+        question: {
+          select: {
+            categoryId: true,
+          },
+        },
+      },
+    });
+
+    // 5. Process data
+    const results = {};
+    
+    // Intermediate structure: { position: { company: { categoryId: { total: score, count: n } } } }
+    const intermediate = {};
+
+    for (const answer of answers) {
+      const position = answer.user?.position_user;
+      const company = answer.user?.company_user;
+      const categoryId = answer.question?.categoryId;
+      const score = answer[scoreField];
+
+      if (!position || !company || !categoryId || score === null) continue;
+
+      if (!intermediate[position]) intermediate[position] = {};
+      if (!intermediate[position][company]) intermediate[position][company] = {};
+      if (!intermediate[position][company][categoryId]) {
+        intermediate[position][company][categoryId] = { total: 0, count: 0 };
+      }
+
+      intermediate[position][company][categoryId].total += score;
+      intermediate[position][company][categoryId].count += 1;
+    }
+
+    // Final structure: { position: { v1: [cat1, cat2, ...], v2: [...] } }
+    for (const position in intermediate) {
+      results[position] = {};
+      const companyData = intermediate[position];
+
+      for (const company in companyData) {
+        const version = companyMap[company];
+        if (!version) continue;
+
+        const categoryAverages = categoryOrder.map(catId => {
+          const categoryStats = companyData[company][catId];
+          if (!categoryStats || categoryStats.count === 0) return 0;
+          return categoryStats.total / categoryStats.count;
+        });
+        
+        // Calculate overall average for this position-company
+        const totalSum = categoryAverages.reduce((acc, val) => acc + val, 0);
+        const totalCount = categoryAverages.filter(val => val > 0).length;
+        const overallAvg = totalCount > 0 ? totalSum / totalCount : 0;
+        
+        categoryAverages.push(overallAvg); // Add the 'AVG' value
+
+        results[position][version] = categoryAverages;
+      }
+    }
+
+    res.status(200).json(results);
+
+  } catch (error) {
+    console.error(`Error fetching ${scoreType} evaluation data:`, error);
+    res.status(500).json({ error: 'Internal Server Error', message: error.message });
+  }
+};
+
 
 module.exports = {
   getAggregatedSurveyData,
@@ -742,5 +852,6 @@ module.exports = {
   getAssessmentYears,
   getQuestionResultsData,
   getWorkGroupRawData,
-  getWorkGroupEvaluationData
+  getWorkGroupEvaluationData,
+  getEvaluationData,
 };
