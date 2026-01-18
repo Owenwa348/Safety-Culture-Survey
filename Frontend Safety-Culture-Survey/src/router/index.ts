@@ -34,7 +34,7 @@ import ExcelUploadView from '../views/Dashboard/SettingsDashboard/Uploadlistfile
 import SettingsView from '../views/Dashboard/SettingsDashboard/SettingsView.vue'
 import Admin from '../views/Dashboard/Users/Admin/AdminList.vue'
 import SuperAdmin from '../views/Dashboard/Users/SuperAdmin/SuperAdminList.vue'
-import DataManagement from '../views/Dashboard/SettingsDashboard/DataManagement/DataManagement.vue' // Add this import
+
 
 // Not Found
 import NotFound from '../views/other/NotFound.vue'
@@ -162,11 +162,6 @@ const routes = [
     path: '/excelupload',
     name: 'ExcelUploadView',
     component: ExcelUploadView
-  },
-  {
-    path: '/data-management',
-    name: 'DataManagement',
-    component: DataManagement
   },
 
   //========================== Not Found==============================
