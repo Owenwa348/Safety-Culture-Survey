@@ -18,8 +18,8 @@
           <p>การวิเคราะห์ผลการประเมินตามตำแหน่งและพื้นที่การดำเนินงาน</p>
           
           <!-- Error Warning -->
-          <div v-if="error" class="mt-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-3 text-sm rounded">
-            <p class="font-semibold">⚠️ {{ error.startsWith('ไม่มีข้อมูล') ? 'ไม่มีข้อมูล' : 'ใช้ข้อมูลตัวอย่าง' }}</p>
+          <div v-if="error" class="mt-3 bg-red-100 border-l-4 border-red-500 text-red-700 p-3 text-sm rounded">
+            <p class="font-semibold">⚠️ เกิดข้อผิดพลาด</p>
             <p class="text-xs mt-1">{{ error }}</p>
           </div>
         </div>
@@ -66,108 +66,113 @@
         </div>
       </div>
 
-      <!-- Chart Card -->
-      <div class="bg-white rounded-xl shadow-md mb-6 overflow-hidden">
-        <div class="px-8 py-5 border-b bg-gradient-to-r from-gray-50 to-white">
-          <h2 class="text-lg font-bold text-gray-800 flex items-center">
-            <span class="w-1 h-6 bg-blue-600 rounded-full mr-3"></span>
-            กราฟแสดงผลการประเมิน
-          </h2>
-          <p class="text-sm text-gray-600 mt-1 ml-7">เปรียบเทียบคะแนนเฉลี่ยในแต่ละหมวดหมู่</p>
-        </div>
-        
-        <div class="px-8 py-8">
-          <div class="h-[450px]">
-            <Bar :data="chartData" :options="chartOptions" />
+      <template v-if="chartData.datasets.length > 0">
+        <!-- Chart Card -->
+        <div class="bg-white rounded-xl shadow-md mb-6 overflow-hidden">
+          <div class="px-8 py-5 border-b bg-gradient-to-r from-gray-50 to-white">
+            <h2 class="text-lg font-bold text-gray-800 flex items-center">
+              <span class="w-1 h-6 bg-blue-600 rounded-full mr-3"></span>
+              กราฟแสดงผลการประเมิน
+            </h2>
+            <p class="text-sm text-gray-600 mt-1 ml-7">เปรียบเทียบคะแนนเฉลี่ยในแต่ละหมวดหมู่</p>
+          </div>
+          
+          <div class="px-8 py-8">
+            <div class="h-[450px]">
+              <Bar :data="chartData" :options="chartOptions" />
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Table Card -->
-      <div class="bg-white rounded-xl shadow-md overflow-hidden">
-        <div class="px-8 py-5 border-b bg-gradient-to-r from-gray-50 to-white">
-          <h2 class="text-lg font-bold text-gray-800 flex items-center">
-            <span class="w-1 h-6 bg-blue-600 rounded-full mr-3"></span>
-            ตารางข้อมูลรายละเอียด
-          </h2>
-          <p class="text-sm text-gray-600 mt-1 ml-7">{{ getTableDescription }}</p>
-        </div>
-        
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
-              <tr>
-                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider sticky left-0 bg-gray-50 z-10">
-                  {{ tableHeader }}
-                </th>
-                <th 
-                  v-for="(label, index) in chartLabels" 
+        <!-- Table Card -->
+        <div class="bg-white rounded-xl shadow-md overflow-hidden">
+          <div class="px-8 py-5 border-b bg-gradient-to-r from-gray-50 to-white">
+            <h2 class="text-lg font-bold text-gray-800 flex items-center">
+              <span class="w-1 h-6 bg-blue-600 rounded-full mr-3"></span>
+              ตารางข้อมูลรายละเอียด
+            </h2>
+            <p class="text-sm text-gray-600 mt-1 ml-7">{{ getTableDescription }}</p>
+          </div>
+          
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
+                <tr>
+                  <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider sticky left-0 bg-gray-50 z-10">
+                    {{ tableHeader }}
+                  </th>
+                  <th 
+                    v-for="(label, index) in chartLabels" 
+                    :key="index" 
+                    class="px-4 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider"
+                    :title="label"
+                  >
+                    <div class="w-28 mx-auto truncate">
+                      {{ label }}
+                    </div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-100">
+                <tr 
+                  v-for="(dataset, index) in chartData.datasets" 
                   :key="index" 
-                  class="px-4 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider"
-                  :title="label"
+                  class="hover:bg-blue-50 transition-colors duration-200"
                 >
-                  <div class="w-28 mx-auto truncate">
-                    {{ label }}
-                  </div>
-                </th>
-              </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-100">
-              <tr 
-                v-for="(dataset, index) in chartData.datasets" 
-                :key="index" 
-                class="hover:bg-blue-50 transition-colors duration-200"
-              >
-                <td class="px-6 py-4 text-sm font-semibold text-gray-800 sticky left-0 bg-white z-10 border-r border-gray-100">
-                  <div class="flex items-center">
-                    <div 
-                      class="w-4 h-4 rounded mr-3 flex-shrink-0 shadow-sm" 
-                      :style="{ backgroundColor: dataset.backgroundColor }"
-                    ></div>
-                    <span class="truncate">{{ dataset.label }}</span>
-                  </div>
-                </td>
-                <td 
-                  v-for="(score, scoreIndex) in dataset.data" 
-                  :key="scoreIndex" 
-                  class="px-4 py-4 text-sm text-center font-semibold"
-                  :class="getScoreClass(score)"
-                >
-                  {{ formatScore(score) }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        
-        <!-- Footer Summary -->
-        <div class="px-8 py-5 bg-gradient-to-r from-gray-50 to-blue-50 border-t">
-          <div class="space-y-4">
-            <div class="flex items-center space-x-6 text-sm text-gray-700">
-              <span class="font-semibold">จำนวนกลุ่ม: <span class="text-blue-600">{{ chartData.datasets.length }}</span></span>
-              <span class="font-semibold">จำนวนหมวดหมู่: <span class="text-blue-600">{{ chartLabels.length }}</span></span>
-            </div>
-            
-            <div class="flex flex-wrap items-center gap-4 text-sm">
-              <div class="flex items-center space-x-2">
-                <div class="w-3 h-3 bg-green-500 rounded shadow-sm"></div>
-                <span class="text-gray-700 font-medium whitespace-nowrap">ดีเยี่ยม ≥ 4.5</span>
+                  <td class="px-6 py-4 text-sm font-semibold text-gray-800 sticky left-0 bg-white z-10 border-r border-gray-100">
+                    <div class="flex items-center">
+                      <div 
+                        class="w-4 h-4 rounded mr-3 flex-shrink-0 shadow-sm" 
+                        :style="{ backgroundColor: dataset.backgroundColor }"
+                      ></div>
+                      <span class="truncate">{{ dataset.label }}</span>
+                    </div>
+                  </td>
+                  <td 
+                    v-for="(score, scoreIndex) in dataset.data" 
+                    :key="scoreIndex" 
+                    class="px-4 py-4 text-sm text-center font-semibold"
+                    :class="getScoreClass(score)"
+                  >
+                    {{ formatScore(score) }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <!-- Footer Summary -->
+          <div class="px-8 py-5 bg-gradient-to-r from-gray-50 to-blue-50 border-t">
+            <div class="space-y-4">
+              <div class="flex items-center space-x-6 text-sm text-gray-700">
+                <span class="font-semibold">จำนวนกลุ่ม: <span class="text-blue-600">{{ chartData.datasets.length }}</span></span>
+                <span class="font-semibold">จำนวนหมวดหมู่: <span class="text-blue-600">{{ chartLabels.length }}</span></span>
               </div>
-              <div class="flex items-center space-x-2">
-                <div class="w-3 h-3 bg-blue-500 rounded shadow-sm"></div>
-                <span class="text-gray-700 font-medium whitespace-nowrap">ดี 4.0 - 4.49</span>
-              </div>
-              <div class="flex items-center space-x-2">
-                <div class="w-3 h-3 bg-yellow-500 rounded shadow-sm"></div>
-                <span class="text-gray-700 font-medium whitespace-nowrap">ปานกลาง 3.5 - 3.99</span>
-              </div>
-              <div class="flex items-center space-x-2">
-                <div class="w-3 h-3 bg-red-500 rounded shadow-sm"></div>
-                <span class="text-gray-700 font-medium whitespace-nowrap">ต้องพัฒนา &lt; 3.5</span>
+              
+              <div class="flex flex-wrap items-center gap-4 text-sm">
+                <div class="flex items-center space-x-2">
+                  <div class="w-3 h-3 bg-green-500 rounded shadow-sm"></div>
+                  <span class="text-gray-700 font-medium whitespace-nowrap">ดีเยี่ยม ≥ 4.5</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <div class="w-3 h-3 bg-blue-500 rounded shadow-sm"></div>
+                  <span class="text-gray-700 font-medium whitespace-nowrap">ดี 4.0 - 4.49</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <div class="w-3 h-3 bg-yellow-500 rounded shadow-sm"></div>
+                  <span class="text-gray-700 font-medium whitespace-nowrap">ปานกลาง 3.5 - 3.99</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <div class="w-3 h-3 bg-red-500 rounded shadow-sm"></div>
+                  <span class="text-gray-700 font-medium whitespace-nowrap">ต้องพัฒนา &lt; 3.5</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
+      </template>
+      <div v-else class="mt-6 rounded-xl bg-white p-10 text-center shadow-md">
+        <p class="text-lg font-semibold text-gray-500">ยังไม่มีข้อมูลในระบบ</p>
       </div>
     </div>
   </div>
@@ -191,8 +196,8 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 // Reactive state
 const selectedVersion = ref("combined");
 const selectedTimePeriod = ref("all");
-const currentData = ref(null);
-const futureData = ref(null);
+const currentData = ref({});
+const futureData = ref({});
 const loading = ref(true);
 const error = ref(null);
 const companies = ref([]);
@@ -205,60 +210,11 @@ const availableYears = ref([]);
 const selectedYear = ref(new Date().getFullYear());
 
 const chartLabels = computed(() => {
-  if (categories.value.length > 0) {
+  if (categories.value && categories.value.length > 0) {
     return [...categories.value.map(c => c.name), 'AVG'];
   }
-  // Fallback to hardcoded labels if fetch fails
-  return [
-    'Leadership & Commitment',
-    'Policy & Strategic Objectives',
-    'Organization Resource & Documentation',
-    'Evaluation & Risk Management',
-    'Implementation & Operation Control',
-    'Monitoring & Measurement',
-    'Audit & Review',
-    'AVG',
-  ];
+  return [];
 });
-
-// ข้อมูลสำรอง (Fallback data)
-const fallbackCurrentData = {
-  'ผู้บริหารระดับสูง / ผู้จัดการส่วน': {
-    v1: [3.85, 3.72, 3.58, 3.45, 3.92, 3.68, 3.55, 3.68],
-    v2: [3.95, 3.88, 3.75, 3.62, 4.05, 3.85, 3.68, 3.83]
-  },
-  'ผู้จัดการแผนก / ผู้จัดการ / พนักงานอาวุโส': {
-    v1: [3.65, 3.55, 3.42, 3.35, 3.88, 3.58, 3.38, 3.54],
-    v2: [3.78, 3.72, 3.62, 3.55, 4.02, 3.75, 3.52, 3.71]
-  },
-  'พนักงาน': {
-    v1: [3.85, 3.68, 2.52, 3.45, 2.95, 3.72, 3.58, 2.68],
-    v2: [2.98, 2.85, 2.68, 2.58, 3.08, 2.88, 2.72, 2.82]
-  },
-  'ผู้รับเหมาประจำ': {
-    v1: [3.55, 3.42, 2.28, 3.18, 2.68, 3.48, 3.35, 2.42],
-    v2: [2.72, 2.58, 2.45, 2.32, 2.82, 2.65, 2.48, 2.57]
-  }
-};
-
-const fallbackFutureData = {
-  'ผู้บริหารระดับสูง / ผู้จัดการส่วน': {
-    v1: [4.62, 4.55, 4.45, 4.38, 4.72, 4.58, 4.42, 4.53],
-    v2: [4.75, 4.68, 4.58, 4.48, 4.85, 4.72, 4.55, 4.66]
-  },
-  'ผู้จัดการแผนก / ผู้จัดการ / พนักงานอาวุโส': {
-    v1: [4.48, 4.38, 4.28, 4.18, 4.62, 4.45, 4.28, 4.38],
-    v2: [4.58, 4.52, 4.42, 4.35, 4.72, 4.58, 4.42, 4.51]
-  },
-  'พนักงาน': {
-    v1: [4.22, 4.12, 4.02, 3.95, 4.38, 4.18, 4.05, 4.13],
-    v2: [4.38, 4.28, 4.18, 4.08, 4.52, 4.35, 4.18, 4.28]
-  },
-  'ผู้รับเหมาประจำ': {
-    v1: [3.95, 3.85, 3.72, 3.65, 4.08, 3.92, 3.78, 3.85],
-    v2: [4.12, 4.02, 3.92, 3.82, 4.25, 4.08, 3.95, 4.02]
-  }
-};
 
 const timePeriodMap = {
   'all': 'ทั้งหมด',
@@ -321,16 +277,8 @@ const fetchCompanies = async () => {
 
   } catch (err) {
     console.error(err.message);
-    // Fallback to hardcoded values if fetch fails
-    companies.value = [
-      { id: 'v1', name: 'Verte Smart Solution' },
-      { id: 'v2', name: 'Verte Security' }
-    ];
-    areaNameMap.value = {
-      'combined': 'บริษัททั้งหมด',
-      'v1': 'Verte Smart Solution',
-      'v2': 'Verte Security'
-    };
+    companies.value = [];
+    areaNameMap.value = { 'combined': 'บริษัททั้งหมด' };
   }
 };
 
@@ -343,7 +291,7 @@ const fetchCategories = async () => {
     categories.value = await response.json();
   } catch (err) {
     console.error(err.message);
-    // On error, categories.value will be empty, and the chartLabels computed will use the fallback.
+    categories.value = [];
   }
 };
 
@@ -352,6 +300,8 @@ const fetchCategories = async () => {
 const fetchData = async () => {
   error.value = null;
   loading.value = true;
+  currentData.value = {};
+  futureData.value = {};
   try {
     const yearQuery = `?year=${selectedYear.value}`;
     // เรียก API ทั้ง 2 endpoints พร้อมกัน
@@ -367,20 +317,14 @@ const fetchData = async () => {
     const currentResult = await currentResponse.json();
     const futureResult = await futureResponse.json();
 
-    currentData.value = currentResult;
-    futureData.value = futureResult;
-
-    if (Object.keys(currentResult).length === 0) {
-       error.value = `ไม่มีข้อมูลสำหรับปี ${selectedYear.value}`;
-       currentData.value = fallbackCurrentData;
-       futureData.value = fallbackFutureData;
+    if (Object.keys(currentResult).length > 0 && Object.keys(futureResult).length > 0) {
+      currentData.value = currentResult;
+      futureData.value = futureResult;
     }
 
   } catch (err) {
+    console.error('Fetch error:', err);
     error.value = err.message;
-    // ใช้ข้อมูลสำรองถ้าเชื่อมต่อไม่ได้
-    currentData.value = fallbackCurrentData;
-    futureData.value = fallbackFutureData;
   } finally {
     loading.value = false;
   }
@@ -408,7 +352,7 @@ const getDataForTimePeriod = (timePeriod) => {
 
 // Computed สำหรับข้อมูลกราฟ
 const chartData = computed(() => {
-  if (!currentData.value || !futureData.value) {
+  if (!currentData.value || !futureData.value || Object.keys(currentData.value).length === 0) {
     return { labels: chartLabels.value, datasets: [] };
   }
 
