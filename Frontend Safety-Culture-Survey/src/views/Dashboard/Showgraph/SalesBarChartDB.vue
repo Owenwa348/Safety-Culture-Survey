@@ -235,7 +235,7 @@ const colors = {
 
 const fetchAssessmentYears = async () => {
   try {
-    const response = await fetch('http://localhost:5000/api/analytics/assessment-years');
+    const response = await fetch('/api/analytics/assessment-years');
     if (!response.ok) {
       throw new Error('ไม่สามารถดึงข้อมูลปีได้');
     }
@@ -254,7 +254,7 @@ const fetchAssessmentYears = async () => {
 
 const fetchCompanies = async () => {
   try {
-    const response = await fetch('http://localhost:5000/api/companies');
+    const response = await fetch('/api/companies');
     if (!response.ok) {
       throw new Error('ไม่สามารถดึงข้อมูลบริษัทได้');
     }
@@ -284,7 +284,7 @@ const fetchCompanies = async () => {
 
 const fetchCategories = async () => {
   try {
-    const response = await fetch('http://localhost:5000/api/categories');
+    const response = await fetch('/api/categories');
     if (!response.ok) {
       throw new Error('ไม่สามารถดึงข้อมูลหมวดหมู่ได้');
     }
@@ -306,8 +306,8 @@ const fetchData = async () => {
     const yearQuery = `?year=${selectedYear.value}`;
     // เรียก API ทั้ง 2 endpoints พร้อมกัน
     const [currentResponse, futureResponse] = await Promise.all([
-      fetch(`http://localhost:5000/api/analytics/evaluation/current${yearQuery}`),
-      fetch(`http://localhost:5000/api/analytics/evaluation/future${yearQuery}`)
+      fetch(`/api/analytics/evaluation/current${yearQuery}`),
+      fetch(`/api/analytics/evaluation/future${yearQuery}`)
     ]);
 
     if (!currentResponse.ok || !futureResponse.ok) {

@@ -238,7 +238,7 @@ const validatePassword = () => {
 // ฟังก์ชันตรวจสอบอีเมลในระบบ
 const checkEmailInSystem = async (emailToCheck) => {
   try {
-    const response = await axios.post('http://localhost:5000/api/users/check-email', { email: emailToCheck });
+    const response = await axios.post('/api/users/check-email', { email: emailToCheck });
     return response.data;
   } catch (error) {
     if (error.response && error.response.status === 404) {
@@ -333,7 +333,7 @@ const handleLogin = async () => {
 
   try {
     // Authenticate with the backend
-    const response = await axios.post('http://localhost:5000/api/users/login', {
+    const response = await axios.post('/api/users/login', {
       email: email.value,
       password: password.value
     });

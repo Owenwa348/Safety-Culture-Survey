@@ -63,7 +63,7 @@ const availableYears = ref([]);
  */
 const fetchQuestions = async () => {
   try {
-    const response = await axios.get('http://localhost:5000/api/questions');
+    const response = await axios.get('/api/questions');
     // แปลงข้อมูลคำถามเป็นรูปแบบ "Q{ลำดับ}: {ข้อความ}"
     fullLabels.value = response.data.map((q, index) => `Q${index + 1}: ${q.text}`);
   } catch (error) {
@@ -77,7 +77,7 @@ const fetchQuestions = async () => {
  */
 const fetchPositions = async () => {
   try {
-    const response = await axios.get('http://localhost:5000/api/positions');
+    const response = await axios.get('/api/positions');
     // แปลงข้อมูลตำแหน่งให้อยู่ในรูปแบบที่ dropdown ใช้งานได้
     const positions = response.data.map(position => ({
       value: position.name,
@@ -96,7 +96,7 @@ const fetchPositions = async () => {
  */
 const fetchYears = async () => {
   try {
-    const { data } = await axios.get('http://localhost:5000/api/analytics/assessment-years');
+    const { data } = await axios.get('/api/analytics/assessment-years');
     availableYears.value = data;
     // ถ้ามีข้อมูลปี ให้เลือกปีแรกเป็นค่าเริ่มต้น
     if (data.length > 0) {
@@ -128,7 +128,7 @@ const fetchChartData = async () => {
     };
     
     // เรียก API เพื่อดึงข้อมูลผลการประเมินตามเงื่อนไข
-    const { data } = await axios.get('http://localhost:5000/api/analytics/question-results', { params });
+    const { data } = await axios.get('/api/analytics/question-results', { params });
     chartAPIData.value = data;
   } catch (error) {
     console.error('เกิดข้อผิดพลาดในการดึงข้อมูลกราฟ:', error);

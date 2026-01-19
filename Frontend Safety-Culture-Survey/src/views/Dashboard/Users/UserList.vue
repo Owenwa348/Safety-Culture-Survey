@@ -426,7 +426,7 @@ const originalUserData = ref({})
 const fetchUsers = async () => {
   try {
     loading.value = true
-    const response = await axios.get('http://localhost:5000/api/users/users')
+    const response = await axios.get('/api/users/users')
     users.value = response.data.map(user => ({
       ...user,
       isEditing: false

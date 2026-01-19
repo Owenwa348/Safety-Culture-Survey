@@ -213,7 +213,7 @@ const questionRefs = ref({});
 
 const fetchQuestions = async () => {
   try {
-    const response = await axios.get('http://localhost:5000/api/questions');
+    const response = await axios.get('/api/questions');
     questions.value = response.data.map(q => ({
       ...q,
       opinions: q.surveyAnswers.map(sa => ({

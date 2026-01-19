@@ -196,7 +196,7 @@ const errorMessage = ref('');
 const successMessage = ref('');
 
 // API URL
-const API_URL = 'http://localhost:5000/api/super-admins/setup';
+const API_URL = '/api/super-admins/setup';
 
 // Extract email from URL on component mount
 onMounted(() => {

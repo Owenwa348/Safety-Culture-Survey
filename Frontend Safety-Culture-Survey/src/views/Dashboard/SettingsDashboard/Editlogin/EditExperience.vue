@@ -97,8 +97,8 @@
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
 
-// 🔹 เปลี่ยน URL ให้ตรงกับ backend ของคุณ เช่น http://localhost:5000/api/experiences
-const API_URL = 'http://localhost:5000/api/experiences'
+// 🔹 เปลี่ยน URL ให้ตรงกับ backend ของคุณ เช่น /api/experiences
+const API_URL = '/api/experiences'
 
 const experiences = ref([])
 const newExperience = ref('')

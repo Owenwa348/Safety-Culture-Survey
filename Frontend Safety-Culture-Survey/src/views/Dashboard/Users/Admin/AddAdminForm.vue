@@ -218,7 +218,7 @@ async function submitForm() {
   }
 
   const promises = adminForms.value.map(admin => {
-    return axios.post('http://localhost:5000/api/admin/add', {
+    return axios.post('/api/admin/add', {
       email: admin.email.trim(),
       companyName: admin.company.trim() // Map component's 'company' to backend's 'companyName'
     });

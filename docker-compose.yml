@@ -46,7 +46,7 @@ services:
       - /app/node_modules
     networks:
       - safety-survey-network
-    command: sh -c "npx prisma migrate deploy && node server.js"
+    command: sh -c "npx prisma migrate deploy && node prisma/seed.js && node server.js"
 
   # Frontend
   frontend:

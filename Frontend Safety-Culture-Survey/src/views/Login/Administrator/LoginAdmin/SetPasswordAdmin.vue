@@ -397,7 +397,7 @@ const handleSetPassword = async () => {
   isError.value = false;
 
   try {
-    await axios.put('http://localhost:5000/api/admin/setup-account', {
+    await axios.put('/api/admin/setup-account', {
       email: email.value,
       firstName: firstName.value.trim(),
       lastName: lastName.value.trim(),

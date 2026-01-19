@@ -281,7 +281,7 @@ onMounted(async () => {
       return;
     }
     
-    const response = await axios.get('http://localhost:5000/api/assessment');
+    const response = await axios.get('/api/assessment');
     categories.value = response.data;
     answers.value = questions.value.map(() => ({
       level: null,
@@ -303,7 +303,7 @@ function goBackOrHome() {
 
 async function submitAnswer(questionId, currentScore, expectedScore, comment) {
   try {
-    const response = await axios.post('http://localhost:5000/api/assessment/answer', {
+    const response = await axios.post('/api/assessment/answer', {
       userId: userId.value,
       questionId: questionId,
       currentScore: currentScore,

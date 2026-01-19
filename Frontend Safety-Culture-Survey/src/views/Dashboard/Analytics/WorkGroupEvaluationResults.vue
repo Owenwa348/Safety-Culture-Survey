@@ -42,7 +42,7 @@ const fetchEvaluationData = async () => {
       company: selectedVersion.value,
     });
     
-    const response = await axios.get(`http://localhost:5000/api/analytics/workgroup-evaluation?${params.toString()}`);
+    const response = await axios.get(`/api/analytics/workgroup-evaluation?${params.toString()}`);
     evaluationResults.value = response.data;
   } catch (error) {
     console.error('Error fetching evaluation data:', error);
@@ -57,7 +57,7 @@ const fetchEvaluationData = async () => {
  */
 const fetchPositions = async () => {
   try {
-    const response = await axios.get('http://localhost:5000/api/positions');
+    const response = await axios.get('/api/positions');
     positions.value = [{ id: 'all', name: 'ทั้งหมด' }, ...response.data];
   } catch (error) {
     console.error('Error fetching positions:', error);
@@ -70,7 +70,7 @@ const fetchPositions = async () => {
  */
 const fetchDepartments = async () => {
   try {
-    const response = await axios.get('http://localhost:5000/api/departments');
+    const response = await axios.get('/api/departments');
     departments.value = [{ id: 'all', name: 'ทั้งหมด' }, ...response.data];
   } catch (error) {
     console.error('Error fetching departments:', error);
@@ -83,7 +83,7 @@ const fetchDepartments = async () => {
  */
 const fetchWorkGroups = async () => {
   try {
-    const response = await axios.get('http://localhost:5000/api/workgroups');
+    const response = await axios.get('/api/workgroups');
     workGroups.value = [{ id: 'all', name: 'ทั้งหมด' }, ...response.data];
   } catch (error) {
     console.error('Error fetching work groups:', error);
@@ -96,7 +96,7 @@ const fetchWorkGroups = async () => {
  */
 const fetchAssessmentYears = async () => {
   try {
-    const response = await axios.get('http://localhost:5000/api/analytics/assessment-years');
+    const response = await axios.get('/api/analytics/assessment-years');
     if (response.data && response.data.length > 0) {
       years.value = response.data;
       selectedYear.value = response.data[0];
@@ -142,7 +142,7 @@ const calculateAverage = (scores) => {
  */
 const fetchVersionOptions = async () => {
   try {
-    const response = await axios.get('http://localhost:5000/api/companies');
+    const response = await axios.get('/api/companies');
     const companyNames = response.data;
 
     const options = [

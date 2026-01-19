@@ -1,10 +1,12 @@
 // server.js (ส่วนที่เกี่ยวข้อง)
+
 const express = require('express');
 const cors = require('cors');
 const registerRoutes = require('./routes'); // Import the central route registrar
 
 
 const app = express();
+require('dotenv').config(); // Load environment variables
 
 // CORS - รองรับทั้ง Development และ Docker
 const allowedOrigins = [

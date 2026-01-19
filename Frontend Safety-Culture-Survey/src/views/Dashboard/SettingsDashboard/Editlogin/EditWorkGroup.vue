@@ -104,7 +104,7 @@ import { ref, onMounted } from 'vue'
 import axios from 'axios'
 
 // API base URL
-const API_URL = 'http://localhost:5000/api/workgroups' // 🔧 เปลี่ยนตาม backend ของคุณ
+const API_URL = '/api/workgroups' // 🔧 เปลี่ยนตาม backend ของคุณ
 
 const workGroups = ref([])
 const showAddForm = ref(false)

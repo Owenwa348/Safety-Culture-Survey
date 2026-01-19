@@ -186,7 +186,7 @@ import axios from 'axios';
 import AddSuperAdminForm from './AddSuperAdminForm.vue'; 
 import NavbarDashboard from '../../../../components/NavbarDashboard.vue';
 
-const API_URL = 'http://localhost:5000/api/super-admins';
+const API_URL = '/api/super-admins';
 
 const showForm = ref(false);
 const admins = ref([]);

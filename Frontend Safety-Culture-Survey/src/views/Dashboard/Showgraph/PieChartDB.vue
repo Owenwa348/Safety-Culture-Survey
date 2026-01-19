@@ -154,7 +154,7 @@ const colorPalette = [
 
 onMounted(async () => {
   try {
-    const response = await axios.get('http://localhost:5000/api/analytics/completion-status');
+    const response = await axios.get('/api/analytics/completion-status');
     allUsers.value = response.data;
   } catch (err) {
     error.value = 'Failed to fetch data.';

@@ -280,7 +280,7 @@ const checkEmail = async () => {
   if (loginType.value === 'admin') {
     // --- Admin Logic (existing) ---
     try {
-      const response = await axios.post('http://localhost:5000/api/admin/check-email', { email: userEmail });
+      const response = await axios.post('/api/admin/check-email', { email: userEmail });
       router.push({ 
         name: 'SetPasswordAdmin', 
         query: { email: response.data.email, company: response.data.companyName }
@@ -304,7 +304,7 @@ const checkEmail = async () => {
   } else {
     // --- SuperAdmin Logic (new) ---
     try {
-        const response = await axios.post('http://localhost:5000/api/super-admins/check-email', { email: userEmail });
+        const response = await axios.post('/api/super-admins/check-email', { email: userEmail });
         // Success (200): User is PENDING, redirect to set password
         router.push({ name: 'SetPasswordSuperAdmin', query: { email: response.data.email } });
 
@@ -354,7 +354,7 @@ const handleLogin = async () => {
         router.push('/dashboard');
     } else {
         // --- SuperAdmin Login API Call ---
-        const response = await axios.post('http://localhost:5000/api/super-admins/login', {
+        const response = await axios.post('/api/super-admins/login', {
             email: userEmail,
             password: userPassword,
         });
