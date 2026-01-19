@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: safety-survey-mysql-dev
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data_dev:/var/lib/mysql
+    networks:
+      - safety-survey-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API - Development mode with hot reload
+  backend:
+    image: node:20-alpine
+    container_name: safety-survey-backend-dev
+    working_dir: /app
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: mysql://root:${DB_PASSWORD}@mysql:3306/${DB_NAME}
+      DB_HOST: mysql
+      DB_USER: root
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      PORT: 5000
+      NODE_ENV: development
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./Backend Safety-Culture-Survey:/app
+      - /app/node_modules
+    networks:
+      - safety-survey-network
+    command: sh -c "npm install && npx prisma generate && npx prisma migrate deploy && node prisma/seed.js && npm run dev"
+
+  # Frontend - Development mode with hot reload
+  frontend:
+    image: node:20-alpine
+    container_name: safety-survey-frontend-dev
+    working_dir: /app
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      - VITE_API_BASE_URL=http://localhost:5000
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./Frontend Safety-Culture-Survey:/app
+      - /app/node_modules
+    networks:
+      - safety-survey-network
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+
+networks:
+  safety-survey-network:
+    driver: bridge
+
+volumes:
+  mysql_data_dev:
+    driver: local
