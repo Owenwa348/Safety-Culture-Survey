@@ -7,6 +7,15 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [vue(), tailwindcss()],
   server: {
+    host: true, // Listen on all addresses
+    port: 5173,
+    watch: {
+      usePolling: true, // Enable polling for Docker
+    },
+    hmr: {
+      host: 'localhost', // HMR host
+      port: 5173,
+    },
     proxy: {
       // Proxy /api requests ไปยัง backend
       '/api': {
