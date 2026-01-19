@@ -6,9 +6,24 @@ const registerRoutes = require('./routes'); // Import the central route registra
 
 const app = express();
 
-// CORS - ต้องอยู่ก่อน routes
+// CORS - รองรับทั้ง Development และ Docker
+const allowedOrigins = [
+  'http://localhost:5173',  // Vite dev server
+  'http://localhost',       // Docker frontend (port 80)
+  'http://localhost:80'     // Docker frontend (explicit port)
+];
+
 app.use(cors({
-  origin: 'http://localhost:5173', // URL ของ Vue (ตรวจสอบ port)
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 
