@@ -335,6 +335,10 @@ const resetEmailStatus = () => {
   emailMessage.value = ''
   password.value = ''
   errorMessage.value = ''
+  // Clear any old user data when starting fresh login
+  if (emailStatus.value === null) {
+    localStorage.removeItem('user')
+  }
 }
 
 const handleLogin = async () => {
@@ -348,10 +352,21 @@ const handleLogin = async () => {
 
   try {
     if (loginType.value === 'admin') {
-        // TODO: Replace with actual API call to POST /api/admin/login
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        alert('Admin Login successful (DEMO)! Redirecting to dashboard.');
-        router.push('/dashboard');
+        // --- Admin Login API Call ---
+        const response = await axios.post('/api/admin/login', {
+            email: userEmail,
+            password: userPassword,
+        });
+
+        // On success, store user info and redirect
+        localStorage.setItem('user', JSON.stringify({ 
+            email: response.data.email, 
+            role: response.data.role, 
+            companyName: response.data.companyName,
+            firstName: response.data.firstName,
+            lastName: response.data.lastName
+        }));
+        router.push('/dashboard'); // Redirect to the main dashboard for admins
     } else {
         // --- SuperAdmin Login API Call ---
         const response = await axios.post('/api/super-admins/login', {

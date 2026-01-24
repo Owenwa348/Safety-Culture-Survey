@@ -185,6 +185,44 @@ const deleteAdmin = async (req, res) => {
     }
 };
 
+// 4. Admin Login
+const adminLogin = async (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        return res.status(400).json({ message: 'Email and password are required.' });
+    }
+
+    try {
+        const admin = await prisma.adminList.findUnique({
+            where: { email },
+        });
+
+        if (!admin || admin.status !== 'ACTIVE') {
+            return res.status(401).json({ message: 'Authentication failed. Account not found or not active.' });
+        }
+
+        const isPasswordValid = await bcrypt.compare(password, admin.password);
+
+        if (!isPasswordValid) {
+            return res.status(401).json({ message: 'Authentication failed. Incorrect password.' });
+        }
+
+        // Do not send the password back
+        res.status(200).json({
+            message: 'Login successful',
+            email: admin.email,
+            firstName: admin.firstName,
+            lastName: admin.lastName,
+            role: admin.role,
+            companyName: admin.companyName,
+        });
+    } catch (error) {
+        console.error('Admin login error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
 
 module.exports = {
   addAdmin,
@@ -194,4 +232,5 @@ module.exports = {
   updateAdmin,
   toggleAdminStatus,
   deleteAdmin,
+  adminLogin,
 };

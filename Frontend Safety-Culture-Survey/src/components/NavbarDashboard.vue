@@ -104,8 +104,8 @@
           </div>
         </router-link>
         
-        <!-- ตั้งค่าระบบ -->
-        <div>
+        <!-- ตั้งค่าระบบ (SuperAdmin only) -->
+        <div v-if="isSuperAdmin">
           <button 
             @click="toggleSettingsMenu"
             class="relative flex items-center w-full px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer group"
@@ -269,12 +269,41 @@ const isAssessmentMenuOpen = ref(false)
 const isSettingsMenuOpen = ref(false)
 
 const userData = ref({
-  fullName: 'มาดี มีสุข',
-  email: 'superadmin01@gmail.com',
-  company: 'บริษัท ความปลอดภัย จำกัด',
-  role: 'SuperAdmin',
-  position: 'ผู้จัดการระบบ'
+  fullName: 'ผู้ใช้งาน',
+  email: '',
+  company: '',
+  role: 'Admin',
+  position: 'ผู้ดูแลระบบ'
 })
+
+// Load user data from localStorage
+const loadUserData = () => {
+  const storedUser = localStorage.getItem('user')
+  console.log('📦 Loading user from localStorage:', storedUser)
+  if (storedUser) {
+    try {
+      const user = JSON.parse(storedUser)
+      console.log('✅ Parsed user:', user)
+      
+      // Normalize role: 'Super Admin' -> 'SuperAdmin'
+      const normalizedRole = user.role?.replace(/\s+/g, '') || 'Admin'
+      console.log('✅ Normalized role:', normalizedRole)
+      
+      userData.value = {
+        fullName: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email,
+        email: user.email || '',
+        company: user.companyName || '',
+        role: normalizedRole,
+        position: normalizedRole === 'SuperAdmin' ? 'ผู้ดูแลระบบ' : 'ผู้ดูแลระบบ'
+      }
+      console.log('✅ Updated userData:', userData.value)
+    } catch (error) {
+      console.error('❌ Failed to parse user data:', error)
+    }
+  } else {
+    console.warn('⚠️ No user data in localStorage')
+  }
+}
 
 const isActivePath = (path) => {
   return route.path === path
@@ -342,6 +371,11 @@ const toggleSettingsMenu = () => {
   }
 }
 
+// Check if user has SuperAdmin role
+const isSuperAdmin = computed(() => {
+  return userData.value.role === 'SuperAdmin'
+})
+
 const closeAllMenus = () => {
   isUserMenuOpen.value = false
   isAssessmentMenuOpen.value = false
@@ -350,8 +384,11 @@ const closeAllMenus = () => {
 
 const logout = () => {
   console.log('Logout clicked')
+  // Clear localStorage
+  localStorage.removeItem('user')
   closeAllMenus()
-  window.location.href = '/'
+  // Redirect to login page
+  window.location.href = '/Login-all'
 }
 
 const handleClickOutside = (event) => {
@@ -362,6 +399,7 @@ const handleClickOutside = (event) => {
 }
 
 onMounted(() => {
+  loadUserData()
   document.addEventListener('click', handleClickOutside)
   
   // เปิด dropdown menu ถ้าอยู่ในหน้าย่อย

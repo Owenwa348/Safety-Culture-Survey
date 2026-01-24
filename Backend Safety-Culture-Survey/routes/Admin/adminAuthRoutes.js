@@ -8,6 +8,7 @@ const {
   updateAdmin,
   toggleAdminStatus,
   deleteAdmin,
+  adminLogin,
 } = require('../../controllers/Admin/adminAuthController');
 
 // Route for SuperAdmin to add a new admin
@@ -37,5 +38,9 @@ router.put('/status/:id', toggleAdminStatus);
 // Route for SuperAdmin to delete an admin
 // DELETE /api/admin/delete/:id
 router.delete('/delete/:id', deleteAdmin);
+
+// Route for an existing admin to log in
+// POST /api/admin/login
+router.post('/login', adminLogin);
 
 module.exports = router;
