@@ -91,6 +91,19 @@
                 {{ department }}
               </option>
             </select>
+            <select
+              v-model="companyFilter"
+              class="px-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+            >
+              <option value="all">บริษัททั้งหมด</option>
+              <option
+                v-for="company in uniqueCompanies"
+                :key="company"
+                :value="company"
+              >
+                {{ company }}
+              </option>
+            </select>
           </div>
         </div>
 
@@ -413,6 +426,7 @@ const search = ref('')
 const statusFilter = ref('all')
 const positionFilter = ref('all')
 const departmentFilter = ref('all')
+const companyFilter = ref('all')
 const currentPage = ref(1)
 const perPage = 10
 
@@ -542,7 +556,7 @@ onMounted(async () => {
   window.refreshUsersList = fetchUsers
 })
 
-watch([search, statusFilter, positionFilter, departmentFilter], () => {
+watch([search, statusFilter, positionFilter, departmentFilter, companyFilter], () => {
   currentPage.value = 1
 })
 
@@ -567,6 +581,13 @@ const uniqueDepartments = computed(() => {
     .map(u => u.job_field_user)
     .filter(d => d && d !== '-')
   return [...new Set(departments)].sort()
+})
+
+const uniqueCompanies = computed(() => {
+  const companies = users.value
+    .map(u => u.company_user)
+    .filter(c => c && c !== '-')
+  return [...new Set(companies)].sort()
 })
 
 const filteredUsers = computed(() => {
@@ -601,8 +622,11 @@ const filteredUsers = computed(() => {
     
     const matchDepartment = 
       departmentFilter.value === 'all' || user.job_field_user === departmentFilter.value
+    
+    const matchCompany =
+      companyFilter.value === 'all' || user.company_user === companyFilter.value
       
-    return matchSearch && matchStatus && matchPosition && matchDepartment
+    return matchSearch && matchStatus && matchPosition && matchDepartment && matchCompany
   })
 })
 
@@ -634,17 +658,19 @@ function closeDeleteModal() {
   deleteIndex.value = -1
 }
 
-function confirmDelete() {
+async function confirmDelete() {
   if (userToDelete.value) {
-    const actualIndex = users.value.findIndex(u => 
-      u.name_user === userToDelete.value.name_user && 
-      u.email_user === userToDelete.value.email_user
-    )
-    if (actualIndex >= 0) {
-      users.value.splice(actualIndex, 1)
+    try {
+      const email = userToDelete.value.email_user;
+      await axios.delete(`/api/users/by-email/${email}`);
+      // Refresh the user list from the server
+      await fetchUsers(); 
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      // Optionally, show an error message to the user
     }
   }
-  closeDeleteModal()
+  closeDeleteModal();
 }
 
 // Make refreshUsers available globally

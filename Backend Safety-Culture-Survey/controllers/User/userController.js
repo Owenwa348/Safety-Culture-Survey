@@ -275,9 +275,48 @@ const loginUser = async (req, res) => {
   }
 };
 
+// Delete user by email
+const deleteUser = async (req, res) => {
+  const { email } = req.params;
+
+  if (!email) {
+    return res.status(400).json({ message: 'Email is required.' });
+  }
+
+  try {
+    // First, try to delete the user from the main User table.
+    // This might fail if there are foreign key constraints (e.g., survey answers),
+    // so we wrap it in a try-catch to prevent it from stopping the process.
+    try {
+      await prisma.user.deleteMany({
+        where: { email_user: email },
+      });
+    } catch (e) {
+      console.error(`Could not delete user '${email}' from User table, probably due to existing relations. Error: ${e.message}`);
+    }
+
+    // Always attempt to delete from the user_excel table.
+    // This is the source for the user list, so this ensures the user is removed from the UI.
+    const deleteResult = await prisma.user_excel.deleteMany({
+      where: { email_user: email },
+    });
+
+    if (deleteResult.count === 0) {
+      // This can happen if the email doesn't exist in user_excel.
+      return res.status(404).json({ message: 'User not found in the list.' });
+    }
+
+    res.status(200).json({ message: 'User removed from the list successfully.' });
+  } catch (error) {
+    console.error('Delete user error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 module.exports = {
   getAllUsers,
   checkUserEmail,
   registerUser,
-  loginUser // Export the new login function
+  loginUser, // Export the new login function
+  deleteUser,
 };
