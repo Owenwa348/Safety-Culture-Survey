@@ -2,9 +2,7 @@
   <nav class="fixed top-0 left-0 h-full w-64 bg-gradient-to-b from-[#06202B] to-[#041419] shadow-2xl flex flex-col">
     <!-- โลโก้ -->
     <div class="flex items-center justify-center h-20 border-b border-gray-700/30 bg-black/20">
-      <router-link to="/home" class="flex items-center transition-transform hover:scale-105">
         <img src="/logoandname.png" alt="Logo" class="h-15 w-40" />
-      </router-link>
     </div>
 
     <!-- เมนู -->
