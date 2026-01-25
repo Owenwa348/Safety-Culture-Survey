@@ -74,6 +74,38 @@ async function main() {
     console.log('✅ Experiences are up to date.');
 
 
+    // 6. Seed User Excel (รายชื่อผู้ประเมิน)
+    console.log('Seeding User Excel...');
+    const userExcelData = [];
+    const companies = ['Safety First Ltd.', 'Secure Works Inc.'];
+    const divisions = ['Operations', 'Maintenance', 'Engineering', 'Support'];
+
+    for (const company of companies) {
+        for (let i = 1; i <= 20; i++) {
+            const email = `${company.toLowerCase().replace(/ /g, '_').replace('.', '')}_user${i}@example.com`;
+            userExcelData.push({
+                email_user: email,
+                company_user: company,
+                division_user: divisions[Math.floor(i / 10)] // Assign divisions somewhat evenly
+            });
+        }
+    }
+
+    for (const userData of userExcelData) {
+        const existingUser = await prisma.user_excel.findUnique({
+            where: { email_user: userData.email_user },
+        });
+
+        if (!existingUser) {
+            await prisma.user_excel.create({
+                data: userData,
+            });
+            console.log(` -> Created User Excel: ${userData.email_user}`);
+        }
+    }
+    console.log('✅ User Excel is up to date.');
+
+
     // Seed Categories, Questions, and Options
     const categoriesData = [
         {
