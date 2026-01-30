@@ -241,12 +241,12 @@ const loginUser = async (req, res) => {
       where: { email_user: email },
     });
 
-    if (!user) {
-      return res.status(404).json({ message: 'User not found. Please register first.' });
+    if (!user || user.password_user !== password) {
+      return res.status(401).json({ message: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' });
     }
 
-    // In a real application, you would validate the password here
-    // For now, we'll just check if the user exists
+    // SECURITY WARNING: Passwords are not hashed. This is insecure.
+    // In a real application, you would validate the hashed password here.
     
     // Return user data without sensitive information
     res.status(200).json({
