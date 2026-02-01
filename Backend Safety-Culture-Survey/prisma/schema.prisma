@@ -149,3 +149,17 @@ model SurveyAnswer {
 
   @@unique([userId, questionId]) // Ensure one answer per user per question
 }
+
+// Model for storing inquiries from assessors
+model Inquiry {
+  id          Int      @id @default(autoincrement())
+  name        String   // ชื่อ - นามสกุลของผู้ส่งติดต่อสอบถาม
+  email       String   // อีเมลของผู้ส่งติดต่อสอบถาม
+  phone       String   // เบอร์โทรศัพท์ของผู้ส่งติดต่อสอบถาม
+  message     String   @db.LongText // ข้อความที่ส่งมา
+  status      String   @default("UNREAD") // UNREAD = ยังไม่ได้อ่าน, READ = อ่านแล้ว, RESOLVED = แก้ไขเรียบร้อย
+  reply       String?  @db.LongText // การตอบกลับจาก SuperAdmin
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  readAt      DateTime? // วันที่ที่ SuperAdmin อ่านข้อมูล
+}

@@ -34,6 +34,7 @@ import ExcelUploadView from '../views/Dashboard/SettingsDashboard/Uploadlistfile
 import SettingsView from '../views/Dashboard/SettingsDashboard/SettingsView.vue'
 import Admin from '../views/Dashboard/Users/Admin/AdminList.vue'
 import SuperAdmin from '../views/Dashboard/Users/SuperAdmin/SuperAdminList.vue'
+import InquiryManagement from '../views/Dashboard/InquiryManagement.vue'
 
 
 // Not Found
@@ -163,7 +164,11 @@ const routes = [
     name: 'ExcelUploadView',
     component: ExcelUploadView
   },
-
+  {
+    path: '/inquiry-management',
+    name: 'InquiryManagement',
+    component: InquiryManagement
+  },
   //========================== Not Found==============================
   {
     path: '/:catchAll(.*)',

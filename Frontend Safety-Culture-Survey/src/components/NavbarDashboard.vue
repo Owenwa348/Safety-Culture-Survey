@@ -166,6 +166,14 @@
                 : 'text-gray-400 hover:text-white hover:bg-white/10'">
               <span>อัปโหลดรายชื่อผู้ประเมิน</span>
             </router-link>
+            <router-link 
+              to="/inquiry-management"
+              class="block text-sm px-4 py-2.5 rounded-lg transition-all duration-200"
+              :class="isActivePath('/inquiry-management')
+                ? 'bg-[#7AE2CF]/20 text-[#7AE2CF] font-semibold border-l-2 border-[#7AE2CF] pl-3'
+                : 'text-gray-400 hover:text-white hover:bg-white/10'">
+              <span>ติดต่อสอบถาม</span>
+            </router-link>
           </div>
         </div>
       </div>
@@ -335,7 +343,7 @@ const isAssessmentActive = computed(() => {
 })
 
 const isSettingsActive = computed(() => {
-  return ['/settings', '/admin', '/superadmin', '/excelupload',].includes(route.path)
+  return ['/settings', '/admin', '/superadmin', '/excelupload', '/inquiry-management'].includes(route.path)
 })
 
 const userInitials = computed(() => {
