@@ -7,59 +7,59 @@
     <div class="ml-64 p-6">
       <!-- Header -->
       <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-800 mb-2">จัดการติดต่อสอบถาม</h1>
-        <p class="text-gray-600">ดูและตอบกลับติดต่อสอบถามจากผู้ประเมิน</p>
-      </div>
-
-      <!-- Statistics Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div class="bg-white rounded-lg shadow p-6 border-l-4 border-red-500">
-          <div class="text-sm text-gray-600 mb-2">ยังไม่ได้อ่าน</div>
-          <div class="text-3xl font-bold text-red-600">{{ stats.unread }}</div>
-        </div>
-        <div class="bg-white rounded-lg shadow p-6 border-l-4 border-yellow-500">
-          <div class="text-sm text-gray-600 mb-2">อ่านแล้ว</div>
-          <div class="text-3xl font-bold text-yellow-600">{{ stats.read }}</div>
-        </div>
-        <div class="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
-          <div class="text-sm text-gray-600 mb-2">แก้ไขแล้ว</div>
-          <div class="text-3xl font-bold text-green-600">{{ stats.resolved }}</div>
-        </div>
-        <div class="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
-          <div class="text-sm text-gray-600 mb-2">ทั้งหมด</div>
-          <div class="text-3xl font-bold text-blue-600">{{ stats.total }}</div>
-        </div>
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">ข้อความติดต่อสอบถาม</h1>
+        <p class="text-gray-600">ดูข้อความติดต่อสอบถามจากผู้ประเมิน</p>
       </div>
 
       <!-- Filter & Search -->
       <div class="bg-white rounded-lg shadow p-6 mb-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- Filter by Status -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- Year Filter -->
           <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-2">กรองตามสถานะ</label>
+            <label for="year-filter" class="block text-sm font-semibold text-gray-700 mb-2">ปี</label>
             <select 
-              v-model="filterStatus"
-              @change="fetchInquiries()"
+              id="year-filter"
+              v-model="selectedYear"
+              @change="applyFilters"
               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7ae2cf] focus:border-transparent"
             >
               <option value="">ทั้งหมด</option>
-              <option value="UNREAD">ยังไม่ได้อ่าน</option>
-              <option value="READ">อ่านแล้ว</option>
-              <option value="RESOLVED">แก้ไขแล้ว</option>
+              <option v-for="year in yearOptions" :key="year" :value="year">
+                {{ year }}
+              </option>
             </select>
           </div>
 
-          <!-- Pagination -->
+          <!-- Month Filter -->
           <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-2">จำนวนรายการต่อหน้า</label>
+            <label for="month-filter" class="block text-sm font-semibold text-gray-700 mb-2">เดือน</label>
             <select 
-              v-model.number="itemsPerPage"
-              @change="fetchInquiries()"
+              id="month-filter"
+              v-model="selectedMonth"
+              @change="applyFilters"
               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7ae2cf] focus:border-transparent"
             >
-              <option value="10">10 รายการ</option>
-              <option value="20">20 รายการ</option>
-              <option value="50">50 รายการ</option>
+              <option value="">ทั้งหมด</option>
+              <option v-for="month in monthOptions" :key="month.value" :value="month.value">
+                {{ month.text }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Company Filter -->
+          <div>
+            <label for="company-filter" class="block text-sm font-semibold text-gray-700 mb-2">บริษัท</label>
+            <select 
+              id="company-filter"
+              v-model="selectedCompany"
+              @change="applyFilters"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7ae2cf] focus:border-transparent"
+              :disabled="isCompaniesLoading"
+            >
+              <option value="">ทั้งหมด</option>
+              <option v-for="company in companies" :key="company" :value="company">
+                {{ company }}
+              </option>
             </select>
           </div>
         </div>
@@ -90,7 +90,6 @@
                 <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">อีเมล</th>
                 <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">เบอร์โทร</th>
                 <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">ข้อความ</th>
-                <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">สถานะ</th>
                 <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">การกระทำ</th>
               </tr>
             </thead>
@@ -99,22 +98,10 @@
                 <td class="px-6 py-3 text-sm text-gray-700 whitespace-nowrap">
                   {{ formatDate(inquiry.createdAt) }}
                 </td>
-                <td class="px-6 py-3 text-sm font-medium text-gray-800">{{ inquiry.name }}</td>
-                <td class="px-6 py-3 text-sm text-gray-600">{{ inquiry.email }}</td>
+                <td class="px-6 py-3 text-sm font-medium text-gray-800 max-w-[10rem] truncate" :title="inquiry.name">{{ inquiry.name }}</td>
+                <td class="px-6 py-3 text-sm text-gray-600 max-w-[12rem] truncate" :title="inquiry.email">{{ inquiry.email }}</td>
                 <td class="px-6 py-3 text-sm text-gray-600">{{ inquiry.phone }}</td>
-                <td class="px-6 py-3 text-sm text-gray-600 max-w-xs truncate">{{ inquiry.message }}</td>
-                <td class="px-6 py-3">
-                  <span :class="[
-                    'px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap',
-                    {
-                      'bg-red-100 text-red-700': inquiry.status === 'UNREAD',
-                      'bg-yellow-100 text-yellow-700': inquiry.status === 'READ',
-                      'bg-green-100 text-green-700': inquiry.status === 'RESOLVED'
-                    }
-                  ]">
-                    {{ getStatusLabel(inquiry.status) }}
-                  </span>
-                </td>
+                <td class="px-6 py-3 text-sm text-gray-600 max-w-xs truncate" :title="inquiry.message">{{ inquiry.message }}</td>
                 <td class="px-6 py-3 text-sm">
                   <div class="flex space-x-2">
                     <button
@@ -139,7 +126,7 @@
         <!-- Pagination Controls -->
         <div class="flex flex-col sm:flex-row justify-between items-center p-6 bg-gray-50 border-t gap-4">
           <div class="text-sm text-gray-600">
-            หน้า {{ currentPage }} จากทั้งหมด {{ totalPages }}
+            แสดง {{ inquiries.length }} รายการ | หน้า {{ currentPage }} จากทั้งหมด {{ totalPages }}
           </div>
           <div class="flex space-x-2">
             <button
@@ -162,7 +149,7 @@
 
       <!-- No Data -->
       <div v-else class="bg-white rounded-lg shadow p-12 text-center">
-        <p class="text-gray-600 text-lg">ไม่มีติดต่อสอบถาม</p>
+        <p class="text-gray-600 text-lg">ไม่มีติดต่อสอบถามที่ตรงกับเงื่อนไข</p>
       </div>
     </div>
 
@@ -204,47 +191,14 @@
               <label class="block text-sm font-semibold text-gray-700 mb-1">วันที่ส่ง</label>
               <p class="text-gray-800">{{ formatDateTime(selectedInquiry.createdAt) }}</p>
             </div>
-            <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-1">สถานะ</label>
-              <span :class="[
-                'inline-block px-3 py-1 rounded-full text-xs font-semibold',
-                {
-                  'bg-red-100 text-red-700': selectedInquiry.status === 'UNREAD',
-                  'bg-yellow-100 text-yellow-700': selectedInquiry.status === 'READ',
-                  'bg-green-100 text-green-700': selectedInquiry.status === 'RESOLVED'
-                }
-              ]">
-                {{ getStatusLabel(selectedInquiry.status) }}
-              </span>
-            </div>
           </div>
 
           <!-- Message -->
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-1">ข้อความ</label>
-            <div class="bg-gray-50 p-4 rounded text-gray-800 whitespace-pre-wrap">
+            <div class="bg-gray-50 p-4 rounded text-gray-800 whitespace-pre-wrap break-words">
               {{ selectedInquiry.message }}
             </div>
-          </div>
-
-          <!-- Reply Section -->
-          <div v-if="selectedInquiry.reply" class="bg-green-50 border border-green-200 rounded p-4">
-            <label class="block text-sm font-semibold text-gray-700 mb-2">การตอบกลับ</label>
-            <div class="text-gray-800 whitespace-pre-wrap">
-              {{ selectedInquiry.reply }}
-            </div>
-          </div>
-
-          <!-- Reply Form -->
-          <div v-else>
-            <label class="block text-sm font-semibold text-gray-700 mb-2">ตอบกลับ</label>
-            <textarea
-              v-model="replyText"
-              rows="4"
-              class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7ae2cf] focus:border-transparent"
-              placeholder="กรุณาระบุข้อความตอบกลับ..."
-              :disabled="isReplying"
-            ></textarea>
           </div>
         </div>
 
@@ -256,15 +210,6 @@
           >
             ปิด
           </button>
-          <button
-            v-if="!selectedInquiry.reply && replyText"
-            @click="submitReply"
-            :disabled="isReplying"
-            class="px-4 py-2 bg-[#7ae2cf] text-black rounded hover:bg-[#62CFC0] transition disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
-          >
-            <span v-if="!isReplying">ส่งการตอบกลับ</span>
-            <span v-else>กำลังส่ง...</span>
-          </button>
         </div>
       </div>
     </div>
@@ -272,7 +217,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { API_BASE_URL } from "../../config/api";
 import NavbarDashboard from '../../components/NavbarDashboard.vue';
 
@@ -280,26 +225,73 @@ import NavbarDashboard from '../../components/NavbarDashboard.vue';
 const inquiries = ref([]);
 const selectedInquiry = ref(null);
 const showModal = ref(false);
-const replyText = ref("");
 
 // States
 const isLoading = ref(true);
-const isReplying = ref(false);
 const error = ref("");
+const isCompaniesLoading = ref(true);
 
 // Pagination & Filtering
 const currentPage = ref(1);
-const itemsPerPage = ref(10);
+const itemsPerPage = ref(10); // Still used for API request limit
 const totalPages = ref(1);
-const filterStatus = ref("");
+const selectedYear = ref("");
+const selectedMonth = ref("");
+const selectedCompany = ref("");
+const companies = ref([]);
 
-// Statistics
-const stats = ref({
-  unread: 0,
-  read: 0,
-  resolved: 0,
-  total: 0,
+/**
+ * Generate year options for the last 5 years
+ */
+const yearOptions = computed(() => {
+  const currentYear = new Date().getFullYear();
+  const years = [];
+  for (let i = 0; i < 5; i++) {
+    years.push(currentYear - i);
+  }
+  return years;
 });
+
+/**
+ * Month options
+ */
+const monthOptions = ref([
+  { value: 1, text: 'มกราคม' },
+  { value: 2, text: 'กุมภาพันธ์' },
+  { value: 3, text: 'มีนาคม' },
+  { value: 4, text: 'เมษายน' },
+  { value: 5, text: 'พฤษภาคม' },
+  { value: 6, text: 'มิถุนายน' },
+  { value: 7, text: 'กรกฎาคม' },
+  { value: 8, text: 'สิงหาคม' },
+  { value: 9, text: 'กันยายน' },
+  { value: 10, text: 'ตุลาคม' },
+  { value: 11, text: 'พฤศจิกายน' },
+  { value: 12, text: 'ธันวาคม' },
+]);
+
+
+/**
+ * Fetch distinct company names
+ */
+const fetchCompanies = async () => {
+  isCompaniesLoading.value = true;
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/companies`);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to fetch companies');
+    }
+    const data = await response.json();
+    companies.value = data; // Assuming the endpoint returns an array of strings
+  } catch (err) {
+    console.error("Error fetching companies:", err);
+    companies.value = []; // Reset on error
+  } finally {
+    isCompaniesLoading.value = false;
+  }
+};
+
 
 /**
  * ดึงข้อมูลติดต่อสอบถาม
@@ -312,8 +304,21 @@ const fetchInquiries = async () => {
     const url = new URL(`${API_BASE_URL}/api/inquiry/list`);
     url.searchParams.append("page", currentPage.value);
     url.searchParams.append("limit", itemsPerPage.value);
-    if (filterStatus.value) {
-      url.searchParams.append("status", filterStatus.value);
+
+    let yearToFilter = selectedYear.value;
+    // If a month is selected but a year is not, default to the current year.
+    if (selectedMonth.value && !selectedYear.value) {
+      yearToFilter = new Date().getFullYear();
+    }
+
+    if (yearToFilter) {
+      url.searchParams.append("year", yearToFilter);
+    }
+    if (selectedMonth.value) {
+      url.searchParams.append("month", selectedMonth.value);
+    }
+    if (selectedCompany.value) {
+      url.searchParams.append("company", selectedCompany.value);
     }
 
     const response = await fetch(url.toString());
@@ -325,7 +330,6 @@ const fetchInquiries = async () => {
 
     inquiries.value = data.data;
     totalPages.value = data.pagination.totalPages;
-    fetchStats();
   } catch (err) {
     console.error("Error fetching inquiries:", err);
     error.value = "ไม่สามารถดึงข้อมูลติดต่อสอบถาม";
@@ -335,19 +339,11 @@ const fetchInquiries = async () => {
 };
 
 /**
- * ดึงสถิติติดต่อสอบถาม
+ * Apply filters and reset pagination
  */
-const fetchStats = async () => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/inquiry/stats/summary`);
-    const data = await response.json();
-
-    if (response.ok) {
-      stats.value = data.data;
-    }
-  } catch (err) {
-    console.error("Error fetching stats:", err);
-  }
+const applyFilters = () => {
+  currentPage.value = 1;
+  fetchInquiries();
 };
 
 /**
@@ -361,7 +357,6 @@ const openModal = async (inquiry) => {
     if (response.ok) {
       selectedInquiry.value = data.data;
       showModal.value = true;
-      replyText.value = "";
     }
   } catch (err) {
     console.error("Error fetching inquiry details:", err);
@@ -375,50 +370,6 @@ const openModal = async (inquiry) => {
 const closeModal = () => {
   showModal.value = false;
   selectedInquiry.value = null;
-  replyText.value = "";
-};
-
-/**
- * ส่งการตอบกลับ
- */
-const submitReply = async () => {
-  if (!replyText.value.trim()) {
-    error.value = "กรุณาระบุข้อความตอบกลับ";
-    return;
-  }
-
-  isReplying.value = true;
-
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/inquiry/${selectedInquiry.value.id}/reply`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        reply: replyText.value.trim(),
-        status: "RESOLVED",
-      }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || "Failed to submit reply");
-    }
-
-    // Update the selected inquiry
-    selectedInquiry.value = data.data;
-    replyText.value = "";
-
-    // Refresh the list
-    fetchInquiries();
-  } catch (err) {
-    console.error("Error submitting reply:", err);
-    error.value = "ไม่สามารถส่งการตอบกลับ";
-  } finally {
-    isReplying.value = false;
-  }
 };
 
 /**
@@ -493,20 +444,9 @@ const formatDateTime = (dateString) => {
   });
 };
 
-/**
- * ดึงป้ายกำกับสถานะ
- */
-const getStatusLabel = (status) => {
-  const labels = {
-    UNREAD: "ยังไม่ได้อ่าน",
-    READ: "อ่านแล้ว",
-    RESOLVED: "แก้ไขแล้ว",
-  };
-  return labels[status] || status;
-};
-
 // Load data on component mount
 onMounted(() => {
+  fetchCompanies();
   fetchInquiries();
 });
 </script>

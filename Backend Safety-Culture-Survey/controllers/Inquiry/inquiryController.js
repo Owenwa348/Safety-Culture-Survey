@@ -77,17 +77,68 @@ const createInquiry = async (req, res) => {
  * ดึงรายการติดต่อสอบถาม ใช้สำหรับ SuperAdmin
  * GET /api/inquiry/list
  * @param {string} status - (optional) กรองตามสถานะ: UNREAD, READ, RESOLVED
+ * @param {string} year - (optional) กรองตามปี (format: YYYY)
+ * @param {string} month - (optional) กรองตามเดือน (format: M or MM)
+ * @param {string} company - (optional) กรองตามบริษัท
  * @param {number} page - (optional) หน้า (default: 1)
  * @param {number} limit - (optional) จำนวนรายการต่อหน้า (default: 10)
  */
 const getInquiries = async (req, res) => {
   try {
-    const { status, page = 1, limit = 10 } = req.query;
+    const { status, page = 1, limit = 10, year: yearParam, month: monthParam, company } = req.query;
 
     // สร้างเงื่อนไข filter
     const where = {};
     if (status) {
       where.status = status;
+    }
+
+    if (yearParam) {
+      const year = parseInt(yearParam);
+      if (monthParam) {
+        // Filter by year and month
+        const month = parseInt(monthParam);
+        const startDate = new Date(year, month - 1, 1);
+        const endDate = new Date(year, month, 1);
+        where.createdAt = {
+          gte: startDate,
+          lt: endDate,
+        };
+      } else {
+        // Filter by year only
+        const startDate = new Date(year, 0, 1);
+        const endDate = new Date(year + 1, 0, 1);
+        where.createdAt = {
+          gte: startDate,
+          lt: endDate,
+        };
+      }
+    }
+
+    if (company) {
+      const usersInCompany = await prisma.user.findMany({
+        where: { company_user: company },
+        select: { email_user: true }
+      });
+      const emails = usersInCompany.map(u => u.email_user);
+      
+      if (emails.length > 0) {
+        where.email = {
+          in: emails
+        };
+      } else {
+        // If no users found for the company, return no inquiries
+        return res.status(200).json({
+          success: true,
+          data: [],
+          pagination: {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total: 0,
+            totalPages: 0,
+          },
+        });
+      }
     }
 
     // คำนวณ offset
