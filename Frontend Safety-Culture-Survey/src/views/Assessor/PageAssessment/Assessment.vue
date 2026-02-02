@@ -165,27 +165,22 @@
 
       <!-- Comment Section -->
       <div class="mt-6 bg-white rounded-lg shadow border overflow-hidden" v-if="questions.length > 0 && answers.length > 0">
-        <div class="bg-red-50 px-6 py-4 border-b border-red-200">
+        <div class="bg-blue-50 px-6 py-4 border-b border-blue-200">
           <div class="flex items-center gap-3">
-            <div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-              <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+              <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V4a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2h-1l-4 4z"/>
               </svg>
             </div>
-            <h3 class="text-lg font-semibold text-gray-800">ความคิดเห็นกับข้อคำถามนี้</h3>
-            <span class="text-sm text-red-600 font-medium">*บังคับ</span>
+            <h3 class="text-lg font-semibold text-gray-800">แสดงความคิดเห็นเพิ่มเติม (ถ้ามี)</h3>
           </div>
         </div>
         <div class="p-6">
           <textarea
             v-model="answers[currentIndex].comment"
             rows="4"
-            class="w-full p-4 border-2 border-red-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent resize-vertical transition-all duration-200 placeholder-gray-400"
-            :class="{
-              'border-red-400 bg-red-50': answers[currentIndex].comment === ''
-            }"
-            placeholder="กรุณากรอกความคิดเห็นของคุณเกี่ยวกับข้อคำถามนี้... (จำเป็นต้องกรอก)"
-            required
+            class="w-full p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical transition-all duration-200 placeholder-gray-400"
+            placeholder="กรุณากรอกความคิดเห็นของคุณเกี่ยวกับข้อคำถามนี้... (ถ้ามี)"
           ></textarea>
         </div>
       </div>
@@ -213,8 +208,8 @@
             class="w-3 h-3 rounded-full transition-all duration-300"
             :class="{
               'bg-blue-500': idx === currentIndex,
-              'bg-green-400': answers[idx].level && answers[idx].futureLevel && answers[idx].comment.trim() !== '' && idx !== currentIndex,
-              'bg-gray-300': (!answers[idx].level || !answers[idx].futureLevel || answers[idx].comment.trim() === '') && idx !== currentIndex
+              'bg-green-400': answers[idx].level && answers[idx].futureLevel && idx !== currentIndex,
+              'bg-gray-300': (!answers[idx].level || !answers[idx].futureLevel) && idx !== currentIndex
             }"
           ></div>
         </div>
@@ -234,16 +229,6 @@
         </button>
       </div>
 
-      <!-- Validation Alert -->
-      <div v-if="showValidationAlert" 
-           class="fixed top-4 right-4 bg-red-500 text-white px-4 py-3 rounded-lg shadow-lg z-50 transition-opacity duration-300">
-        <div class="flex items-center gap-2">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
-          </svg>
-          <span class="text-sm">กรุณาเลือกทั้งคะแนนปัจจุบันและอนาคต และกรอกความคิดเห็นก่อนดำเนินการต่อ</span>
-        </div>
-      </div>
     </div>
   </div>
 </template>
@@ -256,7 +241,6 @@ import axios from 'axios';
 const router = useRouter();
 
 const currentIndex = ref(0);
-const showValidationAlert = ref(false);
 const categories = ref([]);
 const userId = ref(null); // We'll get the user ID from localStorage
 
@@ -344,61 +328,39 @@ async function submitAllAnswers() {
 }
 
 async function goNext() {
-  // Validate the current question before doing anything
-  const currentAnswer = answers.value[currentIndex.value];
-  if (currentAnswer.level === null || currentAnswer.futureLevel === null || currentAnswer.comment.trim() === '') {
-    showValidationAlert.value = true;
-    setTimeout(() => {
-      showValidationAlert.value = false;
-    }, 3000);
-    return;
-  }
-
-  // Submit the current answer to the backend
-  try {
-    await submitAnswer(
-      questions.value[currentIndex.value].id,
-      currentAnswer.level,
-      currentAnswer.futureLevel,
-      currentAnswer.comment
-    );
-  } catch (error) {
-    alert("เกิดข้อผิดพลาดในการบันทึกคำตอบ กรุณาลองใหม่อีกครั้ง");
-    return;
-  }
-
-  // If it's not the last question, just go to the next one
+  // If it's not the last question, just go to the next one. No validation needed.
   if (currentIndex.value < questions.value.length - 1) {
     currentIndex.value++;
-  } else {
-    // It IS the last question, so this is a submission attempt.
-    // Now, check if ALL questions are answered.
-    const allAnswered = answers.value.every(
-      ans => ans.level !== null && ans.futureLevel !== null && ans.comment.trim() !== ''
-    );
+    return;
+  }
 
-    if (allAnswered) {
-      // Submit all answers
-      try {
-        await submitAllAnswers();
-        alert("ส่งแบบประเมินเรียบร้อยแล้ว ขอบคุณค่ะ");
-        console.log("คำตอบทั้งหมด:", answers.value);
-        // Refresh the user list to show updated status
-        if (window.refreshUsersList) {
-          window.refreshUsersList();
-        }
-        router.push('/home');
-      } catch (error) {
-        alert("เกิดข้อผิดพลาดในการบันทึกคำตอบทั้งหมด กรุณาลองใหม่อีกครั้ง");
+  // If we are here, the user is clicking "Submit Assessment" on the last question.
+  // Now, we validate that ALL questions have been answered.
+  const allAnswered = answers.value.every(
+    ans => ans.level !== null && ans.futureLevel !== null
+  );
+
+  if (allAnswered) {
+    // If all questions are answered, proceed with submitting all answers.
+    try {
+      await submitAllAnswers();
+      alert("ส่งแบบประเมินเรียบร้อยแล้ว ขอบคุณค่ะ");
+      console.log("คำตอบทั้งหมด:", answers.value);
+      if (window.refreshUsersList) {
+        window.refreshUsersList();
       }
-    } else {
-      // If not all are answered, navigate to the first unanswered question.
-      const firstUnansweredIndex = answers.value.findIndex(
-        ans => ans.level === null || ans.futureLevel === null || ans.comment.trim() === ''
-      );
-      if (firstUnansweredIndex !== -1) {
-        currentIndex.value = firstUnansweredIndex;
-      }
+      router.push('/home');
+    } catch (error) {
+      alert("เกิดข้อผิดพลาดในการบันทึกคำตอบทั้งหมด กรุณาลองใหม่อีกครั้ง");
+    }
+  } else {
+    // If not all questions are answered, show an alert and go to the first unanswered question.
+    alert("กรุณาตอบทุกข้อคำถามให้ครบถ้วนก่อนส่งแบบประเมิน");
+    const firstUnansweredIndex = answers.value.findIndex(
+      ans => ans.level === null || ans.futureLevel === null
+    );
+    if (firstUnansweredIndex !== -1) {
+      currentIndex.value = firstUnansweredIndex;
     }
   }
 }
