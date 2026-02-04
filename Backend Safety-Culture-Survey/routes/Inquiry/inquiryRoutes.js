@@ -9,10 +9,7 @@ const {
   createInquiry,
   getInquiries,
   getInquiryById,
-  replyInquiry,
-  updateInquiryStatus,
   deleteInquiry,
-  getInquiryStats,
 } = require("../../controllers/Inquiry/inquiryController");
 
 /**
@@ -33,35 +30,15 @@ router.post("/create", createInquiry);
 /**
  * GET /api/inquiry/list
  * ดึงรายการติดต่อสอบถาม
- * Query: { status, page, limit }
+ * Query: { page, limit, year, month, company }
  */
 router.get("/list", getInquiries);
-
-/**
- * GET /api/inquiry/stats/summary
- * ดึงสถิติติดต่อสอบถาม
- */
-router.get("/stats/summary", getInquiryStats);
 
 /**
  * GET /api/inquiry/:id
  * ดึงรายละเอียดติดต่อสอบถาม
  */
 router.get("/:id", getInquiryById);
-
-/**
- * PATCH /api/inquiry/:id/reply
- * ตอบกลับติดต่อสอบถาม
- * Body: { reply, status }
- */
-router.patch("/:id/reply", replyInquiry);
-
-/**
- * PATCH /api/inquiry/:id/status
- * อัปเดตสถานะติดต่อสอบถาม
- * Body: { status }
- */
-router.patch("/:id/status", updateInquiryStatus);
 
 /**
  * DELETE /api/inquiry/:id

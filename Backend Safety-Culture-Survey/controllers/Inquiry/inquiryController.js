@@ -51,7 +51,6 @@ const createInquiry = async (req, res) => {
         email: email.trim().toLowerCase(),
         phone: phone.trim(),
         message: message.trim(),
-        status: "UNREAD",
       },
     });
 
@@ -76,7 +75,6 @@ const createInquiry = async (req, res) => {
 /**
  * ดึงรายการติดต่อสอบถาม ใช้สำหรับ SuperAdmin
  * GET /api/inquiry/list
- * @param {string} status - (optional) กรองตามสถานะ: UNREAD, READ, RESOLVED
  * @param {string} year - (optional) กรองตามปี (format: YYYY)
  * @param {string} month - (optional) กรองตามเดือน (format: M or MM)
  * @param {string} company - (optional) กรองตามบริษัท
@@ -85,13 +83,10 @@ const createInquiry = async (req, res) => {
  */
 const getInquiries = async (req, res) => {
   try {
-    const { status, page = 1, limit = 10, year: yearParam, month: monthParam, company } = req.query;
+    const { page = 1, limit = 10, year: yearParam, month: monthParam, company } = req.query;
 
     // สร้างเงื่อนไข filter
     const where = {};
-    if (status) {
-      where.status = status;
-    }
 
     if (yearParam) {
       const year = parseInt(yearParam);
@@ -194,17 +189,6 @@ const getInquiryById = async (req, res) => {
       });
     }
 
-    // อัปเดตสถานะเป็นอ่านแล้ว
-    if (inquiry.status === "UNREAD") {
-      await prisma.inquiry.update({
-        where: { id: parseInt(id) },
-        data: {
-          status: "READ",
-          readAt: new Date(),
-        },
-      });
-    }
-
     return res.status(200).json({
       success: true,
       data: inquiry,
@@ -214,112 +198,6 @@ const getInquiryById = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "เกิดข้อผิดพลาดในการดึงข้อมูล",
-      error: error.message,
-    });
-  }
-};
-
-/**
- * ตอบกลับติดต่อสอบถาม
- * PATCH /api/inquiry/:id/reply
- * @param {string} reply - ข้อความตอบกลับ
- * @param {string} status - (optional) สถานะใหม่: READ, RESOLVED
- */
-const replyInquiry = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { reply, status = "RESOLVED" } = req.body;
-
-    if (!reply) {
-      return res.status(400).json({
-        success: false,
-        message: "กรุณาระบุข้อความตอบกลับ",
-      });
-    }
-
-    const inquiry = await prisma.inquiry.findUnique({
-      where: { id: parseInt(id) },
-    });
-
-    if (!inquiry) {
-      return res.status(404).json({
-        success: false,
-        message: "ไม่พบติดต่อสอบถามที่ขอ",
-      });
-    }
-
-    // อัปเดตการตอบกลับ
-    const updatedInquiry = await prisma.inquiry.update({
-      where: { id: parseInt(id) },
-      data: {
-        reply: reply.trim(),
-        status,
-        readAt: new Date(),
-      },
-    });
-
-    return res.status(200).json({
-      success: true,
-      message: "ส่งการตอบกลับเรียบร้อยแล้ว",
-      data: updatedInquiry,
-    });
-  } catch (error) {
-    console.error("Error replying to inquiry:", error);
-    return res.status(500).json({
-      success: false,
-      message: "เกิดข้อผิดพลาดในการตอบกลับ",
-      error: error.message,
-    });
-  }
-};
-
-/**
- * อัปเดตสถานะติดต่อสอบถาม
- * PATCH /api/inquiry/:id/status
- * @param {string} status - สถานะใหม่: UNREAD, READ, RESOLVED
- */
-const updateInquiryStatus = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { status } = req.body;
-
-    const validStatuses = ["UNREAD", "READ", "RESOLVED"];
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: "สถานะไม่ถูกต้อง",
-      });
-    }
-
-    const inquiry = await prisma.inquiry.findUnique({
-      where: { id: parseInt(id) },
-    });
-
-    if (!inquiry) {
-      return res.status(404).json({
-        success: false,
-        message: "ไม่พบติดต่อสอบถามที่ขอ",
-      });
-    }
-
-    const updatedInquiry = await prisma.inquiry.update({
-      where: { id: parseInt(id) },
-      data: {
-        status,
-        readAt: status !== "UNREAD" ? new Date() : inquiry.readAt,
-      },
-    });
-
-    return res.status(200).json({
-      success: true,
-      message: "อัปเดตสถานะเรียบร้อยแล้ว",
-      data: updatedInquiry,
-    });
-  } catch (error) {
-    console.error("Error updating inquiry status:", error);
-    return res.status(500).json({
-      success: false,
-      message: "เกิดข้อผิดพลาดในการอัปเดตสถานะ",
       error: error.message,
     });
   }
@@ -362,44 +240,9 @@ const deleteInquiry = async (req, res) => {
   }
 };
 
-/**
- * สถิติติดต่อสอบถาม
- * GET /api/inquiry/stats/summary
- */
-const getInquiryStats = async (req, res) => {
-  try {
-    const [unreadCount, readCount, resolvedCount, total] = await Promise.all([
-      prisma.inquiry.count({ where: { status: "UNREAD" } }),
-      prisma.inquiry.count({ where: { status: "READ" } }),
-      prisma.inquiry.count({ where: { status: "RESOLVED" } }),
-      prisma.inquiry.count(),
-    ]);
-
-    return res.status(200).json({
-      success: true,
-      data: {
-        unread: unreadCount,
-        read: readCount,
-        resolved: resolvedCount,
-        total,
-      },
-    });
-  } catch (error) {
-    console.error("Error fetching inquiry stats:", error);
-    return res.status(500).json({
-      success: false,
-      message: "เกิดข้อผิดพลาดในการดึงสถิติ",
-      error: error.message,
-    });
-  }
-};
-
 module.exports = {
   createInquiry,
   getInquiries,
   getInquiryById,
-  replyInquiry,
-  updateInquiryStatus,
   deleteInquiry,
-  getInquiryStats,
 };
