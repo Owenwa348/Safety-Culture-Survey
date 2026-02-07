@@ -1,7 +1,7 @@
 // routes/User/userRoutes.js
 const express = require('express');
 const router = express.Router();
-const { getAllUsers, checkUserEmail, registerUser, loginUser, deleteUser } = require('../../controllers/User/userController');
+const { getAllUsers, checkUserEmail, registerUser, loginUser, deleteUser, forgotPassword, resetPassword } = require('../../controllers/User/userController');
 
 // Route to get all users (for UserList.vue)
 router.get('/users', getAllUsers);
@@ -18,5 +18,11 @@ router.post('/register', registerUser);
 
 // Route to login user (for LoginEvaluator.vue)
 router.post('/login', loginUser);
+
+// Route to verify user for forgot password (for ForgotPasswordEvaluator.vue)
+router.post('/forgot-password', forgotPassword);
+
+// Route to reset password after OTP verification (for ForgotPasswordEvaluator.vue)
+router.post('/reset-password', resetPassword);
 
 module.exports = router;

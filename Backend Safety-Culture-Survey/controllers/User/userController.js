@@ -313,10 +313,107 @@ const deleteUser = async (req, res) => {
   }
 };
 
+// Forgot password - verify user by email and phone
+const forgotPassword = async (req, res) => {
+  const { email, phone } = req.body;
+
+  // Validate required fields
+  if (!email || !phone) {
+    return res.status(400).json({ message: 'Email and phone are required.' });
+  }
+
+  try {
+    // Clean phone number (remove formatting characters)
+    const cleanedPhone = phone.replace(/\D/g, '');
+
+    // Check if user exists in User table with matching email and phone
+    const user = await prisma.user.findFirst({
+      where: {
+        email_user: email,
+        phone_user: cleanedPhone
+      },
+      select: {
+        id: true,
+        email_user: true,
+        name_user: true,
+        phone_user: true
+      }
+    });
+
+    if (!user) {
+      // For security reasons, don't reveal if email or phone is wrong
+      return res.status(404).json({ message: 'User not found. Please check your email and phone number.' });
+    }
+
+    // Generate OTP (6 digits)
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // In a real application, you should:
+    // 1. Store the OTP in a temporary table with expiration time
+    // 2. Send the OTP via SMS to the phone number
+    // For now, we'll just return the OTP for testing purposes
+    
+    res.status(200).json({ 
+      message: 'User verified successfully. OTP has been sent to your phone.',
+      success: true,
+      email: user.email_user,
+      phone: user.phone_user,
+      userId: user.id,
+      otp: otp // In production, remove this and send via SMS instead
+    });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Reset password after OTP verification
+const resetPassword = async (req, res) => {
+  const { email, phone, newPassword } = req.body;
+
+  // Validate required fields
+  if (!email || !phone || !newPassword) {
+    return res.status(400).json({ message: 'Email, phone, and new password are required.' });
+  }
+
+  try {
+    // Clean phone number
+    const cleanedPhone = phone.replace(/\D/g, '');
+
+    // Find user
+    const user = await prisma.user.findFirst({
+      where: {
+        email_user: email,
+        phone_user: cleanedPhone
+      }
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    // Update password
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { password_user: newPassword } // In production, hash the password
+    });
+
+    res.status(200).json({ 
+      message: 'Password reset successfully.',
+      success: true
+    });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 module.exports = {
   getAllUsers,
   checkUserEmail,
   registerUser,
   loginUser, // Export the new login function
   deleteUser,
+  forgotPassword,
+  resetPassword,
 };

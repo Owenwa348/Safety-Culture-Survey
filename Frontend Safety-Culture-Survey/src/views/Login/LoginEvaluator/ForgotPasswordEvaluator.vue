@@ -319,10 +319,8 @@ const showConfirmPassword = ref(false)
 const passwordError = ref('')
 const confirmPasswordError = ref('')
 
-// Mock database for validation
-const mockUsers = [
-  { email: 'user01@email.com', phone: '0811577922' },
-]
+// API base URL
+const API_BASE_URL = 'http://localhost:5000/api/users' // Update this with your actual API URL
 
 // Computed properties
 const isPasswordValid = computed(() => {
@@ -466,30 +464,37 @@ const handleEmailSubmit = async () => {
   isLoading.value = true
   
   try {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    
     const cleanedPhone = phoneNumber.value.replace(/\D/g, '')
     
-    // Check if user exists in mock database
-    const user = mockUsers.find(u => 
-      u.email.toLowerCase() === email.value.toLowerCase() && 
-      u.phone === cleanedPhone
-    )
+    // Call the API to verify user
+    const response = await fetch(`${API_BASE_URL}/forgot-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        email: email.value,
+        phone: cleanedPhone
+      })
+    })
     
-    if (!user) {
-      emailError.value = 'ไม่พบข้อมูลผู้ใช้ในระบบ กรุณาตรวจสอบอีเมลและเบอร์โทร'
+    const data = await response.json()
+    
+    if (!response.ok) {
+      emailError.value = data.message || 'ไม่พบข้อมูลผู้ใช้ในระบบ กรุณาตรวจสอบอีเมลและเบอร์โทร'
       return
     }
     
-    // Generate OTP
-    generatedOtp.value = Math.floor(100000 + Math.random() * 900000).toString()
+    // Generate OTP from response (for testing) or generate locally
+    // In production, the server would send OTP via SMS
+    generatedOtp.value = data.otp || Math.floor(100000 + Math.random() * 900000).toString()
     console.log('Generated OTP:', generatedOtp.value) // For testing purposes
     
     // Proceed to OTP verification step
     currentStep.value = 'otp'
     
   } catch (error) {
+    console.error('Error:', error)
     emailError.value = 'เกิดข้อผิดพลาดในการตรวจสอบข้อมูล กรุณาลองใหม่อีกครั้ง'
   } finally {
     isLoading.value = false
@@ -527,13 +532,33 @@ const handlePasswordReset = async () => {
   isLoading.value = true
   
   try {
-    // Simulate API call to reset password
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    const cleanedPhone = phoneNumber.value.replace(/\D/g, '')
+    
+    // Call the API to reset password
+    const response = await fetch(`${API_BASE_URL}/reset-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        email: email.value,
+        phone: cleanedPhone,
+        newPassword: newPassword.value
+      })
+    })
+    
+    const data = await response.json()
+    
+    if (!response.ok) {
+      passwordError.value = data.message || 'เกิดข้อผิดพลาดในการตั้งรหัสผ่าน กรุณาลองใหม่อีกครั้ง'
+      return
+    }
     
     // Show success message
     currentStep.value = 'success'
     
   } catch (error) {
+    console.error('Error:', error)
     passwordError.value = 'เกิดข้อผิดพลาดในการตั้งรหัสผ่าน กรุณาลองใหม่อีกครั้ง'
   } finally {
     isLoading.value = false
