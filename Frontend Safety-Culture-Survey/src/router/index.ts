@@ -34,6 +34,7 @@ import ExcelUploadView from '../views/Dashboard/SettingsDashboard/Uploadlistfile
 import SettingsView from '../views/Dashboard/SettingsDashboard/SettingsView.vue'
 import Admin from '../views/Dashboard/Users/Admin/AdminList.vue'
 import SuperAdmin from '../views/Dashboard/Users/SuperAdmin/SuperAdminList.vue'
+import InquiryManagement from '../views/Dashboard/InquiryManagement.vue'
 
 
 // Not Found
@@ -163,7 +164,11 @@ const routes = [
     name: 'ExcelUploadView',
     component: ExcelUploadView
   },
-
+  {
+    path: '/inquiry-management',
+    name: 'InquiryManagement',
+    component: InquiryManagement
+  },
   //========================== Not Found==============================
   {
     path: '/:catchAll(.*)',
@@ -175,6 +180,47 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes
+})
+
+// Route Guard: Check authentication and authorization
+router.beforeEach((to, from, next) => {
+  // Routes that require authentication
+  const protectedRoutes = ['/dashboard', '/settings', '/admin', '/superadmin', '/excelupload', '/user-list', 
+                          '/question-results', '/opinion-results', '/workgroup-evaluation-results', '/puestion-results']
+  
+  // Routes that only SuperAdmin can access
+  const superAdminRoutes = ['/settings', '/admin', '/superadmin', '/excelupload']
+
+  if (protectedRoutes.includes(to.path)) {
+    const userStr = localStorage.getItem('user')
+    
+    if (!userStr) {
+      // No user logged in, redirect to login
+      next('/Login-all')
+      return
+    }
+
+    try {
+      const user = JSON.parse(userStr)
+      // Normalize role: 'Super Admin' -> 'SuperAdmin'
+      const normalizedRole = user.role?.replace(/\s+/g, '') || 'Admin'
+      
+      // Check if SuperAdmin-only routes
+      if (superAdminRoutes.includes(to.path) && normalizedRole !== 'SuperAdmin') {
+        // User is not SuperAdmin, redirect to dashboard
+        console.warn(`Access denied: User ${user.email} (${user.role}) tried to access ${to.path}`)
+        next('/dashboard')
+        return
+      }
+    } catch (error) {
+      console.error('Failed to parse user data:', error)
+      localStorage.removeItem('user')
+      next('/Login-all')
+      return
+    }
+  }
+
+  next()
 })
 
 export default router

@@ -8,6 +8,9 @@ const {
   updateAdmin,
   toggleAdminStatus,
   deleteAdmin,
+  adminLogin,
+  verifyAdminForPasswordReset,
+  resetAdminPassword,
 } = require('../../controllers/Admin/adminAuthController');
 
 // Route for SuperAdmin to add a new admin
@@ -18,6 +21,10 @@ router.post('/add', addAdmin);
 // GET /api/admin/list
 router.get('/list', getAllAdmins);
 
+// Route to verify admin email and phone for password reset
+// POST /api/admin/verify-reset
+router.post('/verify-reset', verifyAdminForPasswordReset);
+
 // Route for a new admin to check their email before setting up a password
 // POST /api/admin/check-email
 router.post('/check-email', checkAdminEmail);
@@ -25,6 +32,10 @@ router.post('/check-email', checkAdminEmail);
 // Route for a new admin to complete their account setup
 // PUT /api/admin/setup-account
 router.put('/setup-account', setupAdminAccount);
+
+// Route to reset an admin's password
+// PUT /api/admin/reset-password
+router.put('/reset-password', resetAdminPassword);
 
 // Route for SuperAdmin to update an admin's details
 // PUT /api/admin/update/:id
@@ -37,5 +48,9 @@ router.put('/status/:id', toggleAdminStatus);
 // Route for SuperAdmin to delete an admin
 // DELETE /api/admin/delete/:id
 router.delete('/delete/:id', deleteAdmin);
+
+// Route for an existing admin to log in
+// POST /api/admin/login
+router.post('/login', adminLogin);
 
 module.exports = router;

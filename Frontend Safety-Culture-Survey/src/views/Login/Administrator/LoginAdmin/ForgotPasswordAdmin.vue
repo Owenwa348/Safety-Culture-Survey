@@ -242,160 +242,155 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import OTPAdministrator from './OTPAdmin.vue'
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import OTPAdministrator from './OTPAdmin.vue';
+import axios from 'axios';
+import { API_BASE_URL } from '../../../../config/api';
 
-const router = useRouter()
+const router = useRouter();
 
 // Refs
-const otpAdministrator = ref(null)
+const otpAdministrator = ref(null);
 
 // Data
-const currentStep = ref('email') // 'email', 'otp', 'reset', 'success'
-const isLoading = ref(false)
+const currentStep = ref('email'); // 'email', 'otp', 'reset', 'success'
+const isLoading = ref(false);
 
 // Email step data
-const email = ref('')
-const phoneNumber = ref('')
-const emailError = ref('')
-const phoneError = ref('')
+const email = ref('');
+const phoneNumber = ref('');
+const emailError = ref('');
+const phoneError = ref('');
 
 // OTP step data
-const generatedOtp = ref('')
+const generatedOtp = ref('');
 
 // Password step data
-const newPassword = ref('')
-const confirmPassword = ref('')
-const showNewPassword = ref(false)
-const showConfirmPassword = ref(false)
-const passwordError = ref('')
-
-// Mock database - เฉพาะ Admin
-const mockAdminDatabase = [
-  { email: 'admin01@gmail.com', phone: '0811577922', role: 'admin' },
-]
+const newPassword = ref('');
+const confirmPassword = ref('');
+const showNewPassword = ref(false);
+const showConfirmPassword = ref(false);
+const passwordError = ref('');
 
 // Methods
 const getTitle = () => {
   switch (currentStep.value) {
     case 'email':
-      return 'ลืมรหัสผ่าน'
+      return 'ลืมรหัสผ่าน';
     case 'otp':
-      return 'ยืนยันรหัส OTP'
+      return 'ยืนยันรหัส OTP';
     case 'reset':
-      return 'ตั้งรหัสผ่านใหม่'
+      return 'ตั้งรหัสผ่านใหม่';
     default:
-      return 'สำเร็จ!'
+      return 'สำเร็จ!';
   }
-}
+};
 
 const getDescription = () => {
   switch (currentStep.value) {
     case 'email':
-      return 'กรุณาระบุอีเมลและเบอร์โทรเพื่อรีเซ็ตรหัสผ่าน'
+      return 'กรุณาระบุอีเมลและเบอร์โทรเพื่อรีเซ็ตรหัสผ่าน';
     case 'otp':
-      return 'กรุณากรอกรหัส OTP ที่ส่งไปยังเบอร์โทรของท่าน'
+      return 'กรุณากรอกรหัส OTP ที่ส่งไปยังเบอร์โทรของท่าน';
     case 'reset':
-      return 'กรุณาตั้งรหัสผ่านใหม่ของท่าน'
+      return 'กรุณาตั้งรหัสผ่านใหม่ของท่าน';
     default:
-      return 'ตั้งรหัสผ่านใหม่เรียบร้อย'
+      return 'ตั้งรหัสผ่านใหม่เรียบร้อย';
   }
-}
+};
 
 const onlyNumberInput = (e) => {
-  const char = String.fromCharCode(e.which)
+  const char = String.fromCharCode(e.which);
   if (!/[0-9]/.test(char)) {
-    e.preventDefault()
+    e.preventDefault();
   }
-}
+};
 
 const formatPhoneNumber = (e) => {
-  let value = e.target.value.replace(/\D/g, '')
+  let value = e.target.value.replace(/\D/g, '');
   if (value.length > 10) {
-    value = value.slice(0, 10)
+    value = value.slice(0, 10);
   }
   
   // Format as XXX-XXX-XXXX
   if (value.length >= 6) {
-    value = value.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3')
+    value = value.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3');
   } else if (value.length >= 3) {
-    value = value.replace(/(\d{3})(\d{0,3})/, '$1-$2')
+    value = value.replace(/(\d{3})(\d{0,3})/, '$1-$2');
   }
   
-  phoneNumber.value = value
-  clearPhoneError()
-}
+  phoneNumber.value = value;
+  clearPhoneError();
+};
 
 const clearEmailError = () => {
-  emailError.value = ''
-}
+  emailError.value = '';
+};
 
 const clearPhoneError = () => {
-  phoneError.value = ''
-}
+  phoneError.value = '';
+};
 
 const validateEmail = () => {
   if (!email.value) {
-    emailError.value = 'กรุณากรอกอีเมล'
-    return false
+    emailError.value = 'กรุณากรอกอีเมล';
+    return false;
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
-    emailError.value = 'รูปแบบอีเมลไม่ถูกต้อง'
-    return false
+    emailError.value = 'รูปแบบอีเมลไม่ถูกต้อง';
+    return false;
   }
-  return true
-}
+  return true;
+};
 
 const validatePhone = () => {
-  const cleaned = phoneNumber.value.replace(/\D/g, '')
+  const cleaned = phoneNumber.value.replace(/\D/g, '');
   if (!phoneNumber.value) {
-    phoneError.value = 'กรุณากรอกเบอร์โทรศัพท์'
-    return false
+    phoneError.value = 'กรุณากรอกเบอร์โทรศัพท์';
+    return false;
   }
   if (!/^\d{10}$/.test(cleaned)) {
-    phoneError.value = 'เบอร์โทรต้องเป็นตัวเลข 10 หลัก'
-    return false
+    phoneError.value = 'เบอร์โทรต้องเป็นตัวเลข 10 หลัก';
+    return false;
   }
-  return true
-}
+  return true;
+};
 
 const handleEmailSubmit = async () => {
-  emailError.value = ''
-  phoneError.value = ''
-  
+  emailError.value = '';
+  phoneError.value = '';
+
   if (!validateEmail() || !validatePhone()) {
-    return
+    return;
   }
-  
-  isLoading.value = true
-  
+
+  isLoading.value = true;
+
   try {
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    const cleanedPhone = phoneNumber.value.replace(/\D/g, '');
     
-    const cleanedPhone = phoneNumber.value.replace(/\D/g, '')
-    const admin = mockAdminDatabase.find(u => 
-      u.email.toLowerCase() === email.value.toLowerCase() && 
-      u.phone === cleanedPhone
-    )
-    
-    if (!admin) {
-      emailError.value = 'ไม่พบข้อมูลผู้ดูแลระบบในระบบ กรุณาตรวจสอบอีเมลและเบอร์โทร'
-      return
-    }
-    
-    // Generate OTP
-    generatedOtp.value = Math.floor(100000 + Math.random() * 900000).toString()
-    console.log('Generated OTP for Admin:', generatedOtp.value) // For testing purposes
-    
-    currentStep.value = 'otp'
-    
+    await axios.post(`${API_BASE_URL}/api/admin/verify-reset`, {
+      email: email.value,
+      phone: cleanedPhone,
+    });
+
+    // If verification is successful, proceed to OTP
+    generatedOtp.value = Math.floor(100000 + Math.random() * 900000).toString();
+    console.log('Generated OTP for Admin:', generatedOtp.value); // For testing, will be sent via backend in reality
+
+    currentStep.value = 'otp';
+
   } catch (error) {
-    emailError.value = 'เกิดข้อผิดพลาดในการตรวจสอบข้อมูล กรุณาลองใหม่อีกครั้ง'
+    if (error.response && error.response.data && error.response.data.message) {
+      emailError.value = error.response.data.message;
+    } else {
+      emailError.value = 'เกิดข้อผิดพลาดในการตรวจสอบข้อมูล กรุณาลองใหม่อีกครั้ง';
+    }
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 
 const handleOtpVerified = async (otpCode) => {
   isLoading.value = true
@@ -416,35 +411,43 @@ const handleOtpResend = () => {
 }
 
 const handlePasswordReset = async () => {
-  passwordError.value = ''
+  passwordError.value = '';
   
   if (!newPassword.value) {
-    passwordError.value = 'กรุณากรอกรหัสผ่านใหม่'
-    return
+    passwordError.value = 'กรุณากรอกรหัสผ่านใหม่';
+    return;
   }
   
   if (!confirmPassword.value) {
-    passwordError.value = 'กรุณายืนยันรหัสผ่าน'
-    return
+    passwordError.value = 'กรุณายืนยันรหัสผ่าน';
+    return;
   }
   
   if (newPassword.value !== confirmPassword.value) {
-    passwordError.value = 'รหัสผ่านไม่ตรงกัน'
-    return
+    passwordError.value = 'รหัสผ่านไม่ตรงกัน';
+    return;
   }
   
-  isLoading.value = true
+  isLoading.value = true;
   
   try {
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    currentStep.value = 'success'
+    await axios.put(`${API_BASE_URL}/api/admin/reset-password`, {
+      email: email.value, // The email from the first step
+      newPassword: newPassword.value,
+    });
+    
+    currentStep.value = 'success';
     
   } catch (error) {
-    passwordError.value = 'เกิดข้อผิดพลาดในการตั้งรหัสผ่าน กรุณาลองใหม่อีกครั้ง'
+    if (error.response && error.response.data && error.response.data.message) {
+      passwordError.value = error.response.data.message;
+    } else {
+      passwordError.value = 'เกิดข้อผิดพลาดในการตั้งรหัสผ่าน กรุณาลองใหม่อีกครั้ง';
+    }
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 
 const goToLogin = () => {
   router.push('/login-all')

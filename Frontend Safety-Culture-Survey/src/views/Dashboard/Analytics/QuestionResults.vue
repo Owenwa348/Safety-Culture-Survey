@@ -7,50 +7,31 @@ import NavbarDashboard from '../../../components/NavbarDashboard.vue';
 // ========================================
 // ตัวแปร Reactive States
 // ========================================
-// เก็บค่าตำแหน่งที่เลือก เริ่มต้นเป็น "All" (ทั้งหมด)
 const selectedPosition = ref("All");
-
-// เก็บค่าบริษัทที่เลือก เริ่มต้นเป็น "All" (ทั้งหมด)
 const selectedCompany = ref("All");
-
-// เก็บค่าช่วงเวลาที่เลือก เริ่มต้นเป็น "compare" (เปรียบเทียบ)
 const selectedTimeframe = ref("compare");
-
-// เก็บค่าปีที่เลือก เริ่มต้นเป็น null
 const selectedYear = ref(null);
-
-// เก็บข้อความคำถามทั้งหมดที่จะแสดงในกราฟ (จะดึงมาจาก API)
 const fullLabels = ref([]);
-
-// เก็บข้อมูลกราฟที่ได้จาก API
 const chartAPIData = ref(null);
-
-// สถานะการโหลดข้อมูล true = กำลังโหลด, false = โหลดเสร็จแล้ว
 const isLoading = ref(true);
 
 // ========================================
 // ข้อมูลตัวเลือกสำหรับ Dropdown
 // ========================================
-// ตัวเลือกตำแหน่งต่างๆ เริ่มต้นมีแค่ "รวมทั้งหมด" จากนั้นจะดึงข้อมูลเพิ่มจาก API
 const positionOptions = ref([
   { value: "All", label: "รวมทั้งหมด" },
 ]);
 
-// ตัวเลือกบริษัทต่างๆ มีตัวเลือกตายตัวอยู่ (ในอนาคตอาจดึงจาก API)
 const companyOptions = ref([
   { value: "All", label: "รวมทั้งหมด" },
-  { value: "Verte Security", label: "Verte Security" },
-  { value: "Verte Smart Solution", label: "Verte Smart Solution" }
 ]);
 
-// ตัวเลือกช่วงเวลา มี 3 แบบ: เปรียบเทียบ, ปัจจุบัน, อนาคต
 const timeframeOptions = [
   { value: "compare", label: "เปรียบเทียบ (ปัจจุบัน vs อนาคต)" },
   { value: "current", label: "ปัจจุบัน" },
   { value: "future", label: "คาดในอนาคต" },
 ];
 
-// เก็บรายการปีที่มีข้อมูลในระบบ (จะดึงมาจาก API)
 const availableYears = ref([]);
 
 // ========================================
@@ -59,31 +40,51 @@ const availableYears = ref([]);
 
 /**
  * ดึงข้อมูลคำถามทั้งหมดจาก API เพื่อนำมาแสดงเป็นป้ายกำกับในกราฟ
- * แต่ละคำถามจะแสดงในรูปแบบ "Q1: ข้อความคำถาม"
+ * แสดงหมายเลขและตัวอย่างคำถามสั้นๆ เช่น "Q1: ทักษะการทำงาน..."
  */
 const fetchQuestions = async () => {
   try {
     const response = await axios.get('/api/questions');
-    // แปลงข้อมูลคำถามเป็นรูปแบบ "Q{ลำดับ}: {ข้อความ}"
-    fullLabels.value = response.data.map((q, index) => `Q${index + 1}: ${q.text}`);
+    // แสดงหมายเลขพร้อมตัวอย่างคำถามสั้นๆ (ไม่เกิน 25 ตัวอักษร)
+    fullLabels.value = response.data.map((q, index) => {
+      const questionText = q.text;
+      const maxLength = 25; // กำหนดความยาวสูงสุดของตัวอย่าง
+      const truncatedText = questionText.length > maxLength 
+        ? questionText.substring(0, maxLength) + '...' 
+        : questionText;
+      return `Q${index + 1}: ${truncatedText}`;
+    });
   } catch (error) {
     console.error('เกิดข้อผิดพลาดในการดึงข้อมูลคำถาม:', error);
   }
 };
 
 /**
+ * ดึงข้อมูลบริษัททั้งหมดจาก API
+ */
+const fetchCompanies = async () => {
+  try {
+    const response = await axios.get('/api/companies');
+    const companies = response.data.map(companyName => ({
+      value: companyName,
+      label: companyName
+    }));
+    companyOptions.value.push(...companies);
+  } catch (error) {
+    console.error('เกิดข้อผิดพลาดในการดึงข้อมูลบริษัท:', error);
+  }
+};
+
+/**
  * ดึงข้อมูลตำแหน่งทั้งหมดจาก API 
- * เพื่อนำมาแสดงในตัวเลือก dropdown ของตำแหน่ง
  */
 const fetchPositions = async () => {
   try {
     const response = await axios.get('/api/positions');
-    // แปลงข้อมูลตำแหน่งให้อยู่ในรูปแบบที่ dropdown ใช้งานได้
     const positions = response.data.map(position => ({
       value: position.name,
       label: position.name
     }));
-    // เพิ่มตำแหน่งที่ดึงมาลงในรายการตัวเลือก (ต่อท้าย "รวมทั้งหมด")
     positionOptions.value.push(...positions);
   } catch (error) {
     console.error('เกิดข้อผิดพลาดในการดึงข้อมูลตำแหน่ง:', error);
@@ -92,13 +93,11 @@ const fetchPositions = async () => {
 
 /**
  * ดึงรายการปีที่มีข้อมูลการประเมินจาก API
- * และเลือกปีแรกเป็นค่าเริ่มต้นโดยอัตโนมัติ
  */
 const fetchYears = async () => {
   try {
     const { data } = await axios.get('/api/analytics/assessment-years');
     availableYears.value = data;
-    // ถ้ามีข้อมูลปี ให้เลือกปีแรกเป็นค่าเริ่มต้น
     if (data.length > 0) {
       selectedYear.value = data[0];
     }
@@ -108,33 +107,27 @@ const fetchYears = async () => {
 };
 
 /**
- * ดึงข้อมูลกราฟตามเงื่อนไขที่เลือก (ปี, บริษัท, ตำแหน่ง)
- * ข้อมูลที่ได้จะถูกนำไปแสดงในกราฟ StackedBar
+ * ดึงข้อมูลกราฟตามเงื่อนไขที่เลือก
  */
 const fetchChartData = async () => {
-  // ถ้ายังไม่ได้เลือกปี ไม่ต้องดึงข้อมูล
   if (!selectedYear.value) return;
   
-  // เริ่มการโหลด แสดงสถานะ "กำลังโหลด..."
   isLoading.value = true;
   chartAPIData.value = null;
   
   try {
-    // เตรียม parameters สำหรับส่งไปยัง API
     const params = {
       year: selectedYear.value,
       company: selectedCompany.value,
       position: selectedPosition.value,
     };
     
-    // เรียก API เพื่อดึงข้อมูลผลการประเมินตามเงื่อนไข
     const { data } = await axios.get('/api/analytics/question-results', { params });
     chartAPIData.value = data;
   } catch (error) {
     console.error('เกิดข้อผิดพลาดในการดึงข้อมูลกราฟ:', error);
-    chartAPIData.value = null; // ล้างข้อมูลเมื่อเกิดข้อผิดพลาด
+    chartAPIData.value = null;
   } finally {
-    // สิ้นสุดการโหลด ไม่ว่าจะสำเร็จหรือล้มเหลว
     isLoading.value = false;
   }
 };
@@ -143,55 +136,32 @@ const fetchChartData = async () => {
 // Lifecycle Hooks และ Watchers
 // ========================================
 
-/**
- * เมื่อ component ถูกติดตั้ง (mount) จะทำงานดังนี้:
- * 1. ดึงข้อมูลคำถาม
- * 2. ดึงข้อมูลตำแหน่ง
- * 3. ดึงรายการปี
- * 4. หลังจากดึงข้อมูลเสร็จ ถ้ามีปีที่เลือกแล้ว จะดึงข้อมูลกราฟทันที
- */
 onMounted(async () => {
   await Promise.all([
     fetchQuestions(),
     fetchPositions(),
-    fetchYears()
+    fetchYears(),
+    fetchCompanies()
   ]);
   
-  // ดึงข้อมูลกราฟหลังจากตั้งค่าเริ่มต้นเสร็จสมบูรณ์
   if (selectedYear.value) {
     fetchChartData();
   }
 });
 
-/**
- * ติดตามการเปลี่ยนแปลงของตัวกรอง (ปี, บริษัท, ตำแหน่ง)
- * เมื่อมีการเปลี่ยนแปลง จะเรียกฟังก์ชัน fetchChartData ใหม่ทันที
- */
 watch([selectedYear, selectedCompany, selectedPosition], fetchChartData, { deep: true });
 
 // ========================================
-// Computed Properties (คำนวณแบบ Dynamic)
+// Computed Properties
 // ========================================
 
-/**
- * ตรวจสอบว่าอยู่ในโหมดเปรียบเทียบหรือไม่
- * ถ้าเป็น "compare" จะแสดงกราฟ 2 ชุด (ปัจจุบัน และ อนาคต)
- */
 const isCompareMode = computed(() => selectedTimeframe.value === "compare");
 
-/**
- * หาชื่อแสดงของตำแหน่งที่เลือก
- * @returns {string} ชื่อตำแหน่งภาษาไทย
- */
 const getPositionLabel = () => {
   const option = positionOptions.value.find(opt => opt.value === selectedPosition.value);
   return option ? option.label : selectedPosition.value;
 };
 
-/**
- * หาชื่อแสดงของบริษัทที่เลือก
- * @returns {string} ชื่อบริษัทภาษาไทย
- */
 const getCompanyLabel = () => {
   const option = companyOptions.value.find(opt => opt.value === selectedCompany.value);
   return option ? option.label : selectedCompany.value;
@@ -199,13 +169,8 @@ const getCompanyLabel = () => {
 
 /**
  * จัดเตรียมข้อมูลสำหรับแสดงกราฟ
- * ประมวลผลข้อมูลจาก API ให้อยู่ในรูปแบบที่ component StackedBar ใช้งานได้
- * 
- * โหมดเปรียบเทียบ: จะแสดง 2 ชุดข้อมูล (ปัจจุบัน vs อนาคต)
- * โหมดเดี่ยว: จะแสดง 1 ชุดข้อมูล (ปัจจุบัน หรือ อนาคต)
  */
 const chartData = computed(() => {
-  // ถ้ายังไม่มีข้อมูล หรือกำลังโหลด หรือยังไม่มีป้ายกำกับ ให้คืนค่า null
   if (!chartAPIData.value || isLoading.value || fullLabels.value.length === 0) {
     return null;
   }
@@ -213,24 +178,22 @@ const chartData = computed(() => {
   const positionLabel = getPositionLabel();
   const companyLabel = getCompanyLabel();
 
-  // โหมดเปรียบเทียบ: แสดงทั้งปัจจุบันและอนาคต
   if (isCompareMode.value) {
     return {
-      labels: fullLabels.value, // ป้ายกำกับคำถาม
+      labels: fullLabels.value,
       datasets: [
         {
           label: `${positionLabel} - ${companyLabel} (ปัจจุบัน)`,
-          scoreCounts: chartAPIData.value.current // ข้อมูลคะแนนปัจจุบัน
+          scoreCounts: chartAPIData.value.current
         },
         {
           label: `${positionLabel} - ${companyLabel} (อนาคต)`,
-          scoreCounts: chartAPIData.value.future // ข้อมูลคะแนนอนาคต
+          scoreCounts: chartAPIData.value.future
         }
       ]
     };
   } else {
-    // โหมดเดี่ยว: แสดงเฉพาะปัจจุบัน หรือ อนาคต
-    const dataKey = selectedTimeframe.value; // 'current' หรือ 'future'
+    const dataKey = selectedTimeframe.value;
     const timeLabel = dataKey === 'current' ? 'ปัจจุบัน' : 'คาดในอนาคต';
     return {
       labels: fullLabels.value,
@@ -331,11 +294,9 @@ const chartData = computed(() => {
               :disabled="availableYears.length === 0"
               class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed transition-colors"
             >
-              <!-- แสดงข้อความเมื่อไม่มีข้อมูลปี -->
               <option v-if="availableYears.length === 0" :value="null">
                 ไม่มีข้อมูลปี
               </option>
-              <!-- แสดงรายการปีทั้งหมด -->
               <option 
                 v-for="year in availableYears" 
                 :key="year" 
@@ -370,7 +331,7 @@ const chartData = computed(() => {
           </div>
         </div>
         
-        <!-- สรุปตัวกรองที่เลือก - แสดงเป็นแท็กสีต่างๆ -->
+        <!-- สรุปตัวกรองที่เลือก -->
         <div class="mt-4 pt-4 border-t border-gray-200">
           <div class="flex flex-wrap items-center gap-2 text-sm text-gray-600">
             <span class="font-semibold text-gray-700">กำลังแสดง:</span>
@@ -407,12 +368,12 @@ const chartData = computed(() => {
           </p>
         </header>
         
-        <!-- แสดงข้อความโหลด เมื่อกำลังดึงข้อมูล -->
+        <!-- แสดงข้อความโหลด -->
         <div v-if="isLoading" class="flex justify-center items-center" style="height: 450px;">
           <p class="text-gray-500">กำลังโหลดข้อมูล...</p>
         </div>
         
-        <!-- แสดงกราฟ เมื่อมีข้อมูล -->
+        <!-- แสดงกราฟ -->
         <div v-else-if="chartData && chartData.datasets" class="w-full" style="height: 450px;">
           <StackedBar 
             :chart-data="chartData"
@@ -422,8 +383,7 @@ const chartData = computed(() => {
         </div>
 
         <!-- แสดงข้อความเมื่อไม่พบข้อมูล -->
-        <div v-else class="text-center" style="height: 450px;">
-          <!-- ไอคอนเอกสาร -->
+        <div v-else class="flex flex-col justify-center items-center text-center" style="height: 450px;">
           <svg 
             class="mx-auto h-12 w-12 text-gray-400" 
             fill="none" 
@@ -451,17 +411,14 @@ const chartData = computed(() => {
 </template>
 
 <style scoped>
-/* การเปลี่ยนแปลง style แบบนุ่มนวลเมื่อมีการเปลี่ยนสถานะ */
 select {
   transition: all 0.2s ease;
 }
 
-/* เปลี่ยนสีขอบเมื่อ hover (ยกเว้นตอนที่ disable) */
 select:hover:not(:disabled) {
   border-color: #9ca3af;
 }
 
-/* แสดงเงารอบๆ เมื่อ focus ที่ select */
 select:focus {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }

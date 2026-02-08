@@ -2,9 +2,7 @@
   <nav class="fixed top-0 left-0 h-full w-64 bg-gradient-to-b from-[#06202B] to-[#041419] shadow-2xl flex flex-col">
     <!-- โลโก้ -->
     <div class="flex items-center justify-center h-20 border-b border-gray-700/30 bg-black/20">
-      <router-link to="/home" class="flex items-center transition-transform hover:scale-105">
         <img src="/logoandname.png" alt="Logo" class="h-15 w-40" />
-      </router-link>
     </div>
 
     <!-- เมนู -->
@@ -104,8 +102,8 @@
           </div>
         </router-link>
         
-        <!-- ตั้งค่าระบบ -->
-        <div>
+        <!-- ตั้งค่าระบบ (SuperAdmin only) -->
+        <div v-if="isSuperAdmin">
           <button 
             @click="toggleSettingsMenu"
             class="relative flex items-center w-full px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer group"
@@ -168,28 +166,39 @@
                 : 'text-gray-400 hover:text-white hover:bg-white/10'">
               <span>อัปโหลดรายชื่อผู้ประเมิน</span>
             </router-link>
+            <router-link 
+              to="/inquiry-management"
+              class="block text-sm px-4 py-2.5 rounded-lg transition-all duration-200"
+              :class="isActivePath('/inquiry-management')
+                ? 'bg-[#7AE2CF]/20 text-[#7AE2CF] font-semibold border-l-2 border-[#7AE2CF] pl-3'
+                : 'text-gray-400 hover:text-white hover:bg-white/10'">
+              <span>ติดต่อสอบถาม</span>
+            </router-link>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- โปรไฟล์ผู้ใช้ -->
-    <div class="border-t border-gray-700/30 p-4 bg-black/20">
+    <!-- โปรไฟล์ผู้ใช้ - ปรับปรุงใหม่ -->
+    <div class="border-t border-gray-700/30 bg-black/20">
       <button 
         @click="toggleUserMenu"
-        class="w-full flex items-center space-x-3 text-white hover:bg-white/10 px-3 py-3 rounded-xl transition-all duration-200"
+        class="w-full flex items-center px-4 py-3.5 hover:bg-white/5 transition-all duration-200 group"
       >
-        <div class="w-10 h-10 bg-gradient-to-br from-[#7AE2CF] to-[#4ECDC4] rounded-full flex items-center justify-center text-sm font-bold text-[#06202B] shadow-lg">
+        <div class="w-11 h-11 bg-gradient-to-br from-[#7AE2CF] to-[#4ECDC4] rounded-full flex items-center justify-center font-bold text-[#06202B] shadow-lg ring-2 ring-[#7AE2CF]/20 group-hover:ring-[#7AE2CF]/40 transition-all">
           {{ userInitials }}
         </div>
         
-        <div class="flex-1 text-left">
-          <div class="text-sm font-semibold">{{ userData.fullName }}</div>
-          <div class="text-xs text-gray-400">{{ displayPosition }}</div>
+        <div class="flex-1 ml-3 text-left min-w-0">
+          <div class="text-sm font-semibold text-white truncate">{{ userData.fullName }}</div>
+          <div class="text-xs text-gray-400 truncate flex items-center gap-1.5">
+            <span class="inline-block w-1.5 h-1.5 rounded-full bg-[#7AE2CF]"></span>
+            {{ displayPosition }}
+          </div>
         </div>
 
         <svg 
-          class="w-4 h-4 transition-transform duration-200"
+          class="w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0 ml-2"
           :class="{ 'rotate-180': isUserMenuOpen }"
           fill="none" 
           stroke="currentColor" 
@@ -199,7 +208,7 @@
         </svg>
       </button>
 
-      <!-- เมนูโปรไฟล์ -->
+      <!-- เมนูโปรไฟล์ - ดีไซน์ใหม่ -->
       <transition
         enter-active-class="transition ease-out duration-200"
         enter-from-class="opacity-0 translate-y-2"
@@ -210,43 +219,63 @@
       >
         <div 
           v-show="isUserMenuOpen"
-          class="absolute bottom-24 left-4 right-4 bg-white rounded-xl shadow-2xl overflow-hidden"
+          class="absolute bottom-20 left-3 right-3 bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl overflow-hidden border border-gray-200/50"
         >
-          <div class="px-5 py-4 bg-gradient-to-r from-[#06202B] to-[#0a3d52] border-b border-gray-200">
-            <div class="flex items-center space-x-3">
-              <div class="w-12 h-12 bg-gradient-to-br from-[#7AE2CF] to-[#4ECDC4] rounded-full flex items-center justify-center text-[#06202B] font-bold shadow-lg">
+          <!-- Header Section -->
+          <div class="px-4 py-3.5 bg-gradient-to-r from-[#06202B] to-[#0a3d52]">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 bg-gradient-to-br from-[#7AE2CF] to-[#4ECDC4] rounded-full flex items-center justify-center text-[#06202B] font-bold shadow-md ring-2 ring-white/20">
                 {{ userInitials }}
               </div>
-              <div>
-                <div class="font-semibold text-white">{{ userData.fullName }}</div>
-                <div class="text-sm text-gray-300">{{ displayPosition }}</div>
+              <div class="flex-1 min-w-0">
+                <div class="font-semibold text-white text-sm truncate">{{ userData.fullName }}</div>
+                <div class="text-xs text-gray-300 truncate">{{ displayPosition }}</div>
               </div>
             </div>
           </div>
 
-          <div class="px-5 py-4 space-y-3 text-sm bg-gray-50">
-            <div class="flex justify-between items-center">
-              <span class="text-gray-600 font-medium">อีเมล:</span>
-              <span class="text-gray-900">{{ userData.email }}</span>
+          <!-- Info Section -->
+          <div class="px-4 py-3 space-y-2.5 bg-white">
+            <div class="flex items-start gap-2.5">
+              <svg class="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              <div class="flex-1 min-w-0">
+                <div class="text-xs text-gray-500 mb-0.5">อีเมล</div>
+                <div class="text-sm text-gray-900 truncate">{{ userData.email }}</div>
+              </div>
             </div>
-            <div class="flex justify-between items-center">
-              <span class="text-gray-600 font-medium">บทบาท:</span>
-              <span class="px-3 py-1 rounded-full text-xs font-semibold" :class="roleStyleClass">
-                {{ userData.role }}
-              </span>
+
+            <div class="flex items-start gap-2.5">
+              <svg class="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              <div class="flex-1">
+                <div class="text-xs text-gray-500 mb-0.5">บทบาท</div>
+                <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold" :class="roleStyleClass">
+                  {{ userData.role }}
+                </span>
+              </div>
             </div>
-            <div v-if="userData.role === 'Admin'" class="flex justify-between items-center">
-              <span class="text-gray-600 font-medium">บริษัท:</span>
-              <span class="text-gray-900">{{ userData.company }}</span>
+
+            <div v-if="userData.role === 'Admin'" class="flex items-start gap-2.5">
+              <svg class="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+              <div class="flex-1 min-w-0">
+                <div class="text-xs text-gray-500 mb-0.5">บริษัท</div>
+                <div class="text-sm text-gray-900 truncate">{{ userData.company }}</div>
+              </div>
             </div>
           </div>
 
-          <div class="border-t border-gray-200 px-3 py-2 bg-white">
+          <!-- Logout Button -->
+          <div class="border-t border-gray-100 px-3 py-2.5 bg-gray-50">
             <button 
               @click="logout"
-              class="w-full text-left px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center space-x-2 font-medium"
+              class="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors group"
             >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-4 h-4 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
               <span>ออกจากระบบ</span>
@@ -269,12 +298,41 @@ const isAssessmentMenuOpen = ref(false)
 const isSettingsMenuOpen = ref(false)
 
 const userData = ref({
-  fullName: 'มาดี มีสุข',
-  email: 'superadmin01@gmail.com',
-  company: 'บริษัท ความปลอดภัย จำกัด',
-  role: 'SuperAdmin',
-  position: 'ผู้จัดการระบบ'
+  fullName: 'ผู้ใช้งาน',
+  email: '',
+  company: '',
+  role: 'Admin',
+  position: 'ผู้ดูแลระบบ'
 })
+
+// Load user data from localStorage
+const loadUserData = () => {
+  const storedUser = localStorage.getItem('user')
+  console.log('📦 Loading user from localStorage:', storedUser)
+  if (storedUser) {
+    try {
+      const user = JSON.parse(storedUser)
+      console.log('✅ Parsed user:', user)
+      
+      // Normalize role: 'Super Admin' -> 'SuperAdmin'
+      const normalizedRole = user.role?.replace(/\s+/g, '') || 'Admin'
+      console.log('✅ Normalized role:', normalizedRole)
+      
+      userData.value = {
+        fullName: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email,
+        email: user.email || '',
+        company: user.companyName || '',
+        role: normalizedRole,
+        position: normalizedRole === 'SuperAdmin' ? 'ผู้ดูแลระบบ' : 'ผู้ดูแลระบบ'
+      }
+      console.log('✅ Updated userData:', userData.value)
+    } catch (error) {
+      console.error('❌ Failed to parse user data:', error)
+    }
+  } else {
+    console.warn('⚠️ No user data in localStorage')
+  }
+}
 
 const isActivePath = (path) => {
   return route.path === path
@@ -285,7 +343,7 @@ const isAssessmentActive = computed(() => {
 })
 
 const isSettingsActive = computed(() => {
-  return ['/settings', '/admin', '/superadmin', '/excelupload',].includes(route.path)
+  return ['/settings', '/admin', '/superadmin', '/excelupload', '/inquiry-management'].includes(route.path)
 })
 
 const userInitials = computed(() => {
@@ -310,11 +368,11 @@ const displayPosition = computed(() => {
 const roleStyleClass = computed(() => {
   switch (userData.value.role) {
     case 'SuperAdmin':
-      return 'bg-red-100 text-red-700 border border-red-200'
+      return 'bg-red-50 text-red-700 border border-red-200'
     case 'Admin':
-      return 'bg-blue-100 text-blue-700 border border-blue-200'
+      return 'bg-blue-50 text-blue-700 border border-blue-200'
     default:
-      return 'bg-gray-100 text-gray-700 border border-gray-200'
+      return 'bg-gray-50 text-gray-700 border border-gray-200'
   }
 })
 
@@ -342,6 +400,11 @@ const toggleSettingsMenu = () => {
   }
 }
 
+// Check if user has SuperAdmin role
+const isSuperAdmin = computed(() => {
+  return userData.value.role === 'SuperAdmin'
+})
+
 const closeAllMenus = () => {
   isUserMenuOpen.value = false
   isAssessmentMenuOpen.value = false
@@ -350,8 +413,11 @@ const closeAllMenus = () => {
 
 const logout = () => {
   console.log('Logout clicked')
+  // Clear localStorage
+  localStorage.removeItem('user')
   closeAllMenus()
-  window.location.href = '/'
+  // Redirect to login page
+  window.location.href = '/Login-all'
 }
 
 const handleClickOutside = (event) => {
@@ -362,6 +428,7 @@ const handleClickOutside = (event) => {
 }
 
 onMounted(() => {
+  loadUserData()
   document.addEventListener('click', handleClickOutside)
   
   // เปิด dropdown menu ถ้าอยู่ในหน้าย่อย

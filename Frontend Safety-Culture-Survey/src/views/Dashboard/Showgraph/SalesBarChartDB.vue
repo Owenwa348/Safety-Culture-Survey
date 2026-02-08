@@ -94,20 +94,20 @@
             <p class="text-sm text-gray-600 mt-1 ml-7">{{ getTableDescription }}</p>
           </div>
           
-          <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
+          <div class="overflow-x-auto max-w-full">
+            <table class="w-full divide-y divide-gray-200">
               <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
                 <tr>
-                  <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider sticky left-0 bg-gray-50 z-10">
-                    {{ tableHeader }}
+                  <th class="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider sticky left-0 bg-gray-50 z-10 min-w-[200px] max-w-[250px]">
+                    <div class="truncate">{{ tableHeader }}</div>
                   </th>
                   <th 
                     v-for="(label, index) in chartLabels" 
                     :key="index" 
-                    class="px-4 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider"
+                    class="px-3 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider min-w-[100px] max-w-[140px]"
                     :title="label"
                   >
-                    <div class="w-28 mx-auto truncate">
+                    <div class="truncate">
                       {{ label }}
                     </div>
                   </th>
@@ -119,22 +119,22 @@
                   :key="index" 
                   class="hover:bg-blue-50 transition-colors duration-200"
                 >
-                  <td class="px-6 py-4 text-sm font-semibold text-gray-800 sticky left-0 bg-white z-10 border-r border-gray-100">
-                    <div class="flex items-center">
+                  <td class="px-4 py-4 text-sm font-semibold text-gray-800 sticky left-0 bg-white z-10 border-r border-gray-100 min-w-[200px] max-w-[250px]">
+                    <div class="flex items-center gap-2">
                       <div 
-                        class="w-4 h-4 rounded mr-3 flex-shrink-0 shadow-sm" 
+                        class="w-3 h-3 rounded flex-shrink-0 shadow-sm" 
                         :style="{ backgroundColor: dataset.backgroundColor }"
                       ></div>
-                      <span class="truncate">{{ dataset.label }}</span>
+                      <span class="truncate text-xs">{{ dataset.label }}</span>
                     </div>
                   </td>
                   <td 
                     v-for="(score, scoreIndex) in dataset.data" 
                     :key="scoreIndex" 
-                    class="px-4 py-4 text-sm text-center font-semibold"
+                    class="px-3 py-4 text-sm text-center font-semibold min-w-[100px] max-w-[140px]"
                     :class="getScoreClass(score)"
                   >
-                    {{ formatScore(score) }}
+                    <div class="truncate">{{ formatScore(score) }}</div>
                   </td>
                 </tr>
               </tbody>
@@ -142,28 +142,28 @@
           </div>
           
           <!-- Footer Summary -->
-          <div class="px-8 py-5 bg-gradient-to-r from-gray-50 to-blue-50 border-t">
-            <div class="space-y-4">
-              <div class="flex items-center space-x-6 text-sm text-gray-700">
-                <span class="font-semibold">จำนวนกลุ่ม: <span class="text-blue-600">{{ chartData.datasets.length }}</span></span>
-                <span class="font-semibold">จำนวนหมวดหมู่: <span class="text-blue-600">{{ chartLabels.length }}</span></span>
+          <div class="px-4 sm:px-8 py-5 bg-gradient-to-r from-gray-50 to-blue-50 border-t overflow-x-auto">
+            <div class="space-y-4 min-w-[600px]">
+              <div class="flex items-center space-x-6 text-sm text-gray-700 flex-wrap">
+                <span class="font-semibold whitespace-nowrap">จำนวนกลุ่ม: <span class="text-blue-600">{{ chartData.datasets.length }}</span></span>
+                <span class="font-semibold whitespace-nowrap">จำนวนหมวดหมู่: <span class="text-blue-600">{{ chartLabels.length }}</span></span>
               </div>
               
-              <div class="flex flex-wrap items-center gap-4 text-sm">
+              <div class="flex flex-wrap items-center gap-3 text-xs sm:text-sm">
                 <div class="flex items-center space-x-2">
-                  <div class="w-3 h-3 bg-green-500 rounded shadow-sm"></div>
+                  <div class="w-3 h-3 bg-green-500 rounded shadow-sm flex-shrink-0"></div>
                   <span class="text-gray-700 font-medium whitespace-nowrap">ดีเยี่ยม ≥ 4.5</span>
                 </div>
                 <div class="flex items-center space-x-2">
-                  <div class="w-3 h-3 bg-blue-500 rounded shadow-sm"></div>
+                  <div class="w-3 h-3 bg-blue-500 rounded shadow-sm flex-shrink-0"></div>
                   <span class="text-gray-700 font-medium whitespace-nowrap">ดี 4.0 - 4.49</span>
                 </div>
                 <div class="flex items-center space-x-2">
-                  <div class="w-3 h-3 bg-yellow-500 rounded shadow-sm"></div>
+                  <div class="w-3 h-3 bg-yellow-500 rounded shadow-sm flex-shrink-0"></div>
                   <span class="text-gray-700 font-medium whitespace-nowrap">ปานกลาง 3.5 - 3.99</span>
                 </div>
                 <div class="flex items-center space-x-2">
-                  <div class="w-3 h-3 bg-red-500 rounded shadow-sm"></div>
+                  <div class="w-3 h-3 bg-red-500 rounded shadow-sm flex-shrink-0"></div>
                   <span class="text-gray-700 font-medium whitespace-nowrap">ต้องพัฒนา &lt; 3.5</span>
                 </div>
               </div>
@@ -600,8 +600,14 @@ select:focus {
   outline: none;
 }
 
+/* Scrollbar สำหรับตาราง */
+.overflow-x-auto {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .overflow-x-auto::-webkit-scrollbar {
-  height: 8px;
+  height: 10px;
 }
 
 .overflow-x-auto::-webkit-scrollbar-track {
@@ -610,21 +616,58 @@ select:focus {
 }
 
 .overflow-x-auto::-webkit-scrollbar-thumb {
-  background: #d1d5db;
+  background: #9ca3af;
   border-radius: 4px;
 }
 
 .overflow-x-auto::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
+  background: #6b7280;
 }
 
+/* ป้องกันตารางล้น */
 table {
   border-collapse: separate;
   border-spacing: 0;
+  table-layout: auto;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Sticky column shadow effect */
+th.sticky,
+td.sticky {
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+}
+
+th.sticky {
+  z-index: 20;
 }
 
 tbody tr:last-child td {
   border-bottom: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .overflow-x-auto {
+    max-width: 100vw;
+    margin-left: -1.5rem;
+    margin-right: -1.5rem;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+  
+  table {
+    font-size: 0.875rem;
+  }
+  
+  th.sticky,
+  td.sticky {
+    min-width: 150px !important;
+  }
 }
 
 @keyframes spin {
