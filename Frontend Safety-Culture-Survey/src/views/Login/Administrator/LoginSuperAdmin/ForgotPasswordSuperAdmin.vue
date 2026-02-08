@@ -93,7 +93,7 @@
             <div class="relative group">
               <input
                 v-model="securityPin"
-                type="password"
+                :type="showSecurityPin ? 'text' : 'password'"
                 @input="formatSecurityPin"
                 @keypress="onlyNumberInput"
                 placeholder="กรอกรหัส PIN 6 หลัก"
@@ -111,9 +111,15 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
                 </svg>
               </div>
-              <div class="absolute inset-y-0 right-0 flex items-center pr-3">
-                <span class="text-xs text-gray-400 font-mono">{{ securityPin.length }}/6</span>
-              </div>
+              <button type="button" @click="showSecurityPin = !showSecurityPin" class="absolute inset-y-0 right-0 flex items-center pr-4">
+                <svg v-if="showSecurityPin" class="w-5 h-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"></path>
+                </svg>
+                <svg v-else class="w-5 h-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                </svg>
+              </button>
             </div>
             <p v-if="pinError" class="text-red-500 text-sm">{{ pinError }}</p>
             <p class="text-xs text-purple-600 bg-purple-50 p-2 rounded-lg">
@@ -316,6 +322,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
 import OTPSuperAdministrator from './OTPSuperAdmin.vue'
 
 const router = useRouter()
@@ -331,6 +338,7 @@ const isLoading = ref(false)
 const email = ref('')
 const phoneNumber = ref('')
 const securityPin = ref('')
+const showSecurityPin = ref(false)
 const emailError = ref('')
 const phoneError = ref('')
 const pinError = ref('')
@@ -346,14 +354,11 @@ const showConfirmPassword = ref(false)
 const passwordError = ref('')
 const passwordMatchError = ref('')
 
-// Mock database - เฉพาะ SuperAdmin
-const mockSuperAdminDatabase = [
-  { email: 'superadmin01@gmail.com', phone: '0845678901', pin: '123456', role: 'superadmin' },
-]
+// API endpoint
+const API_BASE_URL = 'http://localhost:5000/api/super-admins'
 
 // Computed properties
 const isPasswordValid = computed(() => {
-  // ทำให้ง่ายขึ้น - เช็คเฉพาะว่ามีรหัสผ่านและตรงกันหรือไม่
   return newPassword.value.length >= 6 &&
          newPassword.value === confirmPassword.value &&
          newPassword.value.trim() !== '' &&
@@ -437,7 +442,6 @@ const checkPasswordMatch = () => {
   passwordMatchError.value = ''
   passwordError.value = ''
   
-  // ถ้าทั้งสองช่องมีข้อมูลแล้วแต่ไม่ตรงกัน
   if (newPassword.value && confirmPassword.value && newPassword.value !== confirmPassword.value) {
     passwordMatchError.value = 'รหัสผ่านไม่ตรงกัน กรุณาตรวจสอบใหม่อีกครั้ง'
   }
@@ -492,28 +496,27 @@ const handleEmailSubmit = async () => {
   isLoading.value = true
   
   try {
-    await new Promise(resolve => setTimeout(resolve, 3000)) // เพิ่มเวลาโหลดสำหรับความปลอดภัย
-    
+    // Call API to verify SuperAdmin
     const cleanedPhone = phoneNumber.value.replace(/\D/g, '')
-    const superAdmin = mockSuperAdminDatabase.find(u => 
-      u.email.toLowerCase() === email.value.toLowerCase() && 
-      u.phone === cleanedPhone &&
-      u.pin === securityPin.value
-    )
-    
-    if (!superAdmin) {
-      emailError.value = 'ไม่พบข้อมูลผู้ดูแลระบบสูงสุดในระบบ กรุณาตรวจสอบข้อมูลทั้งหมด'
-      return
-    }
-    
-    // Generate OTP
+    const response = await axios.post(`${API_BASE_URL}/verify-for-reset`, {
+      email: email.value,
+      phone: cleanedPhone,
+      pin: securityPin.value
+    })
+
+    // Generate OTP for frontend (in production, this should be sent via email/SMS)
     generatedOtp.value = Math.floor(100000 + Math.random() * 900000).toString()
-    console.log('Generated OTP for SuperAdmin:', generatedOtp.value) // For testing purposes
+    console.log('Generated OTP for SuperAdmin:', generatedOtp.value)
     
     currentStep.value = 'otp'
     
   } catch (error) {
-    emailError.value = 'เกิดข้อผิดพลาดในการตรวจสอบข้อมูล กรุณาลองใหม่อีกครั้ง'
+    if (error.response) {
+      emailError.value = error.response.data.message || 'เกิดข้อผิดพลาดในการตรวจสอบข้อมูล'
+    } else {
+      emailError.value = 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้'
+    }
+    console.error('Email verification error:', error)
   } finally {
     isLoading.value = false
   }
@@ -523,7 +526,8 @@ const handleOtpVerified = async (otpCode) => {
   isLoading.value = true
   
   try {
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    // In production, you would verify the OTP against a server
+    await new Promise(resolve => setTimeout(resolve, 1000))
     currentStep.value = 'reset'
   } catch (error) {
     console.error('OTP verification failed:', error)
@@ -534,7 +538,7 @@ const handleOtpVerified = async (otpCode) => {
 
 const handleOtpResend = () => {
   generatedOtp.value = Math.floor(100000 + Math.random() * 900000).toString()
-  console.log('New OTP for SuperAdmin:', generatedOtp.value) // For testing purposes
+  console.log('New OTP for SuperAdmin:', generatedOtp.value)
 }
 
 const validatePasswordRequirements = () => {
@@ -555,7 +559,6 @@ const handlePasswordReset = async () => {
   passwordError.value = ''
   passwordMatchError.value = ''
   
-  // ตรวจสอบความต้องการพื้นฐาน
   if (!validatePasswordRequirements()) {
     return
   }
@@ -565,7 +568,6 @@ const handlePasswordReset = async () => {
     return
   }
   
-  // ตรวจสอบว่ารหัสผ่านตรงกันหรือไม่
   if (newPassword.value !== confirmPassword.value) {
     passwordMatchError.value = 'รหัสผ่านใหม่และการยืนยันรหัสผ่านไม่ตรงกัน'
     return
@@ -574,19 +576,30 @@ const handlePasswordReset = async () => {
   isLoading.value = true
   
   try {
-    await new Promise(resolve => setTimeout(resolve, 2500)) // เพิ่มเวลาสำหรับความปลอดภัย
+    // Call API to reset password
+    await axios.post(`${API_BASE_URL}/reset-password`, {
+      email: email.value,
+      newPassword: newPassword.value,
+      confirmPassword: confirmPassword.value
+    })
+
     currentStep.value = 'success'
     
   } catch (error) {
-    passwordError.value = 'เกิดข้อผิดพลาดในการตั้งรหัสผ่าน กรุณาลองใหม่อีกครั้ง'
+    if (error.response) {
+      passwordError.value = error.response.data.message || 'เกิดข้อผิดพลาดในการตั้งรหัสผ่าน'
+    } else {
+      passwordError.value = 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้'
+    }
+    console.error('Password reset error:', error)
   } finally {
     isLoading.value = false
   }
 }
+
 const goToLogin = () => {
   router.push('/login-all')
 }
-
 </script>
 
 <style scoped>
