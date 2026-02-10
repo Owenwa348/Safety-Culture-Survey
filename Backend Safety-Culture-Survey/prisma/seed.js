@@ -106,6 +106,110 @@ async function main() {
     console.log('✅ User Excel is up to date.');
 
 
+    // 7. Seed Sample Registered Users (ผู้ประเมินที่ลงทะเบียนแล้ว)
+    console.log('Seeding Sample Registered Users...');
+
+    // Fetch positions, departments, workgroups, experiences for reference
+    const allPositions = await prisma.position.findMany();
+    const allDepartments = await prisma.department.findMany();
+    const allWorkGroups = await prisma.workGroup.findMany();
+    const allExperiences = await prisma.experience.findMany();
+
+    const sampleRegisteredUsers = [
+        {
+            title_user: 'นาย',
+            name_user: 'สมชาย ใจดี',
+            email_user: 'safety_first_ltd_user1@example.com',
+            company_user: 'Safety First Ltd.',
+            phone_user: '0811111111',
+            password_user: await bcrypt.hash('User@123', 10),
+            position_user: allPositions[3]?.name || 'พนักงาน',
+            job_field_user: allDepartments[0]?.name || 'CEO',
+            work_group_user: allWorkGroups[0]?.name || 'หน่วยงานเดินเครื่อง (Operation)',
+            years_of_service: allExperiences[0]?.name || '0-3 ปี',
+            section_user: 'Operations',
+            status: 'active',
+            surveyStatus: 'done' // ทำแบบประเมินเสร็จแล้ว
+        },
+        {
+            title_user: 'นาง',
+            name_user: 'วิไล สุขสันต์',
+            email_user: 'safety_first_ltd_user2@example.com',
+            company_user: 'Safety First Ltd.',
+            phone_user: '0822222222',
+            password_user: await bcrypt.hash('User@123', 10),
+            position_user: allPositions[2]?.name || 'พนักงานอาวุโส',
+            job_field_user: allDepartments[1]?.name || 'REP',
+            work_group_user: allWorkGroups[1]?.name || 'หน่วยงานบำรุงรักษา (Maintenance)',
+            years_of_service: allExperiences[2]?.name || '5 ปีขึ้นไป แต่ไม่เกิน 10 ปี',
+            section_user: 'Operations',
+            status: 'active',
+            surveyStatus: 'in_progress' // กำลังทำแบบประเมิน
+        },
+        {
+            title_user: 'นาย',
+            name_user: 'ประสิทธิ์ วิริยะ',
+            email_user: 'safety_first_ltd_user3@example.com',
+            company_user: 'Safety First Ltd.',
+            phone_user: '0833333333',
+            password_user: await bcrypt.hash('User@123', 10),
+            position_user: allPositions[1]?.name || 'ผู้จัดการแผนก / ผู้จัดการ',
+            job_field_user: allDepartments[2]?.name || 'COO',
+            work_group_user: allWorkGroups[2]?.name || 'หน่วยงานวิศวกรรม (Engineering)',
+            years_of_service: allExperiences[3]?.name || '10 ปีขึ้นไป แต่ไม่เกิน 15 ปี',
+            section_user: 'Maintenance',
+            status: 'active',
+            surveyStatus: 'not_started' // ยังไม่เริ่มทำแบบประเมิน
+        },
+        {
+            title_user: 'นางสาว',
+            name_user: 'ศิริพร เจริญสุข',
+            email_user: 'secure_works_inc_user1@example.com',
+            company_user: 'Secure Works Inc.',
+            phone_user: '0844444444',
+            password_user: await bcrypt.hash('User@123', 10),
+            position_user: allPositions[0]?.name || 'ผู้บริหารระดับสูง / ผู้จัดการส่วน',
+            job_field_user: allDepartments[3]?.name || 'CFO',
+            work_group_user: allWorkGroups[3]?.name || 'หน่วยงานสนับสนุน (Supporting functions)',
+            years_of_service: allExperiences[4]?.name || 'มากกว่า 15 ปีขึ้นไป',
+            section_user: 'Operations',
+            status: 'active',
+            surveyStatus: 'done'
+        },
+        {
+            title_user: 'นาย',
+            name_user: 'อนุชา พัฒนา',
+            email_user: 'secure_works_inc_user2@example.com',
+            company_user: 'Secure Works Inc.',
+            phone_user: '0855555555',
+            password_user: await bcrypt.hash('User@123', 10),
+            position_user: allPositions[4]?.name || 'ผู้รับเหมาประจำ',
+            job_field_user: allDepartments[4]?.name || 'SSE',
+            work_group_user: allWorkGroups[0]?.name || 'หน่วยงานเดินเครื่อง (Operation)',
+            years_of_service: allExperiences[1]?.name || '3 ปีขึ้นไป แต่ไม่เกิน 5 ปี',
+            section_user: 'Maintenance',
+            status: 'active',
+            surveyStatus: 'not_started'
+        }
+    ];
+
+    for (const userData of sampleRegisteredUsers) {
+        const existingUser = await prisma.user.findUnique({
+            where: { email_user: userData.email_user },
+        });
+
+        if (!existingUser) {
+            await prisma.user.create({
+                data: userData,
+            });
+            console.log(` -> Created User: ${userData.name_user} (${userData.email_user})`);
+        }
+    }
+
+    console.log('✅ Sample Registered Users are up to date.');
+    console.log('🔑 Sample User Password: User@123');
+
+
     // Seed Categories, Questions, and Options
     const categoriesData = [
         {

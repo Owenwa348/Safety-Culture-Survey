@@ -1,4 +1,5 @@
 const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcryptjs');
 const prisma = new PrismaClient();
 
 // Get all users for UserList.vue
@@ -182,6 +183,9 @@ const registerUser = async (req, res) => {
       return res.status(404).json({ message: 'Email not found in system. Please contact administrator.' });
     }
 
+    // Hash the password before storing
+    const hashedPassword = password ? await bcrypt.hash(password, 10) : null;
+
     // Create new user
     const newUser = await prisma.user.create({
       data: {
@@ -195,7 +199,7 @@ const registerUser = async (req, res) => {
         work_group_user: workGroup,
         years_of_service: workExperience,
         section_user: excelUser.division_user || "-", // Use division from excel as section
-        password_user: password || null, // In a real app, this should be hashed
+        password_user: hashedPassword,
         status: "active",
         surveyStatus: "not_started" // Initialize survey status
       },
@@ -241,12 +245,15 @@ const loginUser = async (req, res) => {
       where: { email_user: email },
     });
 
-    if (!user || user.password_user !== password) {
+    if (!user) {
       return res.status(401).json({ message: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' });
     }
 
-    // SECURITY WARNING: Passwords are not hashed. This is insecure.
-    // In a real application, you would validate the hashed password here.
+    // Verify password using bcrypt
+    const isPasswordValid = await bcrypt.compare(password, user.password_user);
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' });
+    }
     
     // Return user data without sensitive information
     res.status(200).json({
