@@ -44,7 +44,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
 
       const email = row.getCell(1).value?.toString().trim();
       const company = row.getCell(2).value?.toString().trim();
-      const division = row.getCell(3)?.value?.toString().trim() || null; // ✅ อ่านส่วนงาน (division)
+      const division = row.getCell(3)?.value?.toString().trim() || null;
 
       if (!email || !company) {
         invalidRows.push(rowNumber);

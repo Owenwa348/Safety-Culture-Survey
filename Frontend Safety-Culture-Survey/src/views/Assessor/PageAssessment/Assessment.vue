@@ -1,6 +1,17 @@
 <!-- Assessment.vue -->
 <template>
   <div class="min-h-screen bg-gray-100">
+    
+    <!-- Auto-save Indicator -->
+    <div 
+      v-if="!isLoadingDraft && (answers.some(a => a.level || a.futureLevel))"
+      class="fixed bottom-4 left-4 bg-green-100 text-green-800 px-4 py-2 rounded-lg shadow-lg text-sm flex items-center gap-2 z-50"
+    >
+      <svg class="w-4 h-4 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
+        <path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
+      </svg>
+      <span>บันทึกอัตโนมัติ</span>
+    </div>
     <!-- Header Section -->
     <div class="bg-white shadow border-b sticky top-0 z-10" v-if="questions.length > 0 && questions[currentIndex]">
       <div class="max-w-6xl mx-auto px-4 py-4">
@@ -234,7 +245,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch, nextTick } from "vue";
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 
@@ -243,6 +254,8 @@ const router = useRouter();
 const currentIndex = ref(0);
 const categories = ref([]);
 const userId = ref(null); // We'll get the user ID from localStorage
+const isLoadingDraft = ref(true);
+const autoSaveTimeout = ref(null);
 
 const questions = computed(() => {
   return categories.value.flatMap(category => 
@@ -251,6 +264,132 @@ const questions = computed(() => {
 });
 
 const answers = ref([]);
+
+// Auto-save to localStorage when answers change
+watch(answers, (newAnswers) => {
+  if (!isLoadingDraft.value && userId.value && newAnswers.length > 0) {
+    const draftKey = `assessment_draft_${userId.value}`;
+    localStorage.setItem(draftKey, JSON.stringify({
+      answers: newAnswers,
+      currentIndex: currentIndex.value,
+      timestamp: new Date().toISOString()
+    }));
+  }
+}, { deep: true });
+
+// Debounced auto-save to backend
+const autoSaveToBackend = async (index) => {
+  if (autoSaveTimeout.value) {
+    clearTimeout(autoSaveTimeout.value);
+  }
+  
+  autoSaveTimeout.value = setTimeout(async () => {
+    const answer = answers.value[index];
+    const question = questions.value[index];
+    
+    // Only save if both current and future levels are filled
+    if (answer.level !== null && answer.futureLevel !== null) {
+      try {
+        await submitAnswer(
+          question.id,
+          answer.level,
+          answer.futureLevel,
+          answer.comment
+        );
+        console.log('✅ Auto-saved question', index + 1);
+      } catch (error) {
+        console.error('❌ Auto-save failed for question', index + 1, error);
+      }
+    }
+  }, 1500); // Save after 1.5 seconds of inactivity
+};
+
+// Watch individual answer changes for auto-save
+watch(answers, (newAnswers, oldAnswers) => {
+  if (!isLoadingDraft.value && oldAnswers.length > 0) {
+    // Find which answer changed
+    for (let i = 0; i < newAnswers.length; i++) {
+      if (JSON.stringify(newAnswers[i]) !== JSON.stringify(oldAnswers[i])) {
+        autoSaveToBackend(i);
+        break;
+      }
+    }
+  }
+}, { deep: true });
+
+// Load draft from localStorage or backend
+async function loadDraft() {
+  const draftKey = `assessment_draft_${userId.value}`;
+  const localDraft = localStorage.getItem(draftKey);
+  
+  try {
+    // Try to load from backend first
+    const response = await axios.get(`/api/assessment/answers/${userId.value}`);
+    
+    if (response.data && response.data.length > 0) {
+      console.log('📥 Loading saved answers from server...');
+      
+      // Map backend answers to our answers array
+      response.data.forEach(savedAnswer => {
+        const questionIndex = questions.value.findIndex(q => q.id === savedAnswer.questionId);
+        if (questionIndex !== -1) {
+          answers.value[questionIndex] = {
+            level: savedAnswer.currentScore,
+            futureLevel: savedAnswer.expectedScore,
+            comment: savedAnswer.comment || ""
+          };
+        }
+      });
+      
+      // Show notification
+      showNotification('พบข้อมูลที่บันทึกไว้ คุณสามารถทำต่อจากที่ค้างไว้ได้');
+      return true;
+    }
+  } catch (error) {
+    console.log('No saved answers on server, checking localStorage...');
+  }
+  
+  // If no backend data, try localStorage
+  if (localDraft) {
+    try {
+      const draft = JSON.parse(localDraft);
+      const draftAge = new Date() - new Date(draft.timestamp);
+      const oneWeek = 7 * 24 * 60 * 60 * 1000;
+      
+      if (draftAge < oneWeek) {
+        answers.value = draft.answers;
+        currentIndex.value = draft.currentIndex || 0;
+        console.log('📥 Loaded draft from localStorage');
+        showNotification('พบข้อมูลที่บันทึกไว้ในเครื่อง คุณสามารถทำต่อจากที่ค้างไว้ได้');
+        return true;
+      }
+    } catch (error) {
+      console.error('Error loading draft:', error);
+    }
+  }
+  
+  return false;
+}
+
+// Show notification
+function showNotification(message) {
+  const notification = document.createElement('div');
+  notification.className = 'fixed top-4 right-4 bg-blue-500 text-white px-6 py-4 rounded-lg shadow-lg z-50 animate-slide-in';
+  notification.innerHTML = `
+    <div class="flex items-center gap-3">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      <span>${message}</span>
+    </div>
+  `;
+  document.body.appendChild(notification);
+  
+  setTimeout(() => {
+    notification.style.opacity = '0';
+    setTimeout(() => notification.remove(), 300);
+  }, 4000);
+}
 
 onMounted(async () => {
   try {
@@ -267,13 +406,22 @@ onMounted(async () => {
     
     const response = await axios.get('/api/assessment');
     categories.value = response.data;
+    
+    // Initialize empty answers
     answers.value = questions.value.map(() => ({
       level: null,
       futureLevel: null,
       comment: "",
     }));
+    
+    // Load draft after initialization
+    await nextTick();
+    await loadDraft();
+    isLoadingDraft.value = false;
+    
   } catch (error) {
     console.error('Error fetching assessment data:', error);
+    isLoadingDraft.value = false;
   }
 });
 
@@ -344,6 +492,12 @@ async function goNext() {
     // If all questions are answered, proceed with submitting all answers.
     try {
       await submitAllAnswers();
+      
+      // Clear draft from localStorage after successful submission
+      const draftKey = `assessment_draft_${userId.value}`;
+      localStorage.removeItem(draftKey);
+      console.log('✅ Draft cleared after submission');
+      
       alert("ส่งแบบประเมินเรียบร้อยแล้ว ขอบคุณค่ะ");
       console.log("คำตอบทั้งหมด:", answers.value);
       if (window.refreshUsersList) {
@@ -364,4 +518,56 @@ async function goNext() {
     }
   }
 }
+
+// Warn user before leaving if they have unsaved answers
+onMounted(() => {
+  const handleBeforeUnload = (e) => {
+    const hasAnswers = answers.value.some(
+      ans => ans.level !== null || ans.futureLevel !== null
+    );
+    
+    if (hasAnswers && !isLoadingDraft.value) {
+      e.preventDefault();
+      e.returnValue = 'คุณมีคำตอบที่ยังไม่ได้ส่ง ข้อมูลจะถูกบันทึกไว้อัตโนมัติ';
+      return e.returnValue;
+    }
+  };
+  
+  window.addEventListener('beforeunload', handleBeforeUnload);
+  
+  // Cleanup
+  return () => {
+    window.removeEventListener('beforeunload', handleBeforeUnload);
+  };
+});
 </script>
+
+<style scoped>
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+</style>
