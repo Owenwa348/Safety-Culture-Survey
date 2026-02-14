@@ -267,6 +267,11 @@ async function main() {
         { text: 'มากที่สุด' },
     ];
 
+    // Keep track of global question order across all categories
+    let globalQuestionOrder = 1;
+
+    console.log(`\n🔢 Starting question numbering from: ${globalQuestionOrder}`);
+
     for (const categoryData of categoriesData) {
         // Find if a category with questions already exists to avoid duplication
         const existingCategory = await prisma.category.findFirst({
@@ -279,30 +284,61 @@ async function main() {
         });
 
         if (!existingCategory) {
+            // สร้างใหม่ทั้งหมด
+            console.log(`\n📁 Creating new category: ${categoryData.name}`);
+            
+            const questionsToCreate = [];
+            for (let i = 0; i < categoryData.questions.length; i++) {
+                const questionData = categoryData.questions[i];
+                console.log(`  ✏️  Question ${globalQuestionOrder}: ${questionData.text.substring(0, 60)}...`);
+                
+                questionsToCreate.push({
+                    text: questionData.text,
+                    order: globalQuestionOrder,
+                    options: {
+                        create: optionsData
+                    }
+                });
+                
+                globalQuestionOrder++;
+            }
+            
             await prisma.category.create({
                 data: {
                     name: categoryData.name,
                     questions: {
-                        create: categoryData.questions.map(questionData => ({
-                            text: questionData.text,
-                            options: {
-                                create: optionsData
-                            }
-                        }))
-                    }
-                },
-                include: {
-                    questions: {
-                        include: {
-                            options: true
-                        }
+                        create: questionsToCreate
                     }
                 }
             });
+            
+            console.log(` ✅ Created Category: ${categoryData.name}`);
+        } else {
+            // ถ้ามีอยู่แล้ว ให้ update order ของคำถาม
+            console.log(` \n📁 Category "${categoryData.name}" already exists, updating question orders...`);
+            
+            // Get all questions in this category ordered by their current ID
+            const existingQuestions = await prisma.question.findMany({
+                where: { categoryId: existingCategory.id },
+                orderBy: { id: 'asc' }
+            });
+            
+            // Update each question with sequential order
+            for (let i = 0; i < existingQuestions.length; i++) {
+                console.log(`  🔄 Updating question ID ${existingQuestions[i].id} to order ${globalQuestionOrder}`);
+                
+                await prisma.question.update({
+                    where: { id: existingQuestions[i].id },
+                    data: { order: globalQuestionOrder }
+                });
+                
+                globalQuestionOrder++;
+            }
         }
     }
 
-    console.log('✅ Categories, Questions, and Options seeded');
+    console.log(`\n🎯 Final question count: ${globalQuestionOrder - 1}`);
+    console.log('✅ Categories, Questions, and Options seeded\n');
 
 
     // Create password hash for 'Admin@123'

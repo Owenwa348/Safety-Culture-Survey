@@ -466,7 +466,7 @@ const getQuestionsWithSequentialNumbers = (categoryId) => {
   
   return sortedQuestions.map((question) => ({
     ...question,
-    sequentialNumber: question.order !== undefined ? question.order + 1 : question.id
+    sequentialNumber: question.order !== undefined ? question.order : question.id  // ✅ ลบ + 1 ออก
   }))
 }
 
@@ -723,12 +723,11 @@ const saveInlineEdit = async () => {
     const newDisplayNumber = inlineEditData.value.displayNumber
     const currentDisplayNumber = currentQuestion ? currentQuestion.sequentialNumber : 1
     
-    if (newDisplayNumber != currentDisplayNumber) {
-      // If it's a number, convert to order (0-based), otherwise send as custom text
-      if (!isNaN(newDisplayNumber) && newDisplayNumber !== '') {
-        updateData.order = parseInt(newDisplayNumber) - 1
-      } else {
-        // Store custom text as order (backend should handle this)
+  if (newDisplayNumber != currentDisplayNumber) {
+  // If it's a number, convert to order (เก็บตามที่ user ใส่ ไม่ต้อง -1)
+    if (!isNaN(newDisplayNumber) && newDisplayNumber !== '') {
+      updateData.order = parseInt(newDisplayNumber)  // ✅ ลบ - 1 ออก
+    } else {
         updateData.order = newDisplayNumber
       }
     }
