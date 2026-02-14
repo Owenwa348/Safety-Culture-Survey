@@ -41,6 +41,9 @@ const getAllUsers = async (req, res) => {
 
     // Create a map of registered users by email for quick lookup
     const registeredUserMap = new Map(registeredUsers.map(user => [user.email_user, user]));
+    
+    // Create a map of excel users by email for quick lookup
+    const excelUserMap = new Map(excelUsers.map(user => [user.email_user, user]));
 
     // Create a combined list maintaining the original Excel order
     const allUsers = excelUsers.map(excelUser => {
@@ -87,8 +90,33 @@ const getAllUsers = async (req, res) => {
         };
       }
     });
+
+    // Add registered users who are NOT in excel (direct registrations)
+    const directRegistrations = registeredUsers.filter(user => !excelUserMap.has(user.email_user));
+    const directRegistrationUsers = directRegistrations.map((user, index) => ({
+      id: user.id,
+      title_user: user.title_user || "-",
+      name_user: user.name_user || "-",
+      email_user: user.email_user,
+      company_user: user.company_user,
+      phone_user: user.phone_user || "-",
+      position_user: user.position_user || "-",
+      job_field_user: user.job_field_user || "-",
+      work_group_user: user.work_group_user || "-",
+      years_of_service: user.years_of_service || "-",
+      section_user: user.section_user || "-",
+      status: user.surveyStatus === 'done' ? 'done' : 
+              user.surveyStatus === 'in_progress' ? 'in_progress' : 
+              user.status === "active" ? "registered" : user.status,
+      createdAt: user.createdAt,
+      sortOrder: excelUsers.length + 1000 + index // Push to end but maintain relative order
+    }));
+
+    // Combine and sort
+    const combinedUsers = [...allUsers, ...directRegistrationUsers];
+    combinedUsers.sort((a, b) => a.sortOrder - b.sortOrder);
     
-    res.status(200).json(allUsers);
+    res.status(200).json(combinedUsers);
   } catch (error) {
     console.error('Get all users error:', error);
     res.status(500).json({ message: 'Internal server error' });
