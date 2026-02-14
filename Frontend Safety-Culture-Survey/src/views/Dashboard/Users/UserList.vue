@@ -592,8 +592,31 @@ const uniqueCompanies = computed(() => {
 
 const filteredUsers = computed(() => {
   const keyword = search.value.toLowerCase()
-  // Sort users by sortOrder to maintain original Excel order
+  
+  // Define status priority for sorting
+  const getStatusPriority = (status) => {
+    const priorityMap = {
+      'done': 0,
+      'in_progress': 1,
+      'not_started': 2,
+      'registered': 2,
+      'not_registered': 3,
+      'active': 2
+    }
+    return priorityMap[status] !== undefined ? priorityMap[status] : 999
+  }
+  
+  // Sort users by status priority first, then by sortOrder
   const sortedUsers = [...users.value].sort((a, b) => {
+    const statusPriorityA = getStatusPriority(a.status)
+    const statusPriorityB = getStatusPriority(b.status)
+    
+    // Primary sort: by status priority
+    if (statusPriorityA !== statusPriorityB) {
+      return statusPriorityA - statusPriorityB
+    }
+    
+    // Secondary sort: by sortOrder to maintain original order within same status
     return (a.sortOrder || 0) - (b.sortOrder || 0)
   })
   
