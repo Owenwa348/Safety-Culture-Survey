@@ -49,7 +49,7 @@
             </select>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">เลือกพื้นที่</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">เลือกบริษัท</label>
             <select 
               v-model="selectedArea" 
               @change="onAreaChange"

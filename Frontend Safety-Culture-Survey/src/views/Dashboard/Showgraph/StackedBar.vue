@@ -83,11 +83,11 @@ const formattedChartData = computed(() => {
         label: `คะแนน ${level} (ปัจจุบัน)`,
         data: currentData.scoreCounts.map(scores => scores[level]),
         backgroundColor: currentColors[level],
-        borderColor: 'rgba(255, 255, 255, 0.5)',
-        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.8)',
+        borderWidth: 1.5,
         stack: 'current',
-        barThickness: 22,
-        maxBarThickness: 24,
+        barThickness: 16,
+        maxBarThickness: 18,
       })
     }
 
@@ -97,11 +97,11 @@ const formattedChartData = computed(() => {
         label: `คะแนน ${level} (อนาคต)`,
         data: futureData.scoreCounts.map(scores => scores[level]),
         backgroundColor: futureColors[level],
-        borderColor: 'rgba(255, 255, 255, 0.5)',
-        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.8)',
+        borderWidth: 1.5,
         stack: 'future',
-        barThickness: 22,
-        maxBarThickness: 24,
+        barThickness: 16,
+        maxBarThickness: 18,
       })
     }
   } else {
@@ -113,11 +113,11 @@ const formattedChartData = computed(() => {
         label: `คะแนน ${level}`,
         data: singleData.scoreCounts.map(scores => scores[level]),
         backgroundColor: scoreColors[level],
-        borderColor: 'rgba(255, 255, 255, 0.5)',
-        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.8)',
+        borderWidth: 1.5,
         stack: 'stack1',
-        barThickness: 28,
-        maxBarThickness: 32,
+        barThickness: 32,
+        maxBarThickness: 36,
       })
     }
   }
@@ -161,8 +161,8 @@ const chartOptions = computed(() => ({
               labels.push({
                 text: `คะแนน ${level}`,
                 fillStyle: currentColors[level],
-                strokeStyle: 'rgba(255, 255, 255, 0.5)',
-                lineWidth: 1,
+                strokeStyle: 'rgba(255, 255, 255, 0.8)',
+                lineWidth: 1.5,
                 hidden: false,
                 index: level - 1
               });
@@ -245,7 +245,7 @@ const chartOptions = computed(() => ({
       align: 'center',
       font: {
         weight: 'bold',
-        size: 11,
+        size: 10,
         family: 'inherit'
       },
       formatter: (value) => value > 0 ? value : '',

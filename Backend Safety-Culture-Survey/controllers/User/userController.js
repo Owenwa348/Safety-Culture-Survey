@@ -41,14 +41,33 @@ const getAllUsers = async (req, res) => {
 
     // Create a map of registered users by email for quick lookup
     const registeredUserMap = new Map(registeredUsers.map(user => [user.email_user, user]));
+    
+    // Create a map of excel users by email for quick lookup
+    const excelUserMap = new Map(excelUsers.map(user => [user.email_user, user]));
+
+    // Define status priority for sorting (done > in_progress > not_started > not_registered)
+    const getStatusPriority = (status) => {
+      const priorityMap = {
+        'done': 0,
+        'in_progress': 1,
+        'not_started': 2,
+        'registered': 2,
+        'not_registered': 3,
+        'active': 2
+      };
+      return priorityMap[status] !== undefined ? priorityMap[status] : 999;
+    };
 
     // Create a combined list maintaining the original Excel order
-    const allUsers = excelUsers.map(excelUser => {
+    const allUsers = excelUsers.map((excelUser, excelIndex) => {
       // Check if this user has registered
       const registeredUser = registeredUserMap.get(excelUser.email_user);
       
       if (registeredUser) {
         // Return the registered user data
+        const mappedStatus = registeredUser.surveyStatus === 'done' ? 'done' : 
+                            registeredUser.surveyStatus === 'in_progress' ? 'in_progress' : 
+                            registeredUser.status === "active" ? "registered" : registeredUser.status;
         return {
           id: registeredUser.id,
           title_user: registeredUser.title_user || "-",
@@ -61,11 +80,10 @@ const getAllUsers = async (req, res) => {
           work_group_user: registeredUser.work_group_user || "-",
           years_of_service: registeredUser.years_of_service || "-",
           section_user: registeredUser.section_user || "-",
-          status: registeredUser.surveyStatus === 'done' ? 'done' : 
-                  registeredUser.surveyStatus === 'in_progress' ? 'in_progress' : 
-                  registeredUser.status === "active" ? "registered" : registeredUser.status,
+          status: mappedStatus,
           createdAt: registeredUser.createdAt,
-          sortOrder: excelUser.id // Use Excel record ID for sorting to maintain original position
+          statusPriority: getStatusPriority(mappedStatus),
+          sortOrder: excelIndex // Use Excel record ID for sorting to maintain original position
         };
       } else {
         // Return the Excel user data (not registered yet)
@@ -83,12 +101,49 @@ const getAllUsers = async (req, res) => {
           section_user: excelUser.division_user || "-",
           status: "not_registered",
           createdAt: excelUser.createdAt,
-          sortOrder: excelUser.id // Use Excel record ID for sorting
+          statusPriority: getStatusPriority('not_registered'),
+          sortOrder: excelIndex // Use Excel record ID for sorting
         };
       }
     });
+
+    // Add registered users who are NOT in excel (direct registrations)
+    const directRegistrations = registeredUsers.filter(user => !excelUserMap.has(user.email_user));
+    const directRegistrationUsers = directRegistrations.map((user, index) => {
+      const mappedStatus = user.surveyStatus === 'done' ? 'done' : 
+                          user.surveyStatus === 'in_progress' ? 'in_progress' : 
+                          user.status === "active" ? "registered" : user.status;
+      return {
+        id: user.id,
+        title_user: user.title_user || "-",
+        name_user: user.name_user || "-",
+        email_user: user.email_user,
+        company_user: user.company_user,
+        phone_user: user.phone_user || "-",
+        position_user: user.position_user || "-",
+        job_field_user: user.job_field_user || "-",
+        work_group_user: user.work_group_user || "-",
+        years_of_service: user.years_of_service || "-",
+        section_user: user.section_user || "-",
+        status: mappedStatus,
+        createdAt: user.createdAt,
+        statusPriority: getStatusPriority(mappedStatus),
+        sortOrder: excelUsers.length + index // Maintain relative order within direct registrations
+      };
+    });
+
+    // Combine and sort by statusPriority first, then by sortOrder
+    const combinedUsers = [...allUsers, ...directRegistrationUsers];
+    combinedUsers.sort((a, b) => {
+      // Primary sort: by status priority
+      if (a.statusPriority !== b.statusPriority) {
+        return a.statusPriority - b.statusPriority;
+      }
+      // Secondary sort: by original order
+      return a.sortOrder - b.sortOrder;
+    });
     
-    res.status(200).json(allUsers);
+    res.status(200).json(combinedUsers);
   } catch (error) {
     console.error('Get all users error:', error);
     res.status(500).json({ message: 'Internal server error' });
