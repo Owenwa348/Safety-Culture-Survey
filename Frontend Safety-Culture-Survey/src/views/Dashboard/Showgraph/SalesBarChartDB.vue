@@ -15,7 +15,7 @@
       <div class="bg-white rounded-xl shadow-md mb-6 overflow-hidden">
         <div class="bg-gradient-to-r px-8 py-6">
           <h1 class="text-2xl font-bold mb-2">ผลการประเมินบริษัท ประจำปี {{ selectedYear }}</h1>
-          <p>การวิเคราะห์ผลการประเมินตามตำแหน่งและพื้นที่การดำเนินงาน</p>
+          <p>การวิเคราะห์ผลการประเมินตามตำแหน่งและบริษัทการดำเนินงาน</p>
           
           <!-- Error Warning -->
           <div v-if="error" class="mt-3 bg-red-100 border-l-4 border-red-500 text-red-700 p-3 text-sm rounded">
@@ -39,7 +39,7 @@
               </select>
             </div>
             <div class="flex items-center space-x-3">
-              <label class="text-sm font-semibold text-gray-700">พื้นที่:</label>
+              <label class="text-sm font-semibold text-gray-700">บริษัท:</label>
               <select 
                 v-model="selectedVersion" 
                 class="px-4 py-2.5 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"

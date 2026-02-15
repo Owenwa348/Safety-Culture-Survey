@@ -117,7 +117,7 @@
       <h4 class="font-semibold mb-2 text-sm sm:text-base">ข้อมูลทั้งหมด:</h4>
       <div class="text-xs sm:text-sm">
         <p class="mb-2">ผู้ทำแบบสอบถามทั้งหมด: {{ allUsers.length }}</p>
-        <p class="break-words">พื้นที่: {{ availableAreas.join(', ') }}</p>
+        <p class="break-words">บริษัท: {{ availableAreas.join(', ') }}</p>
         <div v-for="area in availableAreas" :key="area" class="mt-2 break-words">
           <strong>{{ area }}:</strong> {{ getAreaStats(area).done }}/{{ getAreaStats(area).total }} 
           ({{ getAreaStats(area).percentDone }}%)

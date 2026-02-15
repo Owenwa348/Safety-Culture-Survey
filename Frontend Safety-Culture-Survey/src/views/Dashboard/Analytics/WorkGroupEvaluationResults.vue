@@ -380,7 +380,7 @@ onMounted(async () => {
           </div>
           
           <div class="p-5">
-            <!-- Row 1: ตำแหน่ง, สายงาน, พื้นที่ -->
+            <!-- Row 1: ตำแหน่ง, สายงาน, บริษัท -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
               <!-- ตำแหน่ง -->
               <div>
@@ -426,9 +426,9 @@ onMounted(async () => {
                 </div>
               </div>
 
-              <!-- พื้นที่ -->
+              <!-- บริษัท -->
               <div>
-                <label class="block text-xs font-medium text-gray-700 mb-1.5">พื้นที่</label>
+                <label class="block text-xs font-medium text-gray-700 mb-1.5">บริษัท</label>
                 <div class="relative">
                   <select 
                     v-model="selectedVersion"

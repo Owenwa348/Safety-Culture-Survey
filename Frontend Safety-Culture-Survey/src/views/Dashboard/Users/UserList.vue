@@ -51,7 +51,7 @@
               <input
                 v-model="search"
                 type="text"
-                placeholder="ค้นหา ชื่อ/อีเมล/พื้นที่/ตำแหน่ง/สายงาน/กลุ่มงาน..."
+                placeholder="ค้นหา ชื่อ/อีเมล/บริษัท/ตำแหน่ง/สายงาน/กลุ่มงาน..."
                 class="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
@@ -135,7 +135,7 @@
                     อีเมล
                   </th>
                   <th class="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase min-w-[110px]">
-                    บริษัทฯ/พื้นที่
+                    บริษัท
                   </th>
                   <th class="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase min-w-[90px]">
                     ตำแหน่งงาน
@@ -212,7 +212,7 @@
                       v-model="user.company_user"
                       type="text"
                       class="w-full bg-blue-50 border border-blue-300 px-2 py-1 text-xs text-gray-600 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 rounded"
-                      placeholder="พื้นที่"
+                      placeholder="บริษัท"
                     />
                   </td>
                   <td class="px-3 py-3 text-xs text-gray-600">
@@ -483,7 +483,7 @@ function exportToExcel() {
     'คำนำหน้า': displayValue(user.title_user),
     'ชื่อ - สกุล': displayValue(user.name_user),
     'อีเมล': user.email_user,
-    'บริษัทฯ/พื้นที่': displayValue(user.company_user),
+    'บริษัท': displayValue(user.company_user),
     'ตำแหน่งงาน': displayValue(user.position_user),
     'สายงาน': displayValue(user.job_field_user),
     'กลุ่มงาน': displayValue(user.work_group_user),
