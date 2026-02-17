@@ -1,6 +1,6 @@
 <!-- StackedBarChartDB.vue -->
 <template>
-  <div class="bg-white rounded-lg shadow">
+  <div class="bg-white rounded-lg shadow relative">
     <!-- Header -->
     <div class="border-b border-gray-200 px-5 py-4">
       <h3 class="text-lg font-bold text-gray-800">กราฟผลการประเมินรายข้อ (บริษัท)</h3>
@@ -9,12 +9,6 @@
       <div v-if="selectedAreaName" class="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
         <span class="text-sm font-medium text-blue-900">🏢 บริษัท: {{ selectedAreaName }}</span>
       </div>
-    </div>
-
-    <!-- Loading State -->
-    <div v-if="loading" class="px-5 py-8 text-center">
-      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      <p class="mt-2 text-sm text-gray-600">กำลังโหลดข้อมูล...</p>
     </div>
 
     <!-- Error State -->
@@ -30,7 +24,15 @@
       </div>
     </div>
 
-    <template v-if="!loading && !error">
+    <template v-if="!error">
+      <!-- Loading Overlay -->
+      <div v-if="loading" class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10 rounded-lg">
+        <div class="text-center">
+          <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <p class="mt-2 text-sm text-gray-600">กำลังโหลด...</p>
+        </div>
+      </div>
+
       <!-- Controls -->
       <div class="px-5 py-4 border-b border-gray-200">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -212,6 +214,11 @@ const fetchChartData = async (year, areaId, timeframe) => {
     chartDataRaw.value = null; // Clear data if no year is selected
     return;
   }
+  
+  // แสดง loading overlay เฉพาะตอนไม่มีข้อมูลเลย
+  const showLoading = !chartDataRaw.value;
+  if (showLoading) loading.value = true;
+  
   try {
     const params = new URLSearchParams({
       areaId: areaId || 'combined',
@@ -232,6 +239,8 @@ const fetchChartData = async (year, areaId, timeframe) => {
     console.error('Error fetching chart data:', err);
     chartDataRaw.value = null; // Clear data on error
     throw err;
+  } finally {
+    if (showLoading) loading.value = false;
   }
 };
 // Fetch all data
@@ -588,36 +597,27 @@ const chartOptions = computed(() => {
 // Methods
 // =======================================
 const onYearChange = async () => {
-  loading.value = true;
   error.value = null;
   try {
     await fetchChartData(selectedYear.value, selectedArea.value, selectedTimeframe.value);
   } catch (err) {
     error.value = 'เกิดข้อผิดพลาดในการโหลดข้อมูลสำหรับปีที่เลือก';
-  } finally {
-    loading.value = false;
   }
 };
 
 const onAreaChange = async () => {
-  loading.value = true;
   try {
     await fetchChartData(selectedYear.value, selectedArea.value, selectedTimeframe.value);
   } catch (err) {
     error.value = 'เกิดข้อผิดพลาดในการโหลดข้อมูล';
-  } finally {
-    loading.value = false;
   }
 };
 
 const onTimeframeChange = async () => {
-  loading.value = true;
   try {
     await fetchChartData(selectedYear.value, selectedArea.value, selectedTimeframe.value);
   } catch (err) {
     error.value = 'เกิดข้อผิดพลาดในการโหลดข้อมูล';
-  } finally {
-    loading.value = false;
   }
 };
 

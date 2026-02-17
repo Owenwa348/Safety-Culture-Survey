@@ -4,12 +4,33 @@
       เปอร์เซ็นต์การทำแบบประเมิน
     </h2>
 
-    <div v-if="loading" class="text-center">
-      <p>Loading...</p>
+    <!-- Loading State -->
+    <div v-if="loading" class="flex justify-center items-center py-12">
+      <div class="text-center">
+        <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <p class="mt-4 text-sm text-gray-600">กำลังโหลดข้อมูล...</p>
+      </div>
     </div>
 
-    <div v-if="error" class="text-center text-red-500">
-      <p>{{ error }}</p>
+    <!-- Error State -->
+    <div v-if="error" class="px-4 sm:px-6 py-8">
+      <div class="max-w-md mx-auto bg-red-50 border border-red-200 rounded-lg p-4">
+        <div class="flex items-start">
+          <svg class="w-5 h-5 text-red-600 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+          </svg>
+          <div class="flex-1">
+            <h3 class="text-sm font-medium text-red-800">เกิดข้อผิดพลาด</h3>
+            <p class="mt-1 text-sm text-red-700">{{ error }}</p>
+            <button 
+              @click="loadData" 
+              class="mt-3 text-sm text-red-600 hover:text-red-800 underline focus:outline-none"
+            >
+              ลองใหม่อีกครั้ง
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Dynamic Charts based on available areas -->
@@ -30,7 +51,7 @@
           </h3>
           <p class="text-xs text-gray-500 mb-3">{{ getAreaStats(area).total }} คน</p>
           
-          <div class="relative inline-block w-full max-w-[140px] sm:max-w-[160px] mx-auto">
+          <div class="relative inline-block w-full max-w-[140px] sm:max-w-[160px] mx-auto transition-transform hover:scale-105 duration-200">
             <!-- Dynamic Pie Chart -->
             <div class="relative w-full aspect-square">
               <svg viewBox="0 0 120 120" class="w-full h-full">
@@ -140,6 +161,7 @@ const props = defineProps({
 const allUsers = ref([])
 const loading = ref(true)
 const error = ref(null)
+// Show debug info
 const showDebug = ref(true)
 
 // Circle circumference for SVG (updated for radius 50)
@@ -153,16 +175,24 @@ const colorPalette = [
   { done: '#06b6d4', notDone: '#ec4899' }, // Cyan/Pink
 ]
 
-onMounted(async () => {
+// Load data function (can be reused for retry)
+const loadData = async () => {
+  loading.value = true;
+  error.value = null;
+  
   try {
     const response = await axios.get('/api/analytics/completion-status');
     allUsers.value = response.data;
   } catch (err) {
-    error.value = 'Failed to fetch data.';
-    console.error(err);
+    error.value = 'ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่อีกครั้ง';
+    console.error('เกิดข้อผิดพลาดในการโหลดข้อมูล:', err);
   } finally {
     loading.value = false;
   }
+};
+
+onMounted(() => {
+  loadData();
 });
 
 // Get unique areas from data
