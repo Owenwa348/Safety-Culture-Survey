@@ -1,10 +1,10 @@
 <template>
-  <div class="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+  <div class="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-x-hidden">
     <!-- Sidebar -->
     <NavbarDashboard />
     
     <!-- Main Content -->
-    <div class="flex-1 pl-64">
+    <div class="flex-1 pl-64 max-w-full overflow-x-hidden">
       <!-- Header Section -->
       <!-- <div class="bg-white border-b shadow-sm sticky top-0 z-50">
         <div class="px-8 py-6">

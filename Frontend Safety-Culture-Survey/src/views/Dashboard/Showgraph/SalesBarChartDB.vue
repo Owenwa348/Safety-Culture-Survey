@@ -1,6 +1,6 @@
 <!-- SalesBarChartDB.vue -->
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
+  <div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4 sm:p-6 overflow-x-hidden">
     <!-- Loading State -->
     <div v-if="loading" class="flex items-center justify-center min-h-screen">
       <div class="text-center">
@@ -10,7 +10,7 @@
     </div>
 
     <!-- Main Content -->
-    <div v-else class="max-w-7xl mx-auto">
+    <div v-else class="max-w-7xl mx-auto space-y-6">
       <!-- Header Card -->
       <div class="bg-white rounded-xl shadow-md mb-6 overflow-hidden">
         <div class="bg-gradient-to-r px-8 py-6">
@@ -68,7 +68,7 @@
 
       <template v-if="chartData.datasets.length > 0">
         <!-- Chart Card -->
-        <div class="bg-white rounded-xl shadow-md mb-6 overflow-hidden">
+        <div class="bg-white rounded-xl shadow-md overflow-hidden">
           <div class="px-8 py-5 border-b bg-gradient-to-r from-gray-50 to-white">
             <h2 class="text-lg font-bold text-gray-800 flex items-center">
               <span class="w-1 h-6 bg-blue-600 rounded-full mr-3"></span>
@@ -77,16 +77,16 @@
             <p class="text-sm text-gray-600 mt-1 ml-7">เปรียบเทียบคะแนนเฉลี่ยในแต่ละหมวดหมู่</p>
           </div>
           
-          <div class="px-8 py-8">
-            <div class="h-[450px]">
-              <Bar :data="chartData" :options="chartOptions" />
+          <div class="px-6 py-6">
+            <div class="h-[580px] w-full">
+              <Bar :key="chartRenderKey" :data="chartData" :options="chartOptions" />
             </div>
           </div>
         </div>
 
         <!-- Table Card -->
-        <div class="bg-white rounded-xl shadow-md overflow-hidden">
-          <div class="px-8 py-5 border-b bg-gradient-to-r from-gray-50 to-white">
+        <div class="bg-white rounded-xl shadow-md">
+          <div class="px-6 py-4 border-b bg-gradient-to-r from-gray-50 to-white">
             <h2 class="text-lg font-bold text-gray-800 flex items-center">
               <span class="w-1 h-6 bg-blue-600 rounded-full mr-3"></span>
               ตารางข้อมูลรายละเอียด
@@ -94,47 +94,45 @@
             <p class="text-sm text-gray-600 mt-1 ml-7">{{ getTableDescription }}</p>
           </div>
           
-          <div class="overflow-x-auto max-w-full">
-            <table class="w-full divide-y divide-gray-200">
-              <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
+          <div class="overflow-x-auto" style="max-width: calc(100vw - 4rem);">
+            <table class="w-auto divide-y divide-gray-200">
+              <thead class="bg-gray-50">
                 <tr>
-                  <th class="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider sticky left-0 bg-gray-50 z-10 min-w-[200px] max-w-[250px]">
-                    <div class="truncate">{{ tableHeader }}</div>
+                  <th class="px-4 py-4 text-left text-sm font-bold text-gray-800 min-w-[200px] sticky left-0 bg-gray-50 z-10">
+                    {{ tableHeader }}
                   </th>
                   <th 
                     v-for="(label, index) in chartLabels" 
-                    :key="index" 
-                    class="px-3 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider min-w-[100px] max-w-[140px]"
+                    :key="`header-${index}`" 
+                    class="px-4 py-4 text-center text-sm font-semibold text-gray-800 min-w-[140px]"
                     :title="label"
                   >
-                    <div class="truncate">
-                      {{ label }}
-                    </div>
+                    <div class="line-clamp-3 leading-relaxed">{{ label }}</div>
                   </th>
                 </tr>
               </thead>
-              <tbody class="bg-white divide-y divide-gray-100">
+              <tbody class="divide-y divide-gray-200 bg-white">
                 <tr 
-                  v-for="(dataset, index) in chartData.datasets" 
-                  :key="index" 
-                  class="hover:bg-blue-50 transition-colors duration-200"
+                  v-for="(dataset, idx) in chartData.datasets" 
+                  :key="`row-${idx}`"
+                  class="hover:bg-gray-50"
                 >
-                  <td class="px-4 py-4 text-sm font-semibold text-gray-800 sticky left-0 bg-white z-10 border-r border-gray-100 min-w-[200px] max-w-[250px]">
+                  <td class="px-4 py-3 text-sm font-medium text-gray-900 min-w-[200px] sticky left-0 bg-white z-10">
                     <div class="flex items-center gap-2">
-                      <div 
-                        class="w-3 h-3 rounded flex-shrink-0 shadow-sm" 
+                      <span 
+                        class="w-2.5 h-2.5 rounded-sm flex-shrink-0" 
                         :style="{ backgroundColor: dataset.backgroundColor }"
-                      ></div>
-                      <span class="truncate text-xs">{{ dataset.label }}</span>
+                      ></span>
+                      <span class="truncate" :title="dataset.label">{{ dataset.label }}</span>
                     </div>
                   </td>
                   <td 
-                    v-for="(score, scoreIndex) in dataset.data" 
-                    :key="scoreIndex" 
-                    class="px-3 py-4 text-sm text-center font-semibold min-w-[100px] max-w-[140px]"
+                    v-for="(score, scoreIdx) in dataset.data" 
+                    :key="`score-${idx}-${scoreIdx}`" 
+                    class="px-4 py-3 text-center text-sm font-semibold min-w-[140px]"
                     :class="getScoreClass(score)"
                   >
-                    <div class="truncate">{{ formatScore(score) }}</div>
+                    {{ formatScore(score) }}
                   </td>
                 </tr>
               </tbody>
@@ -142,28 +140,32 @@
           </div>
           
           <!-- Footer Summary -->
-          <div class="px-4 sm:px-8 py-5 bg-gradient-to-r from-gray-50 to-blue-50 border-t overflow-x-auto">
-            <div class="space-y-4 min-w-[600px]">
-              <div class="flex items-center space-x-6 text-sm text-gray-700 flex-wrap">
-                <span class="font-semibold whitespace-nowrap">จำนวนกลุ่ม: <span class="text-blue-600">{{ chartData.datasets.length }}</span></span>
-                <span class="font-semibold whitespace-nowrap">จำนวนหมวดหมู่: <span class="text-blue-600">{{ chartLabels.length }}</span></span>
+          <div class="px-4 py-4 bg-gradient-to-r from-gray-50 to-blue-50 border-t">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div class="flex items-center gap-4 text-sm text-gray-700 flex-wrap">
+                <span class="font-semibold whitespace-nowrap">
+                  จำนวนกลุ่ม: <span class="text-blue-600">{{ chartData.datasets.length }}</span>
+                </span>
+                <span class="font-semibold whitespace-nowrap">
+                  จำนวนหมวดหมู่: <span class="text-blue-600">{{ chartLabels.length }}</span>
+                </span>
               </div>
               
-              <div class="flex flex-wrap items-center gap-3 text-xs sm:text-sm">
-                <div class="flex items-center space-x-2">
-                  <div class="w-3 h-3 bg-green-500 rounded shadow-sm flex-shrink-0"></div>
+              <div class="flex flex-wrap items-center gap-2.5 text-xs">
+                <div class="flex items-center gap-1.5">
+                  <span class="w-3 h-3 bg-green-500 rounded shadow-sm"></span>
                   <span class="text-gray-700 font-medium whitespace-nowrap">ดีเยี่ยม ≥ 4.5</span>
                 </div>
-                <div class="flex items-center space-x-2">
-                  <div class="w-3 h-3 bg-blue-500 rounded shadow-sm flex-shrink-0"></div>
+                <div class="flex items-center gap-1.5">
+                  <span class="w-3 h-3 bg-blue-500 rounded shadow-sm"></span>
                   <span class="text-gray-700 font-medium whitespace-nowrap">ดี 4.0 - 4.49</span>
                 </div>
-                <div class="flex items-center space-x-2">
-                  <div class="w-3 h-3 bg-yellow-500 rounded shadow-sm flex-shrink-0"></div>
+                <div class="flex items-center gap-1.5">
+                  <span class="w-3 h-3 bg-yellow-500 rounded shadow-sm"></span>
                   <span class="text-gray-700 font-medium whitespace-nowrap">ปานกลาง 3.5 - 3.99</span>
                 </div>
-                <div class="flex items-center space-x-2">
-                  <div class="w-3 h-3 bg-red-500 rounded shadow-sm flex-shrink-0"></div>
+                <div class="flex items-center gap-1.5">
+                  <span class="w-3 h-3 bg-red-500 rounded shadow-sm"></span>
                   <span class="text-gray-700 font-medium whitespace-nowrap">ต้องพัฒนา &lt; 3.5</span>
                 </div>
               </div>
@@ -171,9 +173,12 @@
           </div>
         </div>
       </template>
-      <div v-else class="mt-6 rounded-xl bg-white p-10 text-center shadow-md">
-        <p class="text-lg font-semibold text-gray-500">ยังไม่มีข้อมูลในระบบ</p>
-      </div>
+
+      <template v-else>
+        <div class="mt-6 rounded-xl bg-white p-10 text-center shadow-md">
+          <p class="text-lg font-semibold text-gray-500">ยังไม่มีข้อมูลในระบบ</p>
+        </div>
+      </template>
     </div>
   </div>
 </template>
@@ -208,6 +213,7 @@ const areaNameMap = ref({
 
 const availableYears = ref([]);
 const selectedYear = ref(new Date().getFullYear());
+const chartRenderKey = ref(0);
 
 const chartLabels = computed(() => {
   if (categories.value && categories.value.length > 0) {
@@ -500,22 +506,34 @@ const getTableDescription = computed(() => {
   }
 });
 
-const chartOptions = {
+// Chart options as computed property
+const chartOptions = computed(() => ({
   responsive: true,
   maintainAspectRatio: false,
+  layout: {
+    padding: {
+      left: 5,
+      right: 5,
+      top: 5,
+      bottom: 50
+    }
+  },
   plugins: {
     legend: { 
-      position: 'top',
+      display: true,
+      position: 'bottom',
+      align: 'center',
       labels: {
-        font: { size: 13, weight: '600' },
-        padding: 20,
+        font: { size: 12, weight: '600' },
+        padding: 10,
         usePointStyle: true,
         pointStyle: 'circle',
-        boxWidth: 10,
-        boxHeight: 10,
+        boxWidth: 8,
+        boxHeight: 8,
       }
     },
     tooltip: {
+      enabled: true,
       backgroundColor: 'rgba(0, 0, 0, 0.85)',
       titleFont: { size: 14, weight: 'bold' },
       bodyFont: { size: 13 },
@@ -530,8 +548,9 @@ const chartOptions = {
   },
   scales: {
     y: {
-      suggestedMin: 2.0,
-      suggestedMax: 5.0,
+      beginAtZero: false,
+      min: 2.0,
+      max: 5.0,
       title: { 
         display: true, 
         text: 'คะแนนเฉลี่ย',
@@ -552,11 +571,23 @@ const chartOptions = {
     x: {
       ticks: {
         maxRotation: 45,
-        minRotation: 30,
-        font: { size: 11, weight: '500' },
-        color: '#6b7280'
+        minRotation: 45,
+        font: { size: 10, weight: '500' },
+        color: '#374151',
+        autoSkip: false,
+        padding: 4,
+        callback: function(value) {
+          const label = this.getLabelForValue(value);
+          if (label.length > 15) {
+            return label.substring(0, 15) + '...';
+          }
+          return label;
+        }
       },
-      grid: { display: false }
+      grid: { 
+        display: false,
+        drawBorder: true
+      }
     }
   },
   elements: {
@@ -565,13 +596,24 @@ const chartOptions = {
       borderRadius: 4
     }
   }
-};
+}));
 
+// Watch for changes
 watch(selectedYear, (newYear, oldYear) => {
   if (newYear !== oldYear) {
     fetchData();
   }
 });
+
+// Force re-render when filters change
+watch([selectedVersion, selectedTimePeriod], () => {
+  chartRenderKey.value++;
+}, { deep: true });
+
+// Force re-render when data changes
+watch(chartData, () => {
+  chartRenderKey.value++;
+}, { deep: true });
 
 // เรียกใช้งานตอนโหลดครั้งแรก
 onMounted(async () => {
@@ -600,14 +642,13 @@ select:focus {
   outline: none;
 }
 
-/* Scrollbar สำหรับตาราง */
+/* Scrollbar styling */
 .overflow-x-auto {
-  overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
 
 .overflow-x-auto::-webkit-scrollbar {
-  height: 10px;
+  height: 8px;
 }
 
 .overflow-x-auto::-webkit-scrollbar-track {
@@ -616,58 +657,65 @@ select:focus {
 }
 
 .overflow-x-auto::-webkit-scrollbar-thumb {
-  background: #9ca3af;
+  background: #cbd5e1;
   border-radius: 4px;
 }
 
 .overflow-x-auto::-webkit-scrollbar-thumb:hover {
-  background: #6b7280;
+  background: #94a3b8;
 }
 
-/* ป้องกันตารางล้น */
-table {
-  border-collapse: separate;
-  border-spacing: 0;
-  table-layout: auto;
-  width: 100%;
-  max-width: 100%;
+/* Scrollbar styling */
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
 }
 
-/* Sticky column shadow effect */
-th.sticky,
-td.sticky {
-  position: sticky;
-  left: 0;
-  z-index: 10;
-  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+.overflow-x-auto::-webkit-scrollbar {
+  height: 8px;
 }
 
-th.sticky {
-  z-index: 20;
+.overflow-x-auto::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 4px;
 }
 
-tbody tr:last-child td {
-  border-bottom: none;
+.overflow-x-auto::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .overflow-x-auto {
-    max-width: 100vw;
-    margin-left: -1.5rem;
-    margin-right: -1.5rem;
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
-  }
-  
-  table {
-    font-size: 0.875rem;
-  }
-  
-  th.sticky,
-  td.sticky {
-    min-width: 150px !important;
-  }
+.overflow-x-auto::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Sticky column shadow */
+.overflow-x-auto table thead th[class*="sticky"] {
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.08);
+}
+
+.overflow-x-auto table tbody td[class*="sticky"] {
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.08);
+}
+
+.overflow-x-auto table tbody tr:hover td[class*="sticky"] {
+  background-color: #f9fafb;
+}
+
+/* Line clamp utility */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.4;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.5;
 }
 
 @keyframes spin {
