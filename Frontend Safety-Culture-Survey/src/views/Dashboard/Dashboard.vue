@@ -113,13 +113,13 @@ onMounted(async () => {
   }
 })
 
-// แยกข้อมูลตาม V1/V2
+// แยกข้อมูลตาม Company 1/Company 2
 const v1Users = computed(() =>
-  allUsers.value.filter(u => u.area?.toLowerCase().includes('v1'))
+  allUsers.value.filter(u => u.area?.toLowerCase().includes('company_1'))
 )
 
 const v2Users = computed(() =>
-  allUsers.value.filter(u => u.area?.toLowerCase().includes('v2'))
+  allUsers.value.filter(u => u.area?.toLowerCase().includes('company_2'))
 )
 
 // นับจำนวนที่ทำเสร็จแล้ว

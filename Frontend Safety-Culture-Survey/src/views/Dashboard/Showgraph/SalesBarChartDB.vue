@@ -68,13 +68,12 @@
 
       <template v-if="chartData.datasets.length > 0">
         <!-- Chart Card -->
-        <div class="bg-white rounded-xl shadow-md overflow-hidden">
-          <div class="px-8 py-5 border-b bg-gradient-to-r from-gray-50 to-white">
-            <h2 class="text-lg font-bold text-gray-800 flex items-center">
-              <span class="w-1 h-6 bg-blue-600 rounded-full mr-3"></span>
+        <div class="bg-white rounded-lg shadow">
+          <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <h2 class="text-lg font-bold text-gray-900">
               กราฟแสดงผลการประเมิน
             </h2>
-            <p class="text-sm text-gray-600 mt-1 ml-7">เปรียบเทียบคะแนนเฉลี่ยในแต่ละหมวดหมู่</p>
+            <p class="text-sm text-gray-600 mt-1">เปรียบเทียบคะแนนเฉลี่ยในแต่ละหมวดหมู่</p>
           </div>
           
           <div class="px-6 py-6">
@@ -85,13 +84,12 @@
         </div>
 
         <!-- Table Card -->
-        <div class="bg-white rounded-xl shadow-md">
-          <div class="px-6 py-4 border-b bg-gradient-to-r from-gray-50 to-white">
-            <h2 class="text-lg font-bold text-gray-800 flex items-center">
-              <span class="w-1 h-6 bg-blue-600 rounded-full mr-3"></span>
+        <div class="bg-white rounded-lg shadow">
+          <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <h2 class="text-lg font-bold text-gray-900">
               ตารางข้อมูลรายละเอียด
             </h2>
-            <p class="text-sm text-gray-600 mt-1 ml-7">{{ getTableDescription }}</p>
+            <p class="text-sm text-gray-600 mt-1">{{ getTableDescription }}</p>
           </div>
           
           <div class="overflow-x-auto" style="max-width: calc(100vw - 4rem);">
@@ -140,7 +138,7 @@
           </div>
           
           <!-- Footer Summary -->
-          <div class="px-4 py-4 bg-gradient-to-r from-gray-50 to-blue-50 border-t">
+          <div class="px-4 py-4 bg-gray-50 border-t border-gray-200">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div class="flex items-center gap-4 text-sm text-gray-700 flex-wrap">
                 <span class="font-semibold whitespace-nowrap">
@@ -234,9 +232,7 @@ const colors = {
   'พนักงาน': '#dc2626',
   'ผู้รับเหมาประจำ': '#f97316',
   'all_current': '#7c3aed',
-  'all_future': '#10b981',
-  'all_combined': '#1e40af',
-  'future_single': '#f59e0b'
+  'all_future': '#10b981'
 };
 
 const fetchAssessmentYears = async () => {
@@ -266,14 +262,15 @@ const fetchCompanies = async () => {
     }
     const companyNames = await response.json();
     
-    // Sort company names alphabetically to ensure consistent v1, v2 assignment
+    // เรียงชื่อบริษัทตามตัวอักษรเพื่อให้ลำดับ company_1, company_2, company_3... สอดคล้องกัน
+    // company_1 = บริษัทแรกตามลำดับตัวอักษร, company_2 = บริษัทที่สอง, ฯลฯ
     companyNames.sort();
     
     const companyOptions = [];
     const newAreaNameMap = { 'combined': 'บริษัททั้งหมด' };
 
     companyNames.forEach((name, index) => {
-      const versionId = `v${index + 1}`;
+      const versionId = `company_${index + 1}`; // company_1, company_2, company_3... เป็น ID อ้างอิงบริษัทจากฐานข้อมูล
       companyOptions.push({ id: versionId, name: name });
       newAreaNameMap[versionId] = name;
     });
@@ -336,7 +333,8 @@ const fetchData = async () => {
   }
 };
 
-// ฟังก์ชันคำนวณข้อมูลตามช่วงเวลา
+// ฟังก์ชันคำนวณข้อมูลตามช่วงเวลา (ไม่ได้ใช้แล้ว - เก็บไว้เผื่อขยายในอนาคต)
+// company_1, company_2 คือ ID ของบริษัทที่ดึงจากฐานข้อมูล ไม่ใช่ข้อมูลปลอม
 const getDataForTimePeriod = (timePeriod) => {
   if (!currentData.value || !futureData.value) return {};
   
@@ -348,8 +346,8 @@ const getDataForTimePeriod = (timePeriod) => {
     const combinedData = {};
     for (const group in currentData.value) {
       combinedData[group] = {
-        v1: currentData.value[group].v1.map((val, idx) => (val + futureData.value[group].v1[idx]) / 2),
-        v2: currentData.value[group].v2.map((val, idx) => (val + futureData.value[group].v2[idx]) / 2)
+        company_1: currentData.value[group].company_1.map((val, idx) => (val + futureData.value[group].company_1[idx]) / 2),
+        company_2: currentData.value[group].company_2.map((val, idx) => (val + futureData.value[group].company_2[idx]) / 2)
       };
     }
     return combinedData;
@@ -357,6 +355,9 @@ const getDataForTimePeriod = (timePeriod) => {
 };
 
 // Computed สำหรับข้อมูลกราฟ
+// โครงสร้างข้อมูลจาก API: { positionName: { company_1: [scores], company_2: [scores], ... } }
+// positionName = ชื่อตำแหน่ง (เช่น "ผู้บริหารระดับสูง / ผู้จัดการส่วน", "พนักงาน")
+// company_1, company_2, company_3... = ID บริษัทที่ 1, 2, 3... ที่ดึงจากฐานข้อมูล (ไม่ใช่ข้อมูลปลอม)
 const chartData = computed(() => {
   if (!currentData.value || !futureData.value || Object.keys(currentData.value).length === 0) {
     return { labels: chartLabels.value, datasets: [] };
@@ -370,37 +371,40 @@ const chartData = computed(() => {
   if (timePeriod === 'current' || timePeriod === 'future') {
     const rawData = (timePeriod === 'current') ? currentData.value : futureData.value;
     
-    for (const group in rawData) { // group is position name
+    // วนลูปแต่ละตำแหน่ง (group = positionName)
+    for (const group in rawData) {
       let dataPoints = [];
       
       if (version === 'combined') {
-        const v1Data = rawData[group].v1 || [];
-        const v2Data = rawData[group].v2 || [];
-        const maxLength = Math.max(v1Data.length, v2Data.length, chartLabels.value.length);
+        // รวมทุกบริษัท: คำนวณค่าเฉลี่ยของ company_1, company_2, company_3...
+        const company1Data = rawData[group].company_1 || [];
+        const company2Data = rawData[group].company_2 || [];
+        const maxLength = Math.max(company1Data.length, company2Data.length, chartLabels.value.length);
         for (let i = 0; i < maxLength; i++) {
-          const v1 = v1Data[i] || 0;
-          const v2 = v2Data[i] || 0;
-          if (v1 > 0 && v2 > 0) {
-            dataPoints.push((v1 + v2) / 2);
+          const company1 = company1Data[i] || 0;
+          const company2 = company2Data[i] || 0;
+          if (company1 > 0 && company2 > 0) {
+            dataPoints.push((company1 + company2) / 2);
           } else {
-            dataPoints.push(v1 || v2);
+            dataPoints.push(company1 || company2);
           }
         }
       } else {
-        // Specific version (e.g., 'v1') is selected
+        // บริษัทเฉพาะ (e.g., 'company_1', 'company_2') ถูกเลือก
         dataPoints = rawData[group][version] || [];
       }
       
       if (dataPoints.length > 0) {
         datasets.push({
-          label: `${areaNameMap.value[version]} / ${selectedYear.value}`,
+          label: `${group} - ${areaNameMap.value[version]}`,
           backgroundColor: colors[group] || '#a8a29e',
           data: dataPoints,
         });
       }
     }
-  } else { // 'all' - for comparing current vs future (aggregated view)
+  } else { // 'all' - สำหรับเปรียบเทียบ ปัจจุบัน vs อนาคต (แสดงค่าเฉลี่ยรวมทุกตำแหน่ง)
     if (version === "combined") {
+      // รวมทุกบริษัท: คำนวณค่าเฉลี่ยจาก company_1, company_2, company_3... ของทุกตำแหน่ง
       const currentCombined = currentData.value;
       const futureCombined = futureData.value;
       const totalGroups = Object.keys(currentCombined).length;
@@ -408,9 +412,10 @@ const chartData = computed(() => {
       const currentDataPoints = chartLabels.value.map((_, i) => {
         let sum = 0;
         for (const group in currentCombined) {
-          const v1 = currentCombined[group].v1?.[i] || 0;
-          const v2 = currentCombined[group].v2?.[i] || 0;
-          const avg = (v1 > 0 && v2 > 0) ? (v1 + v2) / 2 : (v1 || v2);
+          // company_1, company_2 = บริษัทที่ 1, 2 (มาจากฐานข้อมูล)
+          const company1 = currentCombined[group].company_1?.[i] || 0;
+          const company2 = currentCombined[group].company_2?.[i] || 0;
+          const avg = (company1 > 0 && company2 > 0) ? (company1 + company2) / 2 : (company1 || company2);
           sum += avg;
         }
         return totalGroups > 0 ? sum / totalGroups : 0;
@@ -419,9 +424,9 @@ const chartData = computed(() => {
       const futureDataPoints = chartLabels.value.map((_, i) => {
         let sum = 0;
         for (const group in futureCombined) {
-          const v1 = futureCombined[group].v1?.[i] || 0;
-          const v2 = futureCombined[group].v2?.[i] || 0;
-          const avg = (v1 > 0 && v2 > 0) ? (v1 + v2) / 2 : (v1 || v2);
+          const company1 = futureCombined[group].company_1?.[i] || 0;
+          const company2 = futureCombined[group].company_2?.[i] || 0;
+          const avg = (company1 > 0 && company2 > 0) ? (company1 + company2) / 2 : (company1 || company2);
           sum += avg;
         }
         return totalGroups > 0 ? sum / totalGroups : 0;
@@ -439,7 +444,7 @@ const chartData = computed(() => {
         data: futureDataPoints,
       });
 
-    } else { // 'all' for a specific version
+    } else { // บริษัทเฉพาะ (version = 'company_1', 'company_2', ...): แสดงค่าเฉลี่ยทุกตำแหน่งในบริษัทนั้น
       const currentRawData = currentData.value;
       const futureRawData = futureData.value;
       const totalGroups = Object.keys(currentRawData).length;
@@ -642,7 +647,7 @@ select:focus {
   outline: none;
 }
 
-/* Scrollbar styling */
+/* Custom scrollbar styling (not available in Tailwind without plugin) */
 .overflow-x-auto {
   -webkit-overflow-scrolling: touch;
 }
@@ -665,66 +670,20 @@ select:focus {
   background: #94a3b8;
 }
 
-/* Scrollbar styling */
-.overflow-x-auto {
-  -webkit-overflow-scrolling: touch;
-}
-
-.overflow-x-auto::-webkit-scrollbar {
-  height: 8px;
-}
-
-.overflow-x-auto::-webkit-scrollbar-track {
-  background: #f3f4f6;
-  border-radius: 4px;
-}
-
-.overflow-x-auto::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
-}
-
-.overflow-x-auto::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
-
-/* Sticky column shadow */
-.overflow-x-auto table thead th[class*="sticky"] {
-  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.08);
-}
-
-.overflow-x-auto table tbody td[class*="sticky"] {
-  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.08);
-}
-
-.overflow-x-auto table tbody tr:hover td[class*="sticky"] {
-  background-color: #f9fafb;
-}
-
-/* Line clamp utility */
+/* Line clamp utilities (with standard property for compatibility) */
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  line-height: 1.4;
 }
 
 .line-clamp-3 {
   display: -webkit-box;
   -webkit-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  line-height: 1.5;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.animate-spin {
-  animation: spin 1s linear infinite;
 }
 </style>

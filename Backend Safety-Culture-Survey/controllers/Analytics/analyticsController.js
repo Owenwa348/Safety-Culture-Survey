@@ -583,7 +583,7 @@ const getWorkGroupRawData = async (req, res) => {
     }
 
     const userWhere = {};
-    // This maps the frontend's 'v1'/'v2' to actual company names if needed
+    // This maps the frontend's 'company_1'/'company_2' to actual company names if needed
     if (company && company !== 'both' && company !== 'all') {
       const companies = await prisma.user.findMany({
         distinct: ['company_user'],
@@ -592,8 +592,9 @@ const getWorkGroupRawData = async (req, res) => {
       });
       
       let companyName = '';
-      if (company === 'v1' && companies.length > 0) companyName = companies[0].company_user;
-      if (company === 'v2' && companies.length > 1) companyName = companies[1].company_user;
+      if (company === 'company_1' && companies.length > 0) companyName = companies[0].company_user;
+      if (company === 'company_2' && companies.length > 1) companyName = companies[1].company_user;
+      if (company === 'company_3' && companies.length > 2) companyName = companies[2].company_user;
 
       if (companyName) userWhere.company_user = companyName;
     }
@@ -612,7 +613,7 @@ const getWorkGroupRawData = async (req, res) => {
             position_user: true,
             job_field_user: true,
             work_group_user: true,
-            company_user: true, // For v1/v2 distinction if not filtered
+            company_user: true, // For company_1/company_2 distinction if not filtered
           }
         }
       }
@@ -625,8 +626,11 @@ const getWorkGroupRawData = async (req, res) => {
         orderBy: { company_user: 'asc' }
       });
     const companyMap = {};
-    if (companies.length > 0) companyMap[companies[0].company_user] = 'v1';
-    if (companies.length > 1) companyMap[companies[1].company_user] = 'v2';
+    companies.forEach((c, i) => {
+      if (c.company_user) {
+        companyMap[c.company_user] = `company_${i + 1}`;
+      }
+    });
 
     // Format data for frontend
     const formattedData = answers.map(a => ({
@@ -690,8 +694,9 @@ const getWorkGroupEvaluationData = async (req, res) => {
               orderBy: { company_user: 'asc' }
           });
           let companyName = '';
-          if (company === 'v1' && companies.length > 0) companyName = companies[0].company_user;
-          if (company === 'v2' && companies.length > 1) companyName = companies[1].company_user;
+          if (company === 'company_1' && companies.length > 0) companyName = companies[0].company_user;
+          if (company === 'company_2' && companies.length > 1) companyName = companies[1].company_user;
+          if (company === 'company_3' && companies.length > 2) companyName = companies[2].company_user;
           if (companyName) {
               userWhere.company_user = companyName;
           }
@@ -735,7 +740,7 @@ const getEvaluationData = (scoreType) => async (req, res) => {
     const { year } = req.query;
     const scoreField = scoreType === 'current' ? 'currentScore' : 'expectedScore';
 
-    // 1. Get companies and create mapping v1, v2
+    // 1. Get companies and create mapping company_1, company_2, etc.
     const companies = await prisma.user.findMany({
       distinct: ['company_user'],
       select: { company_user: true },
@@ -744,7 +749,7 @@ const getEvaluationData = (scoreType) => async (req, res) => {
     const companyMap = {};
     companies.forEach((c, i) => {
       if (c.company_user) {
-        companyMap[c.company_user] = `v${i + 1}`;
+        companyMap[c.company_user] = `company_${i + 1}`;
       }
     });
 
@@ -806,7 +811,7 @@ const getEvaluationData = (scoreType) => async (req, res) => {
       intermediate[position][company][categoryId].count += 1;
     }
 
-    // Final structure: { position: { v1: [cat1, cat2, ...], v2: [...] } }
+    // Final structure: { position: { company_1: [cat1, cat2, ...], company_2: [...] } }
     for (const position in intermediate) {
       results[position] = {};
       const companyData = intermediate[position];

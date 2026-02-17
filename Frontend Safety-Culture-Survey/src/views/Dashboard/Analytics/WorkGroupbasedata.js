@@ -60,11 +60,11 @@ export const workGroups = [
 
 // ฟังก์ชันสร้างข้อมูลสุ่มสำหรับแต่ละกลุ่มงาน
 const generateWorkGroupData = () => ({
-  v1: {
+  company_1: {
     current: Array.from({length: 18}, () => Math.floor(Math.random() * 5) + 1),
     future: Array.from({length: 18}, () => Math.floor(Math.random() * 5) + 1)
   },
-  v2: {
+  company_2: {
     current: Array.from({length: 18}, () => Math.floor(Math.random() * 5) + 1),
     future: Array.from({length: 18}, () => Math.floor(Math.random() * 5) + 1)
   }
@@ -76,11 +76,11 @@ export const evaluationData = {
   contractor: {
     CEO: {
       operation: {
-        v1: {
+        company_1: {
           current: [3, 4, 2, 1, 5, 4, 3, 1, 2, 5, 3, 4, 2, 1, 5, 4, 3, 1],
           future: [4, 2, 5, 3, 1, 2, 4, 5, 3, 1, 4, 2, 5, 3, 1, 2, 4, 5]
         },
-        v2: {
+        company_2: {
           current: [5, 3, 1, 4, 2, 3, 5, 1, 4, 2, 5, 3, 1, 4, 2, 3, 5, 1],
           future: [2, 4, 3, 5, 1, 4, 2, 3, 5, 1, 2, 4, 3, 5, 1, 4, 2, 3]
         }
