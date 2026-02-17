@@ -139,7 +139,7 @@ const calculateAverage = (scores) => {
 
 /**
  * Fetches company options from the API.
- * แก้ไขให้แสดงบริษัททั้งหมดจาก API
+ * แก้ไขให้แสดงบริษัททั้งหมดจาก API และใช้ company_1, company_2 format
  */
 const fetchCompanyOptions = async () => {
   try {
@@ -151,25 +151,27 @@ const fetchCompanyOptions = async () => {
       { id: 'all', name: 'บริษัททั้งหมด' }
     ];
 
-    // เพิ่มบริษัททั้งหมดจาก API
+    // เรียงบริษัทตามตัวอักษรเพื่อให้สอดคล้องกับ Backend
+    let sortedCompanies = [];
+    
     if (Array.isArray(companies)) {
-      companies.forEach((company, index) => {
-        // ถ้า API ส่งมาเป็น object ที่มี id และ name
-        if (typeof company === 'object' && company.id && company.name) {
-          options.push({
-            id: company.id,
-            name: company.name
-          });
-        } 
-        // ถ้า API ส่งมาเป็น string (ชื่อบริษัท)
-        else if (typeof company === 'string') {
-          options.push({
-            id: `company_${index + 1}`, // สร้าง id อัตโนมัติ
-            name: company
-          });
-        }
-      });
+      // ถ้า API ส่งมาเป็น array ของ objects
+      if (companies.length > 0 && typeof companies[0] === 'object' && companies[0].name) {
+        sortedCompanies = companies.map(c => c.name).sort();
+      } 
+      // ถ้า API ส่งมาเป็น array ของ strings
+      else {
+        sortedCompanies = [...companies].sort();
+      }
     }
+
+    // สร้าง options ด้วย company_1, company_2, company_3... ตามลำดับที่เรียง
+    sortedCompanies.forEach((companyName, index) => {
+      options.push({
+        id: `company_${index + 1}`,
+        name: companyName
+      });
+    });
     
     return options;
   } catch (error) {
@@ -204,6 +206,14 @@ const availableWorkGroups = computed(() => {
 const chartData = computed(() => {
   const data = evaluationResults.value;
   if (!data || data.length === 0) return { labels: [], datasets: [] };
+
+  // กรองข้อมูลตามบริษัทที่เลือก (ถ้าไม่ใช่ 'all')
+  let filteredData = data;
+  if (selectedCompany.value !== 'all') {
+    // Backend จะส่งข้อมูลที่กรองแล้ว ดังนั้นไม่ต้องกรองเพิ่ม
+    // แต่เก็บไว้เผื่อใช้ในอนาคต
+    filteredData = data;
+  }
 
   const groupedData = new Map();
   let labels = [];
@@ -252,7 +262,7 @@ const chartData = computed(() => {
   });
 
   // Group scores from results
-  data.forEach(item => {
+  filteredData.forEach(item => {
     if (item.user) {
         const groupName = item.user[dimensionKey];
         if (groupedData.has(groupName)) {
@@ -309,15 +319,21 @@ const dataSummary = computed(() => {
       .join(", ") || "ไม่มี";
   }
 
-  // เพิ่มการแสดงชื่อบริษัทที่เลือก
-  const companyName = companyOptions.value.find(c => c.id === selectedCompany.value)?.name || "ทั้งหมด";
+  // แสดงชื่อบริษัทที่เลือก
+  const companyName = companyOptions.value.find(c => c.id === selectedCompany.value)?.name || "บริษัททั้งหมด";
+  
+  // นับจำนวนข้อมูลที่แสดงจริงในกราฟ
+  const actualCount = chartData.value.datasets.reduce((sum, dataset) => {
+    return sum + dataset.data.filter(val => val > 0).length;
+  }, 0);
   
   return { 
     department: deptName,
     unit: unitName,
     group: groupNames,
     company: companyName,
-    total: evaluationResults.value.length
+    total: evaluationResults.value.length,
+    displayCount: actualCount
   };
 });
 
@@ -572,7 +588,7 @@ onMounted(async () => {
                   <p class="text-sm font-semibold text-gray-900 truncate" :title="dataSummary.company">{{ dataSummary.company }}</p>
                 </div>
                 <div class="bg-white rounded-md p-2.5 border border-gray-200 ring-2 ring-blue-500">
-                  <p class="text-xs text-gray-500 mb-0.5">จำนวนข้อมูล</p>
+                  <p class="text-xs text-gray-500 mb-0.5">ข้อมูลดิบทั้งหมด</p>
                   <p class="text-sm font-bold text-blue-600">{{ dataSummary.total }} รายการ</p>
                 </div>
               </div>
