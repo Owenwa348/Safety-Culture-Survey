@@ -135,6 +135,7 @@ const chartOptions = computed(() => ({
     mode: 'index',
     intersect: false,
   },
+  resizeDelay: 0,
   plugins: {
     legend: {
       display: true,
@@ -229,6 +230,11 @@ const chartOptions = computed(() => ({
       }
     },
     datalabels: {
+      display: (context) => {
+        const value = context.dataset.data[context.dataIndex];
+        // ซ่อนตัวเลขถ้าค่าน้อยกว่า 5 เพื่อไม่ให้กราฟดูรกเกินไป
+        return value >= 5;
+      },
       color: (context) => {
         const value = context.dataset.data[context.dataIndex];
         if (value === 0) return 'transparent';
@@ -245,10 +251,10 @@ const chartOptions = computed(() => ({
       align: 'center',
       font: {
         weight: 'bold',
-        size: 10,
+        size: 9,
         family: 'inherit'
       },
-      formatter: (value) => value > 0 ? value : '',
+      formatter: (value) => value >= 5 ? value : '',
       textShadowColor: (context) => {
         const value = context.dataset.data[context.dataIndex];
         if (value === 0) return 'transparent';
@@ -282,13 +288,13 @@ const chartOptions = computed(() => ({
         font: {
           size: 10,
           family: 'inherit',
-          weight: '500'
+          weight: '600'
         },
-        color: '#4B5563',
+        color: '#374151',
         maxRotation: 45,
         minRotation: 45,
         autoSkip: false,
-        padding: 8
+        padding: 5
       },
       border: {
         display: true,

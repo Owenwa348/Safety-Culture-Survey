@@ -481,7 +481,7 @@ const getAssessmentYears = async (req, res) => {
 
 const getQuestionResultsData = async (req, res) => {
   try {
-    const { company = 'All', position = 'All', year } = req.query;
+    const { company = 'All', position = 'All', year, categoryId } = req.query;
 
     if (!year) {
       return res.status(400).json({ error: 'Year is a required parameter.' });
@@ -504,7 +504,13 @@ const getQuestionResultsData = async (req, res) => {
     }
 
     // 2. Fetch all questions to ensure order and completeness
+    const questionWhere = {};
+    if (categoryId && categoryId !== 'All') {
+      questionWhere.categoryId = parseInt(categoryId);
+    }
+    
     const allQuestions = await prisma.question.findMany({
+      where: questionWhere,
       orderBy: {
         order: 'asc',
       },

@@ -9,9 +9,13 @@ import NavbarDashboard from '../../../components/NavbarDashboard.vue';
 // ========================================
 const selectedPosition = ref("All");
 const selectedCompany = ref("All");
+const selectedCategory = ref("All");
 const selectedTimeframe = ref("compare");
 const selectedYear = ref(null);
+const currentPage = ref(1);
+const questionsPerPage = ref(20);
 const fullLabels = ref([]);
+const allQuestions = ref([]);
 const chartAPIData = ref(null);
 const isLoading = ref(true);
 
@@ -24,6 +28,10 @@ const positionOptions = ref([
 
 const companyOptions = ref([
   { value: "All", label: "รวมทั้งหมด" },
+]);
+
+const categoryOptions = ref([
+  { value: "All", label: "ทุกหมวดหมู่" },
 ]);
 
 const timeframeOptions = [
@@ -45,18 +53,35 @@ const availableYears = ref([]);
 const fetchQuestions = async () => {
   try {
     const response = await axios.get('/api/questions');
-    // แสดงหมายเลขพร้อมตัวอย่างคำถามสั้นๆ (ไม่เกิน 25 ตัวอักษร)
-    fullLabels.value = response.data.map((q, index) => {
-      const questionText = q.text;
-      const maxLength = 25; // กำหนดความยาวสูงสุดของตัวอย่าง
-      const truncatedText = questionText.length > maxLength 
-        ? questionText.substring(0, maxLength) + '...' 
-        : questionText;
-      return `Q${index + 1}: ${truncatedText}`;
-    });
+    allQuestions.value = response.data;
+    updateLabels();
   } catch (error) {
     console.error('เกิดข้อผิดพลาดในการดึงข้อมูลคำถาม:', error);
   }
+};
+
+/**
+ * อัพเดท labels ตาม category ที่เลือก
+ */
+const updateLabels = () => {
+  let filteredQuestions = allQuestions.value;
+  
+  // กรองตาม category
+  if (selectedCategory.value !== 'All') {
+    filteredQuestions = filteredQuestions.filter(
+      q => q.categoryId === parseInt(selectedCategory.value)
+    );
+  }
+  
+  // แสดงหมายเลขพร้อมตัวอย่างคำถามสั้นๆ
+  fullLabels.value = filteredQuestions.map((q, index) => {
+    const questionText = q.text;
+    const maxLength = 25;
+    const truncatedText = questionText.length > maxLength 
+      ? questionText.substring(0, maxLength) + '...' 
+      : questionText;
+    return `Q${index + 1}: ${truncatedText}`;
+  });
 };
 
 /**
@@ -72,6 +97,22 @@ const fetchCompanies = async () => {
     companyOptions.value.push(...companies);
   } catch (error) {
     console.error('เกิดข้อผิดพลาดในการดึงข้อมูลบริษัท:', error);
+  }
+};
+
+/**
+ * ดึงข้อมูล Category ทั้งหมดจาก API
+ */
+const fetchCategories = async () => {
+  try {
+    const response = await axios.get('/api/categories');
+    const categories = response.data.map(category => ({
+      value: category.id.toString(),
+      label: category.name
+    }));
+    categoryOptions.value.push(...categories);
+  } catch (error) {
+    console.error('เกิดข้อผิดพลาดในการดึงข้อมูล Category:', error);
   }
 };
 
@@ -120,6 +161,7 @@ const fetchChartData = async () => {
       year: selectedYear.value,
       company: selectedCompany.value,
       position: selectedPosition.value,
+      categoryId: selectedCategory.value,
     };
     
     const { data } = await axios.get('/api/analytics/question-results', { params });
@@ -141,7 +183,8 @@ onMounted(async () => {
     fetchQuestions(),
     fetchPositions(),
     fetchYears(),
-    fetchCompanies()
+    fetchCompanies(),
+    fetchCategories()
   ]);
   
   if (selectedYear.value) {
@@ -149,7 +192,12 @@ onMounted(async () => {
   }
 });
 
-watch([selectedYear, selectedCompany, selectedPosition], fetchChartData, { deep: true });
+watch([selectedYear, selectedCompany, selectedPosition, selectedCategory], () => {
+  currentPage.value = 1; // Reset to first page
+  fetchChartData();
+}, { deep: true });
+
+watch(selectedCategory, updateLabels);
 
 // ========================================
 // Computed Properties
@@ -167,8 +215,77 @@ const getCompanyLabel = () => {
   return option ? option.label : selectedCompany.value;
 };
 
+const getCategoryLabel = () => {
+  const option = categoryOptions.value.find(opt => opt.value === selectedCategory.value);
+  return option ? option.label : 'ทุกหมวดหมู่';
+};
+
 /**
- * จัดเตรียมข้อมูลสำหรับแสดงกราฟ
+ * คำนวณจำนวนหน้าทั้งหมด
+ */
+const totalPages = computed(() => {
+  return Math.ceil(fullLabels.value.length / questionsPerPage.value);
+});
+
+/**
+ * คำนวณ range ของคำถามในหน้าปัจจุบัน
+ */
+const currentQuestionRange = computed(() => {
+  const start = (currentPage.value - 1) * questionsPerPage.value;
+  const end = Math.min(start + questionsPerPage.value, fullLabels.value.length);
+  return { start, end };
+});
+
+/**
+ * ดึง labels สำหรับหน้าปัจจุบัน
+ */
+const paginatedLabels = computed(() => {
+  const { start, end } = currentQuestionRange.value;
+  return fullLabels.value.slice(start, end);
+});
+
+/**
+ * ข้อมูลสำหรับ pagination buttons
+ */
+const paginationButtons = computed(() => {
+  const total = totalPages.value;
+  const current = currentPage.value;
+  const buttons = [];
+  
+  // แสดงเฉพาะหน้าบางหน้าถ้ามีเยอะ
+  if (total <= 7) {
+    for (let i = 1; i <= total; i++) {
+      buttons.push(i);
+    }
+  } else {
+    buttons.push(1);
+    if (current > 3) buttons.push('...');
+    
+    const start = Math.max(2, current - 1);
+    const end = Math.min(total - 1, current + 1);
+    
+    for (let i = start; i <= end; i++) {
+      buttons.push(i);
+    }
+    
+    if (current < total - 2) buttons.push('...');
+    buttons.push(total);
+  }
+  
+  return buttons;
+});
+
+/**
+ * เปลี่ยนหน้า
+ */
+const goToPage = (page) => {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page;
+  }
+};
+
+/**
+ * จัดเตรียมข้อมูลสำหรับแสดงกราฟ (พร้อม pagination)
  */
 const chartData = computed(() => {
   if (!chartAPIData.value || isLoading.value || fullLabels.value.length === 0) {
@@ -177,18 +294,19 @@ const chartData = computed(() => {
 
   const positionLabel = getPositionLabel();
   const companyLabel = getCompanyLabel();
+  const { start, end } = currentQuestionRange.value;
 
   if (isCompareMode.value) {
     return {
-      labels: fullLabels.value,
+      labels: paginatedLabels.value,
       datasets: [
         {
           label: `${positionLabel} - ${companyLabel} (ปัจจุบัน)`,
-          scoreCounts: chartAPIData.value.current
+          scoreCounts: chartAPIData.value.current.slice(start, end)
         },
         {
           label: `${positionLabel} - ${companyLabel} (อนาคต)`,
-          scoreCounts: chartAPIData.value.future
+          scoreCounts: chartAPIData.value.future.slice(start, end)
         }
       ]
     };
@@ -196,10 +314,10 @@ const chartData = computed(() => {
     const dataKey = selectedTimeframe.value;
     const timeLabel = dataKey === 'current' ? 'ปัจจุบัน' : 'คาดในอนาคต';
     return {
-      labels: fullLabels.value,
+      labels: paginatedLabels.value,
       datasets: [{
         label: `${positionLabel} - ${companyLabel} (${timeLabel})`,
-        scoreCounts: chartAPIData.value[dataKey]
+        scoreCounts: chartAPIData.value[dataKey].slice(start, end)
       }]
     };
   }
@@ -232,9 +350,9 @@ const chartData = computed(() => {
            ส่วนตัวกรองข้อมูล (Filter Section)
            ======================================== -->
       <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           
-          <!-- ตัวกรองบริษัท (ย้ายมาเป็นอันแรก) -->
+          <!-- ตัวกรองบริษัท -->
           <div class="space-y-2">
             <label 
               for="company-select" 
@@ -257,7 +375,7 @@ const chartData = computed(() => {
             </select>
           </div>
 
-          <!-- ตัวกรองตำแหน่ง (ย้ายมาเป็นอันสอง) -->
+          <!-- ตัวกรองตำแหน่ง -->
           <div class="space-y-2">
             <label 
               for="position-select" 
@@ -272,6 +390,29 @@ const chartData = computed(() => {
             >
               <option 
                 v-for="option in positionOptions" 
+                :key="option.value" 
+                :value="option.value"
+              >
+                {{ option.label }}
+              </option>
+            </select>
+          </div>
+
+          <!-- ตัวกรอง Category (ใหม่) -->
+          <div class="space-y-2">
+            <label 
+              for="category-select" 
+              class="block text-sm font-medium text-gray-700"
+            >
+              เลือกหมวดหมู่
+            </label>
+            <select
+              id="category-select"
+              v-model="selectedCategory"
+              class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 transition-colors"
+            >
+              <option 
+                v-for="option in categoryOptions" 
                 :key="option.value" 
                 :value="option.value"
               >
@@ -343,12 +484,20 @@ const chartData = computed(() => {
               {{ getPositionLabel() }}
             </span>
             <span class="text-gray-400">•</span>
+            <span class="px-2 py-1 bg-indigo-50 text-indigo-700 rounded">
+              {{ getCategoryLabel() }}
+            </span>
+            <span class="text-gray-400">•</span>
             <span class="px-2 py-1 bg-purple-50 text-purple-700 rounded">
               ปี {{ selectedYear }}
             </span>
             <span class="text-gray-400">•</span>
             <span class="px-2 py-1 bg-orange-50 text-orange-700 rounded">
               {{ timeframeOptions.find(opt => opt.value === selectedTimeframe)?.label }}
+            </span>
+            <span v-if="totalPages > 1" class="text-gray-400">•</span>
+            <span v-if="totalPages > 1" class="px-2 py-1 bg-gray-50 text-gray-700 rounded">
+              หน้า {{ currentPage }} จาก {{ totalPages }} (คำถามที่ {{ currentQuestionRange.start + 1 }}-{{ currentQuestionRange.end }})
             </span>
           </div>
         </div>
@@ -404,6 +553,88 @@ const chartData = computed(() => {
             ไม่พบข้อมูลสำหรับการเลือกปัจจุบัน กรุณาเลือกตัวกรองอื่น
           </p>
         </div>
+
+        <!-- ========================================
+             ส่วน Pagination Controls (ใหม่)
+             ======================================== -->
+        <div v-if="!isLoading && chartData && totalPages > 1" class="mt-6 pt-4 border-t border-gray-200">
+          <div class="flex items-center justify-between">
+            <!-- ข้อมูลหน้าปัจจุบัน -->
+            <div class="text-sm text-gray-700">
+              แสดงคำถามที่ <span class="font-semibold">{{ currentQuestionRange.start + 1 }}</span> ถึง 
+              <span class="font-semibold">{{ currentQuestionRange.end }}</span> จากทั้งหมด 
+              <span class="font-semibold">{{ fullLabels.length }}</span> คำถาม
+            </div>
+
+            <!-- Pagination Buttons -->
+            <nav class="flex items-center space-x-1">
+              <!-- ปุ่มย้อนกลับ -->
+              <button
+                @click="goToPage(currentPage - 1)"
+                :disabled="currentPage === 1"
+                class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors"
+                :class="currentPage === 1 
+                  ? 'text-gray-400 cursor-not-allowed' 
+                  : 'text-gray-700 hover:bg-gray-100'"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+
+              <!-- ปุ่มหมายเลขหน้า -->
+              <template v-for="(page, index) in paginationButtons" :key="index">
+                <span 
+                  v-if="page === '...'" 
+                  class="px-3 py-1.5 text-sm text-gray-500"
+                >
+                  ...
+                </span>
+                <button
+                  v-else
+                  @click="goToPage(page)"
+                  class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors"
+                  :class="currentPage === page
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'text-gray-700 hover:bg-gray-100'"
+                >
+                  {{ page }}
+                </button>
+              </template>
+
+              <!-- ปุ่มถัดไป -->
+              <button
+                @click="goToPage(currentPage + 1)"
+                :disabled="currentPage === totalPages"
+                class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors"
+                :class="currentPage === totalPages 
+                  ? 'text-gray-400 cursor-not-allowed' 
+                  : 'text-gray-700 hover:bg-gray-100'"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+
+              <!-- ตัวเลือกจำนวนต่อหน้า -->
+              <div class="ml-4 flex items-center space-x-2">
+                <label for="per-page" class="text-sm text-gray-700">แสดง:</label>
+                <select
+                  id="per-page"
+                  v-model.number="questionsPerPage"
+                  @change="currentPage = 1"
+                  class="px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option :value="10">10</option>
+                  <option :value="20">20</option>
+                  <option :value="30">30</option>
+                  <option :value="50">50</option>
+                </select>
+                <span class="text-sm text-gray-700">คำถาม/หน้า</span>
+              </div>
+            </nav>
+          </div>
+        </div>
       </section>
 
     </main>
@@ -421,5 +652,14 @@ select:hover:not(:disabled) {
 
 select:focus {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+button {
+  transition: all 0.15s ease;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>
