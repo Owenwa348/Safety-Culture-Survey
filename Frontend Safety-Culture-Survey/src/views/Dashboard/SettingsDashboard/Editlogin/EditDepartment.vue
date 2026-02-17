@@ -103,7 +103,7 @@
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
 
-const API_URL = 'http://localhost:5000/api/departments'
+const API_URL = '/api/departments'
 
 const departments = ref([])
 const newDepartment = ref('')

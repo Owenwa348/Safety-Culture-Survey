@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: safety-survey-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+    ports:
+      - "3307:3306"  # เปลี่ยนเป็น 3307 เพื่อไม่ชนกับ MySQL ที่มีอยู่
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - safety-survey-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  backend:
+    build:
+      context: ./Backend Safety-Culture-Survey
+      dockerfile: Dockerfile
+    container_name: safety-survey-backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: mysql://root:${DB_PASSWORD}@mysql:3306/${DB_NAME}
+      DB_HOST: mysql
+      DB_USER: root
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      PORT: 5000
+      NODE_ENV: production
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./Backend Safety-Culture-Survey:/app
+      - /app/node_modules
+    networks:
+      - safety-survey-network
+    command: sh -c "npx prisma migrate deploy && node prisma/seed.js && node server.js"
+
+  # Frontend
+  frontend:
+    build:
+      context: ./Frontend Safety-Culture-Survey
+      dockerfile: Dockerfile
+    container_name: safety-survey-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    networks:
+      - safety-survey-network
+
+networks:
+  safety-survey-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local

@@ -11,6 +11,7 @@ const questionRoutes = require('./Questions/questionRoutes');
 const userRoutes = require('./User/userRoutes');
 const assessmentRoutes = require('./Assessment/assessmentRoutes');
 const analyticsRoutes = require('./Analytics/analyticsRoutes');
+const inquiryRoutes = require('./Inquiry/inquiryRoutes');
 
 
 const registerRoutes = (app) => {
@@ -27,6 +28,7 @@ const registerRoutes = (app) => {
   app.use('/api/users', userRoutes);
   app.use('/api/assessment', assessmentRoutes);
   app.use('/api/analytics', analyticsRoutes);
+  app.use('/api/inquiry', inquiryRoutes);
 };
 
 module.exports = registerRoutes;

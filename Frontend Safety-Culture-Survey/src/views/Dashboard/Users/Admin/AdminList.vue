@@ -159,7 +159,7 @@ import axios from 'axios';
 import AddAdminForm from './AddAdminForm.vue';
 import NavbarDashboard from '../../../../components/NavbarDashboard.vue';
 
-const API_URL = 'http://localhost:5000/api/admin';
+const API_URL = '/api/admin';
 
 const showForm = ref(false);
 const search = ref('');

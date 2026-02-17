@@ -214,6 +214,106 @@ const updateSuperAdminStatus = async (req, res) => {
     }
 };
 
+// 9. Verify SuperAdmin for Password Reset (from ForgotPasswordSuperAdmin.vue)
+const verifyForPasswordReset = async (req, res) => {
+    const { email, phone, pin } = req.body;
+
+    if (!email || !phone || !pin) {
+        return res.status(400).json({ message: 'Email, phone, and PIN are required.' });
+    }
+
+    try {
+        // Check if email exists
+        const superAdmin = await prisma.superAdminList.findUnique({
+            where: { email },
+        });
+
+        if (!superAdmin) {
+            return res.status(404).json({ message: 'Email not found in the system.' });
+        }
+
+        // Check if account is ACTIVE (must be activated to reset password)
+        if (superAdmin.status !== 'ACTIVE') {
+            return res.status(409).json({ message: 'This account has not been activated yet.' });
+        }
+
+        // Verify phone and PIN
+        const phoneMatch = await bcrypt.compare(phone, superAdmin.phone);
+        const pinMatch = await bcrypt.compare(pin, superAdmin.pin);
+
+        // For phone: exact match (not hashed for comparison)
+        const phoneExactMatch = superAdmin.phone === phone;
+
+        // PIN must match (hashed)
+        if (!phoneExactMatch || !pinMatch) {
+            return res.status(401).json({ message: 'Phone number or PIN is incorrect.' });
+        }
+
+        // Return success with email for next step
+        res.status(200).json({ 
+            message: 'Verification successful. Proceed to password reset.',
+            email: superAdmin.email 
+        });
+
+    } catch (error) {
+        console.error('Error verifying for password reset:', error);
+        res.status(500).json({ message: 'An error occurred during verification.' });
+    }
+};
+
+// 10. Reset Password for SuperAdmin (from ForgotPasswordSuperAdmin.vue)
+const resetPassword = async (req, res) => {
+    const { email, newPassword, confirmPassword } = req.body;
+
+    if (!email || !newPassword || !confirmPassword) {
+        return res.status(400).json({ message: 'Email and password fields are required.' });
+    }
+
+    if (newPassword !== confirmPassword) {
+        return res.status(400).json({ message: 'Passwords do not match.' });
+    }
+
+    if (newPassword.length < 6) {
+        return res.status(400).json({ message: 'Password must be at least 6 characters.' });
+    }
+
+    try {
+        // Verify email exists and is ACTIVE
+        const superAdmin = await prisma.superAdminList.findUnique({
+            where: { email },
+        });
+
+        if (!superAdmin) {
+            return res.status(404).json({ message: 'Super Admin with this email not found.' });
+        }
+
+        if (superAdmin.status !== 'ACTIVE') {
+            return res.status(409).json({ message: 'This account is not activated.' });
+        }
+
+        // Hash new password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+        // Update password
+        await prisma.superAdminList.update({
+            where: { email },
+            data: {
+                password: hashedPassword,
+            },
+        });
+
+        res.status(200).json({ message: 'Password reset successful. You can now log in with your new password.' });
+
+    } catch (error) {
+        console.error('Error resetting password:', error);
+        if (error.code === 'P2025') {
+            return res.status(404).json({ message: 'Super Admin with this email not found.' });
+        }
+        res.status(500).json({ message: 'An error occurred during password reset.' });
+    }
+};
+
 
 module.exports = {
   addSuperAdmin,
@@ -224,4 +324,6 @@ module.exports = {
   updateSuperAdmin,
   deleteSuperAdmin,
   updateSuperAdminStatus,
+  verifyForPasswordReset,
+  resetPassword,
 };

@@ -71,6 +71,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+import axios from 'axios'
 import NavbarDashboard from '../../components/NavbarDashboard.vue'
 import PieChart from './Showgraph/PieChartDB.vue'
 import SalesBarChart from './Showgraph/SalesBarChartDB.vue'
@@ -90,10 +91,23 @@ const currentDate = computed(() => {
 onMounted(async () => {
   try {
     const res = await axios.get('/user_excel/with-status')
-    allUsers.value = res.data
+    console.log('API Response:', res.data)
+    
+    // Ensure allUsers is always an array
+    if (Array.isArray(res.data)) {
+      allUsers.value = res.data
+    } else if (res.data && typeof res.data === 'object') {
+      // If response is an object, try to extract array from it
+      const dataArray = res.data.data || res.data.users || []
+      allUsers.value = Array.isArray(dataArray) ? dataArray : []
+    } else {
+      allUsers.value = []
+    }
+    
     console.log('Dashboard loaded users:', allUsers.value.length)
   } catch (err) {
     console.error('โหลดข้อมูลล้มเหลว:', err)
+    allUsers.value = [] // Set to empty array on error
   } finally {
     loading.value = false
   }

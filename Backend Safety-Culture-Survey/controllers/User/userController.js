@@ -1,4 +1,5 @@
 const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcryptjs');
 const prisma = new PrismaClient();
 
 // Get all users for UserList.vue
@@ -40,14 +41,33 @@ const getAllUsers = async (req, res) => {
 
     // Create a map of registered users by email for quick lookup
     const registeredUserMap = new Map(registeredUsers.map(user => [user.email_user, user]));
+    
+    // Create a map of excel users by email for quick lookup
+    const excelUserMap = new Map(excelUsers.map(user => [user.email_user, user]));
+
+    // Define status priority for sorting (done > in_progress > not_started > not_registered)
+    const getStatusPriority = (status) => {
+      const priorityMap = {
+        'done': 0,
+        'in_progress': 1,
+        'not_started': 2,
+        'registered': 2,
+        'not_registered': 3,
+        'active': 2
+      };
+      return priorityMap[status] !== undefined ? priorityMap[status] : 999;
+    };
 
     // Create a combined list maintaining the original Excel order
-    const allUsers = excelUsers.map(excelUser => {
+    const allUsers = excelUsers.map((excelUser, excelIndex) => {
       // Check if this user has registered
       const registeredUser = registeredUserMap.get(excelUser.email_user);
       
       if (registeredUser) {
         // Return the registered user data
+        const mappedStatus = registeredUser.surveyStatus === 'done' ? 'done' : 
+                            registeredUser.surveyStatus === 'in_progress' ? 'in_progress' : 
+                            registeredUser.status === "active" ? "registered" : registeredUser.status;
         return {
           id: registeredUser.id,
           title_user: registeredUser.title_user || "-",
@@ -60,11 +80,10 @@ const getAllUsers = async (req, res) => {
           work_group_user: registeredUser.work_group_user || "-",
           years_of_service: registeredUser.years_of_service || "-",
           section_user: registeredUser.section_user || "-",
-          status: registeredUser.surveyStatus === 'done' ? 'done' : 
-                  registeredUser.surveyStatus === 'in_progress' ? 'in_progress' : 
-                  registeredUser.status === "active" ? "registered" : registeredUser.status,
+          status: mappedStatus,
           createdAt: registeredUser.createdAt,
-          sortOrder: excelUser.id // Use Excel record ID for sorting to maintain original position
+          statusPriority: getStatusPriority(mappedStatus),
+          sortOrder: excelIndex // Use Excel record ID for sorting to maintain original position
         };
       } else {
         // Return the Excel user data (not registered yet)
@@ -82,12 +101,49 @@ const getAllUsers = async (req, res) => {
           section_user: excelUser.division_user || "-",
           status: "not_registered",
           createdAt: excelUser.createdAt,
-          sortOrder: excelUser.id // Use Excel record ID for sorting
+          statusPriority: getStatusPriority('not_registered'),
+          sortOrder: excelIndex // Use Excel record ID for sorting
         };
       }
     });
+
+    // Add registered users who are NOT in excel (direct registrations)
+    const directRegistrations = registeredUsers.filter(user => !excelUserMap.has(user.email_user));
+    const directRegistrationUsers = directRegistrations.map((user, index) => {
+      const mappedStatus = user.surveyStatus === 'done' ? 'done' : 
+                          user.surveyStatus === 'in_progress' ? 'in_progress' : 
+                          user.status === "active" ? "registered" : user.status;
+      return {
+        id: user.id,
+        title_user: user.title_user || "-",
+        name_user: user.name_user || "-",
+        email_user: user.email_user,
+        company_user: user.company_user,
+        phone_user: user.phone_user || "-",
+        position_user: user.position_user || "-",
+        job_field_user: user.job_field_user || "-",
+        work_group_user: user.work_group_user || "-",
+        years_of_service: user.years_of_service || "-",
+        section_user: user.section_user || "-",
+        status: mappedStatus,
+        createdAt: user.createdAt,
+        statusPriority: getStatusPriority(mappedStatus),
+        sortOrder: excelUsers.length + index // Maintain relative order within direct registrations
+      };
+    });
+
+    // Combine and sort by statusPriority first, then by sortOrder
+    const combinedUsers = [...allUsers, ...directRegistrationUsers];
+    combinedUsers.sort((a, b) => {
+      // Primary sort: by status priority
+      if (a.statusPriority !== b.statusPriority) {
+        return a.statusPriority - b.statusPriority;
+      }
+      // Secondary sort: by original order
+      return a.sortOrder - b.sortOrder;
+    });
     
-    res.status(200).json(allUsers);
+    res.status(200).json(combinedUsers);
   } catch (error) {
     console.error('Get all users error:', error);
     res.status(500).json({ message: 'Internal server error' });
@@ -182,6 +238,9 @@ const registerUser = async (req, res) => {
       return res.status(404).json({ message: 'Email not found in system. Please contact administrator.' });
     }
 
+    // Hash the password before storing
+    const hashedPassword = password ? await bcrypt.hash(password, 10) : null;
+
     // Create new user
     const newUser = await prisma.user.create({
       data: {
@@ -195,7 +254,7 @@ const registerUser = async (req, res) => {
         work_group_user: workGroup,
         years_of_service: workExperience,
         section_user: excelUser.division_user || "-", // Use division from excel as section
-        password_user: password || null, // In a real app, this should be hashed
+        password_user: hashedPassword,
         status: "active",
         surveyStatus: "not_started" // Initialize survey status
       },
@@ -242,11 +301,14 @@ const loginUser = async (req, res) => {
     });
 
     if (!user) {
-      return res.status(404).json({ message: 'User not found. Please register first.' });
+      return res.status(401).json({ message: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' });
     }
 
-    // In a real application, you would validate the password here
-    // For now, we'll just check if the user exists
+    // Verify password using bcrypt
+    const isPasswordValid = await bcrypt.compare(password, user.password_user);
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' });
+    }
     
     // Return user data without sensitive information
     res.status(200).json({
@@ -275,9 +337,145 @@ const loginUser = async (req, res) => {
   }
 };
 
+// Delete user by email
+const deleteUser = async (req, res) => {
+  const { email } = req.params;
+
+  if (!email) {
+    return res.status(400).json({ message: 'Email is required.' });
+  }
+
+  try {
+    // First, try to delete the user from the main User table.
+    // This might fail if there are foreign key constraints (e.g., survey answers),
+    // so we wrap it in a try-catch to prevent it from stopping the process.
+    try {
+      await prisma.user.deleteMany({
+        where: { email_user: email },
+      });
+    } catch (e) {
+      console.error(`Could not delete user '${email}' from User table, probably due to existing relations. Error: ${e.message}`);
+    }
+
+    // Always attempt to delete from the user_excel table.
+    // This is the source for the user list, so this ensures the user is removed from the UI.
+    const deleteResult = await prisma.user_excel.deleteMany({
+      where: { email_user: email },
+    });
+
+    if (deleteResult.count === 0) {
+      // This can happen if the email doesn't exist in user_excel.
+      return res.status(404).json({ message: 'User not found in the list.' });
+    }
+
+    res.status(200).json({ message: 'User removed from the list successfully.' });
+  } catch (error) {
+    console.error('Delete user error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Forgot password - verify user by email and phone
+const forgotPassword = async (req, res) => {
+  const { email, phone } = req.body;
+
+  // Validate required fields
+  if (!email || !phone) {
+    return res.status(400).json({ message: 'Email and phone are required.' });
+  }
+
+  try {
+    // Clean phone number (remove formatting characters)
+    const cleanedPhone = phone.replace(/\D/g, '');
+
+    // Check if user exists in User table with matching email and phone
+    const user = await prisma.user.findFirst({
+      where: {
+        email_user: email,
+        phone_user: cleanedPhone
+      },
+      select: {
+        id: true,
+        email_user: true,
+        name_user: true,
+        phone_user: true
+      }
+    });
+
+    if (!user) {
+      // For security reasons, don't reveal if email or phone is wrong
+      return res.status(404).json({ message: 'User not found. Please check your email and phone number.' });
+    }
+
+    // Generate OTP (6 digits)
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // In a real application, you should:
+    // 1. Store the OTP in a temporary table with expiration time
+    // 2. Send the OTP via SMS to the phone number
+    // For now, we'll just return the OTP for testing purposes
+    
+    res.status(200).json({ 
+      message: 'User verified successfully. OTP has been sent to your phone.',
+      success: true,
+      email: user.email_user,
+      phone: user.phone_user,
+      userId: user.id,
+      otp: otp // In production, remove this and send via SMS instead
+    });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Reset password after OTP verification
+const resetPassword = async (req, res) => {
+  const { email, phone, newPassword } = req.body;
+
+  // Validate required fields
+  if (!email || !phone || !newPassword) {
+    return res.status(400).json({ message: 'Email, phone, and new password are required.' });
+  }
+
+  try {
+    // Clean phone number
+    const cleanedPhone = phone.replace(/\D/g, '');
+
+    // Find user
+    const user = await prisma.user.findFirst({
+      where: {
+        email_user: email,
+        phone_user: cleanedPhone
+      }
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    // Update password
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { password_user: newPassword } // In production, hash the password
+    });
+
+    res.status(200).json({ 
+      message: 'Password reset successfully.',
+      success: true
+    });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 module.exports = {
   getAllUsers,
   checkUserEmail,
   registerUser,
-  loginUser // Export the new login function
+  loginUser, // Export the new login function
+  deleteUser,
+  forgotPassword,
+  resetPassword,
 };

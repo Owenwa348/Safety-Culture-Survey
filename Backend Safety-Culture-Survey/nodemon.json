@@ -1,0 +1,21 @@
+{
+  "watch": [
+    "server.js",
+    "controllers/**/*.js",
+    "routes/**/*.js",
+    "prisma/schema.prisma"
+  ],
+  "ext": "js,json,prisma",
+  "ignore": [
+    "node_modules/**",
+    "prisma/migrations/**"
+  ],
+  "legacyWatch": true,
+  "verbose": true,
+  "execMap": {
+    "js": "node"
+  },
+  "env": {
+    "NODE_ENV": "development"
+  }
+}

@@ -1,6 +1,17 @@
 <!-- Assessment.vue -->
 <template>
   <div class="min-h-screen bg-gray-100">
+    
+    <!-- Auto-save Indicator -->
+    <div 
+      v-if="!isLoadingDraft && (answers.some(a => a.level || a.futureLevel))"
+      class="fixed bottom-4 left-4 bg-green-100 text-green-800 px-4 py-2 rounded-lg shadow-lg text-sm flex items-center gap-2 z-50"
+    >
+      <svg class="w-4 h-4 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
+        <path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
+      </svg>
+      <span>บันทึกอัตโนมัติ</span>
+    </div>
     <!-- Header Section -->
     <div class="bg-white shadow border-b sticky top-0 z-10" v-if="questions.length > 0 && questions[currentIndex]">
       <div class="max-w-6xl mx-auto px-4 py-4">
@@ -165,27 +176,22 @@
 
       <!-- Comment Section -->
       <div class="mt-6 bg-white rounded-lg shadow border overflow-hidden" v-if="questions.length > 0 && answers.length > 0">
-        <div class="bg-red-50 px-6 py-4 border-b border-red-200">
+        <div class="bg-blue-50 px-6 py-4 border-b border-blue-200">
           <div class="flex items-center gap-3">
-            <div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-              <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+              <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V4a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2h-1l-4 4z"/>
               </svg>
             </div>
-            <h3 class="text-lg font-semibold text-gray-800">ความคิดเห็นกับข้อคำถามนี้</h3>
-            <span class="text-sm text-red-600 font-medium">*บังคับ</span>
+            <h3 class="text-lg font-semibold text-gray-800">แสดงความคิดเห็นเพิ่มเติม (ถ้ามี)</h3>
           </div>
         </div>
         <div class="p-6">
           <textarea
             v-model="answers[currentIndex].comment"
             rows="4"
-            class="w-full p-4 border-2 border-red-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent resize-vertical transition-all duration-200 placeholder-gray-400"
-            :class="{
-              'border-red-400 bg-red-50': answers[currentIndex].comment === ''
-            }"
-            placeholder="กรุณากรอกความคิดเห็นของคุณเกี่ยวกับข้อคำถามนี้... (จำเป็นต้องกรอก)"
-            required
+            class="w-full p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical transition-all duration-200 placeholder-gray-400"
+            placeholder="กรุณากรอกความคิดเห็นของคุณเกี่ยวกับข้อคำถามนี้... (ถ้ามี)"
           ></textarea>
         </div>
       </div>
@@ -213,8 +219,8 @@
             class="w-3 h-3 rounded-full transition-all duration-300"
             :class="{
               'bg-blue-500': idx === currentIndex,
-              'bg-green-400': answers[idx].level && answers[idx].futureLevel && answers[idx].comment.trim() !== '' && idx !== currentIndex,
-              'bg-gray-300': (!answers[idx].level || !answers[idx].futureLevel || answers[idx].comment.trim() === '') && idx !== currentIndex
+              'bg-green-400': answers[idx].level && answers[idx].futureLevel && idx !== currentIndex,
+              'bg-gray-300': (!answers[idx].level || !answers[idx].futureLevel) && idx !== currentIndex
             }"
           ></div>
         </div>
@@ -234,31 +240,22 @@
         </button>
       </div>
 
-      <!-- Validation Alert -->
-      <div v-if="showValidationAlert" 
-           class="fixed top-4 right-4 bg-red-500 text-white px-4 py-3 rounded-lg shadow-lg z-50 transition-opacity duration-300">
-        <div class="flex items-center gap-2">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
-          </svg>
-          <span class="text-sm">กรุณาเลือกทั้งคะแนนปัจจุบันและอนาคต และกรอกความคิดเห็นก่อนดำเนินการต่อ</span>
-        </div>
-      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch, nextTick } from "vue";
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 
 const router = useRouter();
 
 const currentIndex = ref(0);
-const showValidationAlert = ref(false);
 const categories = ref([]);
 const userId = ref(null); // We'll get the user ID from localStorage
+const isLoadingDraft = ref(true);
+const autoSaveTimeout = ref(null);
 
 const questions = computed(() => {
   return categories.value.flatMap(category => 
@@ -267,6 +264,132 @@ const questions = computed(() => {
 });
 
 const answers = ref([]);
+
+// Auto-save to localStorage when answers change
+watch(answers, (newAnswers) => {
+  if (!isLoadingDraft.value && userId.value && newAnswers.length > 0) {
+    const draftKey = `assessment_draft_${userId.value}`;
+    localStorage.setItem(draftKey, JSON.stringify({
+      answers: newAnswers,
+      currentIndex: currentIndex.value,
+      timestamp: new Date().toISOString()
+    }));
+  }
+}, { deep: true });
+
+// Debounced auto-save to backend
+const autoSaveToBackend = async (index) => {
+  if (autoSaveTimeout.value) {
+    clearTimeout(autoSaveTimeout.value);
+  }
+  
+  autoSaveTimeout.value = setTimeout(async () => {
+    const answer = answers.value[index];
+    const question = questions.value[index];
+    
+    // Only save if both current and future levels are filled
+    if (answer.level !== null && answer.futureLevel !== null) {
+      try {
+        await submitAnswer(
+          question.id,
+          answer.level,
+          answer.futureLevel,
+          answer.comment
+        );
+        console.log('✅ Auto-saved question', index + 1);
+      } catch (error) {
+        console.error('❌ Auto-save failed for question', index + 1, error);
+      }
+    }
+  }, 1500); // Save after 1.5 seconds of inactivity
+};
+
+// Watch individual answer changes for auto-save
+watch(answers, (newAnswers, oldAnswers) => {
+  if (!isLoadingDraft.value && oldAnswers.length > 0) {
+    // Find which answer changed
+    for (let i = 0; i < newAnswers.length; i++) {
+      if (JSON.stringify(newAnswers[i]) !== JSON.stringify(oldAnswers[i])) {
+        autoSaveToBackend(i);
+        break;
+      }
+    }
+  }
+}, { deep: true });
+
+// Load draft from localStorage or backend
+async function loadDraft() {
+  const draftKey = `assessment_draft_${userId.value}`;
+  const localDraft = localStorage.getItem(draftKey);
+  
+  try {
+    // Try to load from backend first
+    const response = await axios.get(`/api/assessment/answers/${userId.value}`);
+    
+    if (response.data && response.data.length > 0) {
+      console.log('📥 Loading saved answers from server...');
+      
+      // Map backend answers to our answers array
+      response.data.forEach(savedAnswer => {
+        const questionIndex = questions.value.findIndex(q => q.id === savedAnswer.questionId);
+        if (questionIndex !== -1) {
+          answers.value[questionIndex] = {
+            level: savedAnswer.currentScore,
+            futureLevel: savedAnswer.expectedScore,
+            comment: savedAnswer.comment || ""
+          };
+        }
+      });
+      
+      // Show notification
+      showNotification('พบข้อมูลที่บันทึกไว้ คุณสามารถทำต่อจากที่ค้างไว้ได้');
+      return true;
+    }
+  } catch (error) {
+    console.log('No saved answers on server, checking localStorage...');
+  }
+  
+  // If no backend data, try localStorage
+  if (localDraft) {
+    try {
+      const draft = JSON.parse(localDraft);
+      const draftAge = new Date() - new Date(draft.timestamp);
+      const oneWeek = 7 * 24 * 60 * 60 * 1000;
+      
+      if (draftAge < oneWeek) {
+        answers.value = draft.answers;
+        currentIndex.value = draft.currentIndex || 0;
+        console.log('📥 Loaded draft from localStorage');
+        showNotification('พบข้อมูลที่บันทึกไว้ในเครื่อง คุณสามารถทำต่อจากที่ค้างไว้ได้');
+        return true;
+      }
+    } catch (error) {
+      console.error('Error loading draft:', error);
+    }
+  }
+  
+  return false;
+}
+
+// Show notification
+function showNotification(message) {
+  const notification = document.createElement('div');
+  notification.className = 'fixed top-4 right-4 bg-blue-500 text-white px-6 py-4 rounded-lg shadow-lg z-50 animate-slide-in';
+  notification.innerHTML = `
+    <div class="flex items-center gap-3">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      <span>${message}</span>
+    </div>
+  `;
+  document.body.appendChild(notification);
+  
+  setTimeout(() => {
+    notification.style.opacity = '0';
+    setTimeout(() => notification.remove(), 300);
+  }, 4000);
+}
 
 onMounted(async () => {
   try {
@@ -281,15 +404,24 @@ onMounted(async () => {
       return;
     }
     
-    const response = await axios.get('http://localhost:5000/api/assessment');
+    const response = await axios.get('/api/assessment');
     categories.value = response.data;
+    
+    // Initialize empty answers
     answers.value = questions.value.map(() => ({
       level: null,
       futureLevel: null,
       comment: "",
     }));
+    
+    // Load draft after initialization
+    await nextTick();
+    await loadDraft();
+    isLoadingDraft.value = false;
+    
   } catch (error) {
     console.error('Error fetching assessment data:', error);
+    isLoadingDraft.value = false;
   }
 });
 
@@ -303,7 +435,7 @@ function goBackOrHome() {
 
 async function submitAnswer(questionId, currentScore, expectedScore, comment) {
   try {
-    const response = await axios.post('http://localhost:5000/api/assessment/answer', {
+    const response = await axios.post('/api/assessment/answer', {
       userId: userId.value,
       questionId: questionId,
       currentScore: currentScore,
@@ -344,62 +476,98 @@ async function submitAllAnswers() {
 }
 
 async function goNext() {
-  // Validate the current question before doing anything
-  const currentAnswer = answers.value[currentIndex.value];
-  if (currentAnswer.level === null || currentAnswer.futureLevel === null || currentAnswer.comment.trim() === '') {
-    showValidationAlert.value = true;
-    setTimeout(() => {
-      showValidationAlert.value = false;
-    }, 3000);
-    return;
-  }
-
-  // Submit the current answer to the backend
-  try {
-    await submitAnswer(
-      questions.value[currentIndex.value].id,
-      currentAnswer.level,
-      currentAnswer.futureLevel,
-      currentAnswer.comment
-    );
-  } catch (error) {
-    alert("เกิดข้อผิดพลาดในการบันทึกคำตอบ กรุณาลองใหม่อีกครั้ง");
-    return;
-  }
-
-  // If it's not the last question, just go to the next one
+  // If it's not the last question, just go to the next one. No validation needed.
   if (currentIndex.value < questions.value.length - 1) {
     currentIndex.value++;
-  } else {
-    // It IS the last question, so this is a submission attempt.
-    // Now, check if ALL questions are answered.
-    const allAnswered = answers.value.every(
-      ans => ans.level !== null && ans.futureLevel !== null && ans.comment.trim() !== ''
-    );
+    return;
+  }
 
-    if (allAnswered) {
-      // Submit all answers
-      try {
-        await submitAllAnswers();
-        alert("ส่งแบบประเมินเรียบร้อยแล้ว ขอบคุณค่ะ");
-        console.log("คำตอบทั้งหมด:", answers.value);
-        // Refresh the user list to show updated status
-        if (window.refreshUsersList) {
-          window.refreshUsersList();
-        }
-        router.push('/home');
-      } catch (error) {
-        alert("เกิดข้อผิดพลาดในการบันทึกคำตอบทั้งหมด กรุณาลองใหม่อีกครั้ง");
+  // If we are here, the user is clicking "Submit Assessment" on the last question.
+  // Now, we validate that ALL questions have been answered.
+  const allAnswered = answers.value.every(
+    ans => ans.level !== null && ans.futureLevel !== null
+  );
+
+  if (allAnswered) {
+    // If all questions are answered, proceed with submitting all answers.
+    try {
+      await submitAllAnswers();
+      
+      // Clear draft from localStorage after successful submission
+      const draftKey = `assessment_draft_${userId.value}`;
+      localStorage.removeItem(draftKey);
+      console.log('✅ Draft cleared after submission');
+      
+      alert("ส่งแบบประเมินเรียบร้อยแล้ว ขอบคุณค่ะ");
+      console.log("คำตอบทั้งหมด:", answers.value);
+      if (window.refreshUsersList) {
+        window.refreshUsersList();
       }
-    } else {
-      // If not all are answered, navigate to the first unanswered question.
-      const firstUnansweredIndex = answers.value.findIndex(
-        ans => ans.level === null || ans.futureLevel === null || ans.comment.trim() === ''
-      );
-      if (firstUnansweredIndex !== -1) {
-        currentIndex.value = firstUnansweredIndex;
-      }
+      router.push('/home');
+    } catch (error) {
+      alert("เกิดข้อผิดพลาดในการบันทึกคำตอบทั้งหมด กรุณาลองใหม่อีกครั้ง");
+    }
+  } else {
+    // If not all questions are answered, show an alert and go to the first unanswered question.
+    alert("กรุณาตอบทุกข้อคำถามให้ครบถ้วนก่อนส่งแบบประเมิน");
+    const firstUnansweredIndex = answers.value.findIndex(
+      ans => ans.level === null || ans.futureLevel === null
+    );
+    if (firstUnansweredIndex !== -1) {
+      currentIndex.value = firstUnansweredIndex;
     }
   }
 }
+
+// Warn user before leaving if they have unsaved answers
+onMounted(() => {
+  const handleBeforeUnload = (e) => {
+    const hasAnswers = answers.value.some(
+      ans => ans.level !== null || ans.futureLevel !== null
+    );
+    
+    if (hasAnswers && !isLoadingDraft.value) {
+      e.preventDefault();
+      e.returnValue = 'คุณมีคำตอบที่ยังไม่ได้ส่ง ข้อมูลจะถูกบันทึกไว้อัตโนมัติ';
+      return e.returnValue;
+    }
+  };
+  
+  window.addEventListener('beforeunload', handleBeforeUnload);
+  
+  // Cleanup
+  return () => {
+    window.removeEventListener('beforeunload', handleBeforeUnload);
+  };
+});
 </script>
+
+<style scoped>
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+</style>

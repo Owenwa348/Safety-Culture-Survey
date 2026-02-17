@@ -105,7 +105,7 @@ const successMessage = ref('');
 const isLoading = ref(false);
 
 // API base URL
-const API_URL = 'http://localhost:5000/api/super-admins';
+const API_URL = '/api/super-admins';
 
 // Add new admin form
 function addAdmin() {

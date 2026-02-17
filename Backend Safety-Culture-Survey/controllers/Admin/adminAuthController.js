@@ -185,6 +185,102 @@ const deleteAdmin = async (req, res) => {
     }
 };
 
+// 4. Admin Login
+const adminLogin = async (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        return res.status(400).json({ message: 'Email and password are required.' });
+    }
+
+    try {
+        const admin = await prisma.adminList.findUnique({
+            where: { email },
+        });
+
+        if (!admin || admin.status !== 'ACTIVE') {
+            return res.status(401).json({ message: 'Authentication failed. Account not found or not active.' });
+        }
+
+        const isPasswordValid = await bcrypt.compare(password, admin.password);
+
+        if (!isPasswordValid) {
+            return res.status(401).json({ message: 'Authentication failed. Incorrect password.' });
+        }
+
+        // Do not send the password back
+        res.status(200).json({
+            message: 'Login successful',
+            email: admin.email,
+            firstName: admin.firstName,
+            lastName: admin.lastName,
+            role: admin.role,
+            companyName: admin.companyName,
+        });
+    } catch (error) {
+        console.error('Admin login error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+
+const verifyAdminForPasswordReset = async (req, res) => {
+  const { email, phone } = req.body;
+
+  if (!email || !phone) {
+    return res.status(400).json({ message: 'Email and phone number are required.' });
+  }
+
+  try {
+    const admin = await prisma.adminList.findUnique({
+      where: {
+        email: email,
+      },
+    });
+
+    if (!admin || admin.status !== 'ACTIVE' || admin.phone !== phone) {
+      return res.status(404).json({ message: 'ไม่พบข้อมูลผู้ดูแลระบบในระบบ กรุณาตรวจสอบอีเมลและเบอร์โทร' });
+    }
+
+    // If admin is found and all conditions match, return success
+    res.status(200).json({ message: 'Admin verified successfully.' });
+
+  } catch (error) {
+    console.error('Verify admin for password reset error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+const resetAdminPassword = async (req, res) => {
+  const { email, newPassword } = req.body;
+
+  if (!email || !newPassword) {
+    return res.status(400).json({ message: 'Email and new password are required.' });
+  }
+
+  try {
+    const admin = await prisma.adminList.findUnique({ where: { email } });
+
+    if (!admin) {
+      return res.status(404).json({ message: 'Admin not found.' });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await prisma.adminList.update({
+      where: { email },
+      data: {
+        password: hashedPassword,
+      },
+    });
+
+    res.status(200).json({ message: 'Password has been reset successfully.' });
+
+  } catch (error) {
+    console.error('Reset admin password error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
 
 module.exports = {
   addAdmin,
@@ -194,4 +290,7 @@ module.exports = {
   updateAdmin,
   toggleAdminStatus,
   deleteAdmin,
+  adminLogin,
+  verifyAdminForPasswordReset,
+  resetAdminPassword,
 };

@@ -425,10 +425,10 @@ onMounted(async () => {
 const fetchData = async () => {
   try {
     const [posRes, depRes, wgRes, expRes] = await Promise.all([
-      axios.get('http://localhost:5000/api/positions'),
-      axios.get('http://localhost:5000/api/departments'),
-      axios.get('http://localhost:5000/api/workgroups'),
-      axios.get('http://localhost:5000/api/experiences')
+      axios.get('/api/positions'),
+      axios.get('/api/departments'),
+      axios.get('/api/workgroups'),
+      axios.get('/api/experiences')
     ]);
     positions.value = posRes.data;
     departments.value = depRes.data;
@@ -552,7 +552,7 @@ const submitForm = async () => {
     };
     
     // Call backend API to register user
-    const response = await axios.post('http://localhost:5000/api/users/register', registrationData);
+    const response = await axios.post('/api/users/register', registrationData);
     
     if (response.status === 201) {
       showSuccessModal.value = true;

@@ -1,6 +1,6 @@
 <template>
-  <div>
-    <h2 class="text-xl font-semibold text-gray-800 mb-6 text-center">
+  <div class="w-full max-w-full overflow-x-hidden">
+    <h2 class="text-xl font-semibold text-gray-800 mb-4 sm:mb-6 text-center px-4">
       เปอร์เซ็นต์การทำแบบประเมิน
     </h2>
 
@@ -13,111 +13,112 @@
     </div>
 
     <!-- Dynamic Charts based on available areas -->
-    <div v-if="!loading && !error" class="flex flex-wrap justify-center gap-8" 
-         :class="{
-           'max-w-2xl mx-auto': availableAreas.length <= 2,
-           'max-w-4xl mx-auto': availableAreas.length <= 3,
-           'max-w-6xl mx-auto': availableAreas.length <= 4
-         }">
-      <div v-for="area in availableAreas" :key="area" 
-           class="flex-shrink-0 text-center"
+    <div v-if="!loading && !error" class="w-full px-4 sm:px-6 lg:px-8">
+      <div class="grid gap-4 sm:gap-6 w-full max-w-7xl mx-auto"
            :class="{
-             'w-full sm:w-80': availableAreas.length === 1,
-             'w-full sm:w-72': availableAreas.length === 2,
-             'w-full sm:w-64': availableAreas.length === 3,
-             'w-full sm:w-56': availableAreas.length >= 4
+             'grid-cols-1': availableAreas.length === 1,
+             'grid-cols-2': availableAreas.length === 2,
+             'grid-cols-2 md:grid-cols-3': availableAreas.length === 3,
+             'grid-cols-2 lg:grid-cols-4': availableAreas.length === 4,
+             'grid-cols-2 md:grid-cols-3 xl:grid-cols-5': availableAreas.length === 5,
+             'grid-cols-2 md:grid-cols-3 lg:grid-cols-4': availableAreas.length >= 6
            }">
-        <h3 class="text-lg font-medium text-gray-700 mb-2">{{ area }}</h3>
-        <p class="text-sm text-gray-500 mb-4">{{ getAreaStats(area).total }} คน</p>
-        
-        <div class="relative inline-block">
-          <!-- Dynamic Pie Chart -->
-          <div class="relative">
-            <svg width="200" height="200" class="mx-auto">
-              <!-- Background Circle -->
-              <circle 
-                cx="100" 
-                cy="100" 
-                r="80" 
-                fill="none" 
-                stroke="#f3f4f6" 
-                stroke-width="20"
-              />
+        <div v-for="area in availableAreas" :key="area" 
+             class="text-center flex flex-col items-center min-w-0 p-2">
+          <h3 class="text-sm sm:text-base font-medium text-gray-700 mb-1 truncate w-full" :title="area">
+            {{ area }}
+          </h3>
+          <p class="text-xs text-gray-500 mb-3">{{ getAreaStats(area).total }} คน</p>
+          
+          <div class="relative inline-block w-full max-w-[140px] sm:max-w-[160px] mx-auto">
+            <!-- Dynamic Pie Chart -->
+            <div class="relative w-full aspect-square">
+              <svg viewBox="0 0 120 120" class="w-full h-full">
+                <!-- Background Circle -->
+                <circle 
+                  cx="60" 
+                  cy="60" 
+                  r="50" 
+                  fill="none" 
+                  stroke="#f3f4f6" 
+                  stroke-width="12"
+                />
+                
+                <!-- Progress Circle for Completed -->
+                <circle 
+                  v-if="getAreaStats(area).percentDone > 0"
+                  cx="60" 
+                  cy="60" 
+                  r="50" 
+                  fill="none" 
+                  :stroke="getAreaColor(area, 100)" 
+                  stroke-width="12"
+                  :stroke-dasharray="circumference"
+                  :stroke-dashoffset="circumference - (getAreaStats(area).percentDone / 100) * circumference"
+                  stroke-linecap="round"
+                  transform="rotate(-90 60 60)"
+                />
+                
+                <!-- Progress Circle for Not Completed -->
+                <circle 
+                  v-if="getAreaStats(area).percentDone < 100"
+                  cx="60" 
+                  cy="60" 
+                  r="50" 
+                  fill="none" 
+                  :stroke="getAreaColor(area, 0)" 
+                  stroke-width="12"
+                  :stroke-dasharray="circumference"
+                  :stroke-dashoffset="getAreaStats(area).percentDone > 0 ? 
+                    circumference - ((100 - getAreaStats(area).percentDone) / 100) * circumference : 0"
+                  stroke-linecap="round"
+                  transform="rotate(-90 60 60)"
+                  :style="{ 
+                    transform: `rotate(${getAreaStats(area).percentDone * 3.6 - 90}deg)`, 
+                    transformOrigin: '60px 60px' 
+                  }"
+                />
+              </svg>
               
-              <!-- Progress Circle for Completed -->
-              <circle 
-                v-if="getAreaStats(area).percentDone > 0"
-                cx="100" 
-                cy="100" 
-                r="80" 
-                fill="none" 
-                :stroke="getAreaColor(area, 100)" 
-                stroke-width="20"
-                :stroke-dasharray="circumference"
-                :stroke-dashoffset="circumference - (getAreaStats(area).percentDone / 100) * circumference"
-                stroke-linecap="round"
-                transform="rotate(-90 100 100)"
-              />
-              
-              <!-- Progress Circle for Not Completed -->
-              <circle 
-                v-if="getAreaStats(area).percentDone < 100"
-                cx="100" 
-                cy="100" 
-                r="80" 
-                fill="none" 
-                :stroke="getAreaColor(area, 0)" 
-                stroke-width="20"
-                :stroke-dasharray="circumference"
-                :stroke-dashoffset="getAreaStats(area).percentDone > 0 ? 
-                  circumference - ((100 - getAreaStats(area).percentDone) / 100) * circumference : 0"
-                stroke-linecap="round"
-                transform="rotate(-90 100 100)"
-                :style="{ 
-                  transform: `rotate(${getAreaStats(area).percentDone * 3.6 - 90}deg)`, 
-                  transformOrigin: '100px 100px' 
-                }"
-              />
-            </svg>
-            
-            <!-- Center Text -->
-            <div class="absolute inset-0 flex flex-col items-center justify-center">
-              <div class="text-3xl font-bold text-gray-800">
-                {{ getAreaStats(area).percentDone }}%
+              <!-- Center Text -->
+              <div class="absolute inset-0 flex flex-col items-center justify-center">
+                <div class="text-xl sm:text-2xl font-bold text-gray-800">
+                  {{ getAreaStats(area).percentDone }}%
+                </div>
+                <div class="text-xs text-gray-500">COMPLETE</div>
               </div>
-              <div class="text-sm text-gray-500 mt-1">COMPLETE</div>
             </div>
           </div>
-        </div>
-        
-        <!-- Legend -->
-        <div class="flex justify-center items-center mt-4 space-x-4">
-          <div class="flex items-center">
-            <div class="w-3 h-3 rounded-full mr-2" 
-                 :style="{ backgroundColor: getAreaColor(area, 100) }"></div>
-            <span class="text-sm text-gray-600">ทำแล้ว</span>
+          
+          <!-- Legend -->
+          <div class="flex justify-center items-center mt-3 gap-3 flex-wrap">
+            <div class="flex items-center whitespace-nowrap">
+              <div class="w-2.5 h-2.5 rounded-full mr-1.5 flex-shrink-0" 
+                   :style="{ backgroundColor: getAreaColor(area, 100) }"></div>
+              <span class="text-xs text-gray-600">ทำแล้ว</span>
+            </div>
+            <div class="flex items-center whitespace-nowrap">
+              <div class="w-2.5 h-2.5 rounded-full mr-1.5 flex-shrink-0" 
+                   :style="{ backgroundColor: getAreaColor(area, 0) }"></div>
+              <span class="text-xs text-gray-600">ยังไม่ได้ทำ</span>
+            </div>
           </div>
-          <div class="flex items-center">
-            <div class="w-3 h-3 rounded-full mr-2" 
-                 :style="{ backgroundColor: getAreaColor(area, 0) }"></div>
-            <span class="text-sm text-gray-600">ยังไม่ได้ทำ</span>
+          
+          <!-- Stats -->
+          <div class="mt-2 text-xs text-gray-500">
+            <div>{{ getAreaStats(area).done }}/{{ getAreaStats(area).total }}</div>
           </div>
-        </div>
-        
-        <!-- Stats -->
-        <div class="mt-4 text-sm text-gray-500">
-          <div>{{ getAreaStats(area).done }}/{{ getAreaStats(area).total }}</div>
         </div>
       </div>
     </div>
     
     <!-- Debug Info -->
-    <div v-if="showDebug" class="mt-8 p-4 bg-gray-100 rounded-lg">
-      <h4 class="font-semibold mb-2">ข้อมูลทั้งหมด:</h4>
-      <div class="text-sm ">
+    <div v-if="showDebug" class="mt-8 mx-4 sm:mx-6 lg:mx-8 p-4 bg-gray-100 rounded-lg max-w-7xl mx-auto">
+      <h4 class="font-semibold mb-2 text-sm sm:text-base">ข้อมูลทั้งหมด:</h4>
+      <div class="text-xs sm:text-sm">
         <p class="mb-2">ผู้ทำแบบสอบถามทั้งหมด: {{ allUsers.length }}</p>
-        <p>พื้นที่: {{ availableAreas.join(', ') }}</p>
-        <div v-for="area in availableAreas" :key="area" class="mt-2">
+        <p class="break-words">บริษัท: {{ availableAreas.join(', ') }}</p>
+        <div v-for="area in availableAreas" :key="area" class="mt-2 break-words">
           <strong>{{ area }}:</strong> {{ getAreaStats(area).done }}/{{ getAreaStats(area).total }} 
           ({{ getAreaStats(area).percentDone }}%)
         </div>
@@ -141,8 +142,8 @@ const loading = ref(true)
 const error = ref(null)
 const showDebug = ref(true)
 
-// Circle circumference for SVG
-const circumference = 2 * Math.PI * 80
+// Circle circumference for SVG (updated for radius 50)
+const circumference = 2 * Math.PI * 50
 
 // Color palette for different areas
 const colorPalette = [
@@ -154,7 +155,7 @@ const colorPalette = [
 
 onMounted(async () => {
   try {
-    const response = await axios.get('http://localhost:5000/api/analytics/completion-status');
+    const response = await axios.get('/api/analytics/completion-status');
     allUsers.value = response.data;
   } catch (err) {
     error.value = 'Failed to fetch data.';

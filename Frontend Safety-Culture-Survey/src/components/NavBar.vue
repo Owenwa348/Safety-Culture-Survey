@@ -117,24 +117,28 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 // Reactive state
 const isUserMenuOpen = ref(false)
 
-// Sample user data - ในการใช้งานจริงควรดึงจาก store หรือ API
+// Initialize with empty user data
 const userData = ref({
-  fullName: 'ธันวา ชัยรัตนานนท์',
-  company: 'บริษัท ABC จำกัด',
-  position: 'ผู้จัดการแผนก / ผู้จัดการ / พนักงานอาวุโส'
+  fullName: '',
+  company: '',
+  position: ''
 })
 
 // Computed properties
 const userInitials = computed(() => {
+  if (!userData.value.fullName) return ''
   const names = userData.value.fullName.split(' ')
   if (names.length >= 2) {
-    return names[0].charAt(0) + names[1].charAt(0)
+    return (names[0].charAt(0) + names[1].charAt(0)).toUpperCase()
   }
-  return names[0].charAt(0) + names[0].charAt(1)
+  return (names[0].charAt(0) + (names[0].length > 1 ? names[0].charAt(1) : '')).toUpperCase()
 })
 
 // Methods
@@ -146,17 +150,13 @@ const closeUserMenu = () => {
   isUserMenuOpen.value = false
 }
 
-const viewProfile = () => {
-  console.log('View profile clicked')
-  closeUserMenu()
-  // Navigate to profile page
-}
-
 const logout = () => {
   console.log('Logout clicked')
+  // Clear user data from localStorage
+  localStorage.removeItem('user')
   closeUserMenu()
-  // Clear user data and navigate to home page
-  window.location.href = '/'
+  // Navigate to home page
+  router.push('/')
 }
 
 // Click outside to close
@@ -169,18 +169,19 @@ const handleClickOutside = (event) => {
 
 // Lifecycle hooks
 onMounted(() => {
+  const storedUser = localStorage.getItem('user')
+  if (storedUser) {
+    const user = JSON.parse(storedUser)
+    userData.value = {
+      fullName: user.name_user || 'ผู้ใช้',
+      company: user.company_user || 'ไม่มีข้อมูล',
+      position: user.position_user || 'ไม่มีข้อมูล'
+    }
+  }
   document.addEventListener('click', handleClickOutside)
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
 })
-
-// Position options for reference
-const positionOptions = [
-  'ผู้บริหารระดับสูง / ผู้จัดการส่วน',
-  'ผู้จัดการแผนก / ผู้จัดการ / พนักงานอาวุโส',
-  'พนักงาน',
-  'ผู้รับเหมาประจำ'
-]
 </script>

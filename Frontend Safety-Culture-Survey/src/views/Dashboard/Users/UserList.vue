@@ -51,7 +51,7 @@
               <input
                 v-model="search"
                 type="text"
-                placeholder="ค้นหา ชื่อ/อีเมล/พื้นที่/ตำแหน่ง/สายงาน/กลุ่มงาน..."
+                placeholder="ค้นหา ชื่อ/อีเมล/บริษัท/ตำแหน่ง/สายงาน/กลุ่มงาน..."
                 class="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
@@ -91,6 +91,19 @@
                 {{ department }}
               </option>
             </select>
+            <select
+              v-model="companyFilter"
+              class="px-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+            >
+              <option value="all">บริษัททั้งหมด</option>
+              <option
+                v-for="company in uniqueCompanies"
+                :key="company"
+                :value="company"
+              >
+                {{ company }}
+              </option>
+            </select>
           </div>
         </div>
 
@@ -122,7 +135,7 @@
                     อีเมล
                   </th>
                   <th class="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase min-w-[110px]">
-                    บริษัทฯ/พื้นที่
+                    บริษัท
                   </th>
                   <th class="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase min-w-[90px]">
                     ตำแหน่งงาน
@@ -199,7 +212,7 @@
                       v-model="user.company_user"
                       type="text"
                       class="w-full bg-blue-50 border border-blue-300 px-2 py-1 text-xs text-gray-600 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 rounded"
-                      placeholder="พื้นที่"
+                      placeholder="บริษัท"
                     />
                   </td>
                   <td class="px-3 py-3 text-xs text-gray-600">
@@ -413,6 +426,7 @@ const search = ref('')
 const statusFilter = ref('all')
 const positionFilter = ref('all')
 const departmentFilter = ref('all')
+const companyFilter = ref('all')
 const currentPage = ref(1)
 const perPage = 10
 
@@ -426,7 +440,7 @@ const originalUserData = ref({})
 const fetchUsers = async () => {
   try {
     loading.value = true
-    const response = await axios.get('http://localhost:5000/api/users/users')
+    const response = await axios.get('/api/users/users')
     users.value = response.data.map(user => ({
       ...user,
       isEditing: false
@@ -469,7 +483,7 @@ function exportToExcel() {
     'คำนำหน้า': displayValue(user.title_user),
     'ชื่อ - สกุล': displayValue(user.name_user),
     'อีเมล': user.email_user,
-    'บริษัทฯ/พื้นที่': displayValue(user.company_user),
+    'บริษัท': displayValue(user.company_user),
     'ตำแหน่งงาน': displayValue(user.position_user),
     'สายงาน': displayValue(user.job_field_user),
     'กลุ่มงาน': displayValue(user.work_group_user),
@@ -542,7 +556,7 @@ onMounted(async () => {
   window.refreshUsersList = fetchUsers
 })
 
-watch([search, statusFilter, positionFilter, departmentFilter], () => {
+watch([search, statusFilter, positionFilter, departmentFilter, companyFilter], () => {
   currentPage.value = 1
 })
 
@@ -569,10 +583,40 @@ const uniqueDepartments = computed(() => {
   return [...new Set(departments)].sort()
 })
 
+const uniqueCompanies = computed(() => {
+  const companies = users.value
+    .map(u => u.company_user)
+    .filter(c => c && c !== '-')
+  return [...new Set(companies)].sort()
+})
+
 const filteredUsers = computed(() => {
   const keyword = search.value.toLowerCase()
-  // Sort users by sortOrder to maintain original Excel order
+  
+  // Define status priority for sorting
+  const getStatusPriority = (status) => {
+    const priorityMap = {
+      'done': 0,
+      'in_progress': 1,
+      'not_started': 2,
+      'registered': 2,
+      'not_registered': 3,
+      'active': 2
+    }
+    return priorityMap[status] !== undefined ? priorityMap[status] : 999
+  }
+  
+  // Sort users by status priority first, then by sortOrder
   const sortedUsers = [...users.value].sort((a, b) => {
+    const statusPriorityA = getStatusPriority(a.status)
+    const statusPriorityB = getStatusPriority(b.status)
+    
+    // Primary sort: by status priority
+    if (statusPriorityA !== statusPriorityB) {
+      return statusPriorityA - statusPriorityB
+    }
+    
+    // Secondary sort: by sortOrder to maintain original order within same status
     return (a.sortOrder || 0) - (b.sortOrder || 0)
   })
   
@@ -601,8 +645,11 @@ const filteredUsers = computed(() => {
     
     const matchDepartment = 
       departmentFilter.value === 'all' || user.job_field_user === departmentFilter.value
+    
+    const matchCompany =
+      companyFilter.value === 'all' || user.company_user === companyFilter.value
       
-    return matchSearch && matchStatus && matchPosition && matchDepartment
+    return matchSearch && matchStatus && matchPosition && matchDepartment && matchCompany
   })
 })
 
@@ -634,17 +681,19 @@ function closeDeleteModal() {
   deleteIndex.value = -1
 }
 
-function confirmDelete() {
+async function confirmDelete() {
   if (userToDelete.value) {
-    const actualIndex = users.value.findIndex(u => 
-      u.name_user === userToDelete.value.name_user && 
-      u.email_user === userToDelete.value.email_user
-    )
-    if (actualIndex >= 0) {
-      users.value.splice(actualIndex, 1)
+    try {
+      const email = userToDelete.value.email_user;
+      await axios.delete(`/api/users/by-email/${email}`);
+      // Refresh the user list from the server
+      await fetchUsers(); 
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      // Optionally, show an error message to the user
     }
   }
-  closeDeleteModal()
+  closeDeleteModal();
 }
 
 // Make refreshUsers available globally

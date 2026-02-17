@@ -15,10 +15,10 @@ const years = ref([]);
 const selectedDepartment = ref("all");
 const selectedUnit = ref("all"); // Corresponds to departmentId
 const selectedGroups = ref(["all"]); // Corresponds to workGroupId
-const selectedVersion = ref("both"); // Corresponds to company
+const selectedCompany = ref("all"); // เปลี่ยนจาก selectedVersion เป็น selectedCompany
 const selectedPeriod = ref("both");
 const selectedYear = ref(null);
-const versionOptions = ref([]);
+const companyOptions = ref([]); // เปลี่ยนจาก versionOptions เป็น companyOptions
 
 const evaluationResults = ref([]); // To store data from the API
 const isLoading = ref(false);
@@ -36,17 +36,17 @@ const fetchEvaluationData = async () => {
   try {
     const params = new URLSearchParams({
       year: selectedYear.value,
-      positionId: selectedDepartment.value, // `selectedDepartment` in frontend is `position` in backend
-      departmentId: selectedUnit.value, // `selectedUnit` in frontend is `department` in backend
+      positionId: selectedDepartment.value,
+      departmentId: selectedUnit.value,
       workGroupId: selectedGroups.value.join(','),
-      company: selectedVersion.value,
+      company: selectedCompany.value, // ใช้ selectedCompany แทน selectedVersion
     });
     
-    const response = await axios.get(`http://localhost:5000/api/analytics/workgroup-evaluation?${params.toString()}`);
+    const response = await axios.get(`/api/analytics/workgroup-evaluation?${params.toString()}`);
     evaluationResults.value = response.data;
   } catch (error) {
     console.error('Error fetching evaluation data:', error);
-    evaluationResults.value = []; // Clear data on error
+    evaluationResults.value = [];
   } finally {
     isLoading.value = false;
   }
@@ -57,7 +57,7 @@ const fetchEvaluationData = async () => {
  */
 const fetchPositions = async () => {
   try {
-    const response = await axios.get('http://localhost:5000/api/positions');
+    const response = await axios.get('/api/positions');
     positions.value = [{ id: 'all', name: 'ทั้งหมด' }, ...response.data];
   } catch (error) {
     console.error('Error fetching positions:', error);
@@ -70,7 +70,7 @@ const fetchPositions = async () => {
  */
 const fetchDepartments = async () => {
   try {
-    const response = await axios.get('http://localhost:5000/api/departments');
+    const response = await axios.get('/api/departments');
     departments.value = [{ id: 'all', name: 'ทั้งหมด' }, ...response.data];
   } catch (error) {
     console.error('Error fetching departments:', error);
@@ -83,7 +83,7 @@ const fetchDepartments = async () => {
  */
 const fetchWorkGroups = async () => {
   try {
-    const response = await axios.get('http://localhost:5000/api/workgroups');
+    const response = await axios.get('/api/workgroups');
     workGroups.value = [{ id: 'all', name: 'ทั้งหมด' }, ...response.data];
   } catch (error) {
     console.error('Error fetching work groups:', error);
@@ -96,7 +96,7 @@ const fetchWorkGroups = async () => {
  */
 const fetchAssessmentYears = async () => {
   try {
-    const response = await axios.get('http://localhost:5000/api/analytics/assessment-years');
+    const response = await axios.get('/api/analytics/assessment-years');
     if (response.data && response.data.length > 0) {
       years.value = response.data;
       selectedYear.value = response.data[0];
@@ -114,10 +114,10 @@ const fetchAssessmentYears = async () => {
 };
 
 /**
- * ตรวจสอบว่าควรรวม version นี้หรือไม่
+ * ตรวจสอบว่าควรรวม company นี้หรือไม่
  */
-const shouldInclude = (version) => {
-  return selectedVersion.value === version || selectedVersion.value === "both";
+const shouldIncludeCompany = (companyId) => {
+  return selectedCompany.value === 'all' || selectedCompany.value === companyId;
 };
 
 /**
@@ -139,30 +139,43 @@ const calculateAverage = (scores) => {
 
 /**
  * Fetches company options from the API.
+ * แก้ไขให้แสดงบริษัททั้งหมดจาก API
  */
-const fetchVersionOptions = async () => {
+const fetchCompanyOptions = async () => {
   try {
-    const response = await axios.get('http://localhost:5000/api/companies');
-    const companyNames = response.data;
+    const response = await axios.get('/api/companies');
+    const companies = response.data;
 
+    // สร้าง options โดยเริ่มจาก "ทั้งหมด"
     const options = [
-      { id: 'both', name: 'บริษัททั้งหมด' },
+      { id: 'all', name: 'บริษัททั้งหมด' }
     ];
 
-    if (companyNames.length > 0) {
-      options.push({ id: 'v1', name: companyNames[0] });
-    }
-    if (companyNames.length > 1) {
-      options.push({ id: 'v2', name: companyNames[1] });
+    // เพิ่มบริษัททั้งหมดจาก API
+    if (Array.isArray(companies)) {
+      companies.forEach((company, index) => {
+        // ถ้า API ส่งมาเป็น object ที่มี id และ name
+        if (typeof company === 'object' && company.id && company.name) {
+          options.push({
+            id: company.id,
+            name: company.name
+          });
+        } 
+        // ถ้า API ส่งมาเป็น string (ชื่อบริษัท)
+        else if (typeof company === 'string') {
+          options.push({
+            id: `company_${index + 1}`, // สร้าง id อัตโนมัติ
+            name: company
+          });
+        }
+      });
     }
     
     return options;
   } catch (error) {
     console.error('Error fetching companies:', error);
     return [
-      { id: 'both', name: 'บริษัททั้งหมด' },
-      { id: 'v1', name: 'Company A (Error)' },
-      { id: 'v2', name: 'Company B (Error)' }
+      { id: 'all', name: 'บริษัททั้งหมด' }
     ];
   }
 };
@@ -197,26 +210,38 @@ const chartData = computed(() => {
   const datasets = [];
 
   // Determine the primary dimension for the x-axis (labels)
-  const groupByUnit = selectedUnit.value === 'all' && selectedDepartment.value !== 'all';
-  const groupByDepartment = selectedDepartment.value === 'all';
-
   let dimensionKey;
   let dimensionSource;
 
-  if (groupByDepartment) {
-    // When "All Positions" is selected, group by department (สายงาน)
-    dimensionKey = 'job_field_user';
-    dimensionSource = departments.value.filter(d => d.id !== 'all');
-  } else if (groupByUnit) {
-    // When a specific position is selected but "All Departments" is selected, group by department (สายงาน)
-    dimensionKey = 'job_field_user';
-    dimensionSource = departments.value.filter(u => u.id !== 'all');
-  } else {
-    // When a specific department (สายงาน) is selected, group by workgroup (กลุ่มงาน)
-    dimensionKey = 'work_group_user';
-    dimensionSource = selectedGroups.value.includes('all')
-      ? workGroups.value.filter(g => g.id !== 'all')
-      : workGroups.value.filter(g => selectedGroups.value.includes(g.id));
+  // กรณีที่ 1: เลือก "ตำแหน่ง: ทั้งหมด"
+  if (selectedDepartment.value === 'all') {
+    // ถ้าเลือก "สายงาน: ทั้งหมด" → แสดงตามสายงาน
+    if (selectedUnit.value === 'all') {
+      dimensionKey = 'job_field_user';
+      dimensionSource = departments.value.filter(d => d.id !== 'all');
+    } 
+    // ถ้าเลือก "สายงาน: เฉพาะสาย" → แสดงตามกลุ่มงาน
+    else {
+      dimensionKey = 'work_group_user';
+      dimensionSource = selectedGroups.value.includes('all')
+        ? workGroups.value.filter(g => g.id !== 'all')
+        : workGroups.value.filter(g => selectedGroups.value.includes(g.id));
+    }
+  } 
+  // กรณีที่ 2: เลือก "ตำแหน่ง: เฉพาะตำแหน่ง"
+  else {
+    // ถ้าเลือก "สายงาน: ทั้งหมด" → แสดงตามสายงาน
+    if (selectedUnit.value === 'all') {
+      dimensionKey = 'job_field_user';
+      dimensionSource = departments.value.filter(d => d.id !== 'all');
+    } 
+    // ถ้าเลือก "สายงาน: เฉพาะสาย" → แสดงตามกลุ่มงาน
+    else {
+      dimensionKey = 'work_group_user';
+      dimensionSource = selectedGroups.value.includes('all')
+        ? workGroups.value.filter(g => g.id !== 'all')
+        : workGroups.value.filter(g => selectedGroups.value.includes(g.id));
+    }
   }
   
   labels = dimensionSource.map(item => item.name);
@@ -283,11 +308,15 @@ const dataSummary = computed(() => {
       .filter(Boolean)
       .join(", ") || "ไม่มี";
   }
+
+  // เพิ่มการแสดงชื่อบริษัทที่เลือก
+  const companyName = companyOptions.value.find(c => c.id === selectedCompany.value)?.name || "ทั้งหมด";
   
   return { 
     department: deptName,
     unit: unitName,
     group: groupNames,
+    company: companyName,
     total: evaluationResults.value.length
   };
 });
@@ -323,7 +352,7 @@ const handleGroupChange = (groupId) => {
 // SECTION 5: WATCHERS
 // ============================================
 
-watch([selectedDepartment, selectedUnit, selectedGroups, selectedVersion, selectedYear], fetchEvaluationData, { deep: true });
+watch([selectedDepartment, selectedUnit, selectedGroups, selectedCompany, selectedYear], fetchEvaluationData, { deep: true });
 
 watch(selectedDepartment, () => {
   selectedUnit.value = "all";
@@ -343,7 +372,7 @@ onMounted(async () => {
   await fetchDepartments();
   await fetchWorkGroups();
   await fetchAssessmentYears();
-  versionOptions.value = await fetchVersionOptions();
+  companyOptions.value = await fetchCompanyOptions();
   
   // Initial data fetch
   if (selectedYear.value) {
@@ -380,8 +409,28 @@ onMounted(async () => {
           </div>
           
           <div class="p-5">
-            <!-- Row 1: ตำแหน่ง, สายงาน, พื้นที่ -->
+            <!-- Row 1: บริษัท, ตำแหน่ง, สายงาน -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <!-- บริษัท -->
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1.5">บริษัท</label>
+                <div class="relative">
+                  <select 
+                    v-model="selectedCompany"
+                    class="w-full px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white transition-all text-sm appearance-none hover:border-gray-400"
+                  >
+                    <option v-for="option in companyOptions" :key="option.id" :value="option.id">
+                      {{ option.name }}
+                    </option>
+                  </select>
+                  <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
               <!-- ตำแหน่ง -->
               <div>
                 <label class="block text-xs font-medium text-gray-700 mb-1.5">
@@ -416,26 +465,6 @@ onMounted(async () => {
                   >
                     <option v-for="unit in availableUnits" :key="unit.id" :value="unit.id">
                       {{ unit.name }}
-                    </option>
-                  </select>
-                  <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                    </svg>
-                  </div>
-                </div>
-              </div>
-
-              <!-- พื้นที่ -->
-              <div>
-                <label class="block text-xs font-medium text-gray-700 mb-1.5">พื้นที่</label>
-                <div class="relative">
-                  <select 
-                    v-model="selectedVersion"
-                    class="w-full px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white transition-all text-sm appearance-none hover:border-gray-400"
-                  >
-                    <option v-for="option in versionOptions" :key="option.id" :value="option.id">
-                      {{ option.name }}
                     </option>
                   </select>
                   <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
@@ -525,7 +554,7 @@ onMounted(async () => {
                 </svg>
                 สรุปเงื่อนไขที่เลือก
               </h3>
-              <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+              <div class="grid grid-cols-2 md:grid-cols-5 gap-2.5">
                 <div class="bg-white rounded-md p-2.5 border border-gray-200">
                   <p class="text-xs text-gray-500 mb-0.5">ตำแหน่ง</p>
                   <p class="text-sm font-semibold text-gray-900 truncate" :title="dataSummary.department">{{ dataSummary.department }}</p>
@@ -537,6 +566,10 @@ onMounted(async () => {
                 <div class="bg-white rounded-md p-2.5 border border-gray-200">
                   <p class="text-xs text-gray-500 mb-0.5">กลุ่มงาน</p>
                   <p class="text-sm font-semibold text-gray-900 truncate" :title="dataSummary.group">{{ dataSummary.group }}</p>
+                </div>
+                <div class="bg-white rounded-md p-2.5 border border-gray-200">
+                  <p class="text-xs text-gray-500 mb-0.5">บริษัท</p>
+                  <p class="text-sm font-semibold text-gray-900 truncate" :title="dataSummary.company">{{ dataSummary.company }}</p>
                 </div>
                 <div class="bg-white rounded-md p-2.5 border border-gray-200 ring-2 ring-blue-500">
                   <p class="text-xs text-gray-500 mb-0.5">จำนวนข้อมูล</p>
@@ -568,7 +601,16 @@ onMounted(async () => {
             </div>
           </div>
           <div class="p-6">
-            <BetChart :chart-data="chartData" />
+            <div v-if="isLoading" class="flex justify-center items-center h-64">
+              <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+            <div v-else-if="chartData.labels.length === 0" class="flex flex-col justify-center items-center h-64 text-gray-500">
+              <svg class="w-16 h-16 mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+              </svg>
+              <p class="text-sm">ไม่พบข้อมูลสำหรับเงื่อนไขที่เลือก</p>
+            </div>
+            <BetChart v-else :chart-data="chartData" />
           </div>
         </div>
       </div>
