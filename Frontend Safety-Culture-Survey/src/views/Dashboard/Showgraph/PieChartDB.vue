@@ -133,8 +133,8 @@ import axios from 'axios';
 
 // Props (if needed from parent)
 const props = defineProps({
-  v1Data: Object,
-  v2Data: Object
+  company1Data: Object,
+  company2Data: Object
 })
 
 const allUsers = ref([])
@@ -199,8 +199,8 @@ function getAreaColor(area, percentDone) {
 }
 
 // Legacy computed properties for backward compatibility
-const v1Data = computed(() => {
-  if (props.v1Data) return props.v1Data
+const company1Data = computed(() => {
+  if (props.company1Data) return props.company1Data
   
   const stats = getAreaStats('Verte Smart Solution')
   return {
@@ -212,8 +212,8 @@ const v1Data = computed(() => {
   }
 })
 
-const v2Data = computed(() => {
-  if (props.v2Data) return props.v2Data
+const company2Data = computed(() => {
+  if (props.company2Data) return props.company2Data
   
   const stats = getAreaStats('Verte Security')
   return {

@@ -89,7 +89,7 @@
 
       <!-- Chart -->
       <div class="px-5 py-5">
-        <div :class="selectedTimeframe === 'comparison' ? 'h-[600px]' : 'h-[500px]'">
+        <div :class="selectedTimeframe === 'comparison' ? 'h-[500px]' : 'h-[450px]'">
           <Bar v-if="chartData" :data="chartData" :options="chartOptions" />
         </div>
       </div>
@@ -411,7 +411,14 @@ const chartOptions = computed(() => {
           color: '#6B7280',
           maxRotation: 45,
           minRotation: 45,
-          autoSkip: false
+          autoSkip: false,
+          callback: function(value) {
+            const label = this.getLabelForValue(value);
+            if (label.length > 20) {
+              return label.substring(0, 20) + '...';
+            }
+            return label;
+          }
         },
         border: {
           display: true,

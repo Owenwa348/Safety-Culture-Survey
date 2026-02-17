@@ -39,7 +39,7 @@
           <!-- Pie Charts Section -->
           <div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
             <div class="p-8 bg-gray-50">
-              <PieChart :v1Data="v1ChartData" :v2Data="v2ChartData" />
+              <PieChart :company1Data="company1ChartData" :company2Data="company2ChartData" />
             </div>
           </div>
 
@@ -114,11 +114,11 @@ onMounted(async () => {
 })
 
 // แยกข้อมูลตาม Company 1/Company 2
-const v1Users = computed(() =>
+const company1Users = computed(() =>
   allUsers.value.filter(u => u.area?.toLowerCase().includes('company_1'))
 )
 
-const v2Users = computed(() =>
+const company2Users = computed(() =>
   allUsers.value.filter(u => u.area?.toLowerCase().includes('company_2'))
 )
 
@@ -151,12 +151,12 @@ function getChartData(users, colors) {
   }
 }
 
-const v1ChartData = computed(() =>
-  getChartData(v1Users.value, ['#10b981', '#ef4444'])
+const company1ChartData = computed(() =>
+  getChartData(company1Users.value, ['#10b981', '#ef4444'])
 )
 
-const v2ChartData = computed(() =>
-  getChartData(v2Users.value, ['#3b82f6', '#f59e0b'])
+const company2ChartData = computed(() =>
+  getChartData(company2Users.value, ['#3b82f6', '#f59e0b'])
 )
 </script>
 
