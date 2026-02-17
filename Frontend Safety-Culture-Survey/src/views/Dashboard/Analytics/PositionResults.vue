@@ -22,8 +22,8 @@ const fetchVersionOptions = async () => {
     setTimeout(() => {
       resolve([
         { id: 'both', name: 'Verte Group' },
-        { id: 'v1', name: 'Verte Smart Solution' },
-        { id: 'v2', name: 'Verte Security' }
+        { id: 'company_1', name: 'Verte Smart Solution' },
+        { id: 'company_2', name: 'Verte Security' }
       ]);
     }, 100);
   });
@@ -36,7 +36,7 @@ onMounted(async () => {
 const baseData = {
   contractor: {
     labels: ["CEO", "REP", "COO", "CFO", "SSE", "PSE", "CME"],
-    v1: {
+    company_1: {
       current: [
         [3, 4, 2, 1, 5, 4, 3, 1, 2, 5, 3, 4, 2, 1, 5, 4, 3, 1],
         [2, 3, 5, 4, 1, 3, 2, 5, 4, 1, 2, 3, 5, 4, 1, 3, 2, 5],
@@ -56,7 +56,7 @@ const baseData = {
         [1, 2, 3, 4, 5, 2, 1, 3, 4, 5, 1, 2, 3, 4, 5, 2, 1, 3]
       ]
     },
-    v2: {
+    company_2: {
       current: [
         [5, 3, 1, 4, 2, 3, 5, 1, 4, 2, 5, 3, 1, 4, 2, 3, 5, 1],
         [1, 4, 3, 2, 5, 4, 1, 3, 2, 5, 1, 4, 3, 2, 5, 4, 1, 3],
@@ -79,7 +79,7 @@ const baseData = {
   },
   employee: {
     labels: ["CEO", "REP", "COO", "CFO", "SSE", "PSE", "CME"],
-    v1: {
+    company_1: {
       current: [
         [2, 5, 1, 4, 3, 5, 1, 2, 4, 4, 1, 5, 3, 2, 1, 4, 5, 3],
         [1, 4, 2, 5, 3, 3, 4, 1, 5, 2, 4, 3, 1, 5, 2, 4, 3, 4],
@@ -99,7 +99,7 @@ const baseData = {
         [5, 4, 1, 2, 3, 5, 4, 1, 2, 3, 5, 4, 1, 2, 3, 5, 4, 1]
       ]
     },
-    v2: {
+    company_2: {
       current: [
         [4, 1, 5, 2, 3, 4, 1, 5, 2, 3, 4, 1, 5, 2, 3, 4, 1, 5],
         [2, 3, 4, 1, 5, 2, 3, 4, 1, 5, 2, 3, 4, 1, 5, 2, 3, 4],
@@ -122,7 +122,7 @@ const baseData = {
   },
   manager: {
     labels: ["CEO", "REP", "COO", "CFO", "SSE", "PSE", "CME"],
-    v1: {
+    company_1: {
       current: [
         [3, 1, 4, 5, 2, 3, 1, 4, 5, 2, 3, 1, 4, 5, 2, 3, 1, 4],
         [1, 5, 2, 4, 3, 1, 5, 2, 4, 3, 1, 5, 2, 4, 3, 1, 5, 2],
@@ -142,7 +142,7 @@ const baseData = {
         [1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3]
       ]
     },
-    v2: {
+    company_2: {
       current: [
         [4, 2, 1, 5, 3, 4, 2, 1, 5, 3, 4, 2, 1, 5, 3, 4, 2, 1],
         [2, 5, 3, 1, 4, 2, 5, 3, 1, 4, 2, 5, 3, 1, 4, 2, 5, 3],
@@ -165,7 +165,7 @@ const baseData = {
   },
   senior: {
     labels: ["CEO", "REP", "COO", "CFO", "SSE", "PSE", "CME"],
-    v1: {
+    company_1: {
       current: [
         [1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3],
         [5, 4, 3, 2, 1, 5, 4, 3, 2, 1, 5, 4, 3, 2, 1, 5, 4, 3],
@@ -185,7 +185,7 @@ const baseData = {
         [4, 3, 2, 1, 5, 4, 3, 2, 1, 5, 4, 3, 2, 1, 5, 4, 3, 2]
       ]
     },
-    v2: {
+    company_2: {
       current: [
         [3, 4, 1, 5, 2, 3, 4, 1, 5, 2, 3, 4, 1, 5, 2, 3, 4, 1],
         [1, 2, 5, 4, 3, 1, 2, 5, 4, 3, 1, 2, 5, 4, 3, 1, 2, 5],
@@ -305,14 +305,14 @@ const chartData = computed(() => {
       datasets.push({
         label: "ปัจจุบัน",
         backgroundColor: colors.current,
-        data: getAverages(["v1", "v2"], "current")
+        data: getAverages(["company_1", "company_2"], "current")
       });
     }
     if (shouldIncludePeriod("future")) {
       datasets.push({
         label: "อนาคต",
         backgroundColor: colors.future,
-        data: getAverages(["v1", "v2"], "future")
+        data: getAverages(["company_1", "company_2"], "future")
       });
     }
   } else {
@@ -354,13 +354,13 @@ const dataSummary = computed(() => {
   if (selectedGroup.value === "all") {
     total = Object.values(baseData).reduce((sum, group) => {
       let count = 0;
-      if (shouldInclude("v1")) {
-        if (shouldIncludePeriod("current")) count += group.v1.current.length;
-        if (shouldIncludePeriod("future")) count += group.v1.future.length;
+      if (shouldInclude("company_1")) {
+        if (shouldIncludePeriod("current")) count += group.company_1.current.length;
+        if (shouldIncludePeriod("future")) count += group.company_1.future.length;
       }
-      if (shouldInclude("v2")) {
-        if (shouldIncludePeriod("current")) count += group.v2.current.length;
-        if (shouldIncludePeriod("future")) count += group.v2.future.length;
+      if (shouldInclude("company_2")) {
+        if (shouldIncludePeriod("current")) count += group.company_2.current.length;
+        if (shouldIncludePeriod("future")) count += group.company_2.future.length;
       }
       return sum + count;
     }, 0);
@@ -368,13 +368,13 @@ const dataSummary = computed(() => {
     const group = baseData[selectedGroup.value];
     const unitLabels = selectedUnits.value.length > 0 ? selectedUnits.value : group.labels;
 
-    if (shouldInclude("v1")) {
-      if (shouldIncludePeriod("current")) total += getCount(group, "v1", unitLabels);
-      if (shouldIncludePeriod("future")) total += getCount(group, "v1", unitLabels);
+    if (shouldInclude("company_1")) {
+      if (shouldIncludePeriod("current")) total += getCount(group, "company_1", unitLabels);
+      if (shouldIncludePeriod("future")) total += getCount(group, "company_1", unitLabels);
     }
-    if (shouldInclude("v2")) {
-      if (shouldIncludePeriod("current")) total += getCount(group, "v2", unitLabels);
-      if (shouldIncludePeriod("future")) total += getCount(group, "v2", unitLabels);
+    if (shouldInclude("company_2")) {
+      if (shouldIncludePeriod("current")) total += getCount(group, "company_2", unitLabels);
+      if (shouldIncludePeriod("future")) total += getCount(group, "company_2", unitLabels);
     }
   }
 
