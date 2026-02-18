@@ -345,7 +345,7 @@ const chartData = computed(() => {
         borderRadius: 3,
         borderWidth: 1,
         stack: 'current',
-        barThickness: 23
+        barThickness: 17
       };
     });
 
@@ -360,7 +360,7 @@ const chartData = computed(() => {
         borderRadius: 3,
         borderWidth: 1,
         stack: 'future',
-        barThickness: 23
+        barThickness: 17
       };
     });
 
