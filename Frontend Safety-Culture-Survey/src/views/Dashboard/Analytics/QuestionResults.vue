@@ -557,8 +557,8 @@ const chartData = computed(() => {
         <!-- ========================================
              ส่วน Pagination Controls (ใหม่)
              ======================================== -->
-        <div v-if="!isLoading && chartData && totalPages > 1" class="mt-6 pt-4 border-t border-gray-200">
-          <div class="flex items-center justify-between">
+        <div v-if="!isLoading && chartData" class="mt-6 pt-4 border-t border-gray-200">
+          <div class="flex items-center justify-between flex-wrap gap-4">
             <!-- ข้อมูลหน้าปัจจุบัน -->
             <div class="text-sm text-gray-700">
               แสดงคำถามที่ <span class="font-semibold">{{ currentQuestionRange.start + 1 }}</span> ถึง 
@@ -566,8 +566,10 @@ const chartData = computed(() => {
               <span class="font-semibold">{{ fullLabels.length }}</span> คำถาม
             </div>
 
-            <!-- Pagination Buttons -->
-            <nav class="flex items-center space-x-1">
+            <!-- Pagination Controls Container -->
+            <div class="flex items-center gap-4">
+              <!-- Pagination Buttons (แสดงเฉพาะเมื่อมีหลายหน้า) -->
+              <nav v-if="totalPages > 1" class="flex items-center space-x-1">
               <!-- ปุ่มย้อนกลับ -->
               <button
                 @click="goToPage(currentPage - 1)"
@@ -615,9 +617,10 @@ const chartData = computed(() => {
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                 </svg>
               </button>
+              </nav>
 
-              <!-- ตัวเลือกจำนวนต่อหน้า -->
-              <div class="ml-4 flex items-center space-x-2">
+              <!-- ตัวเลือกจำนวนต่อหน้า (แสดงเสมอ) -->
+              <div class="flex items-center space-x-2">
                 <label for="per-page" class="text-sm text-gray-700">แสดง:</label>
                 <select
                   id="per-page"
@@ -632,7 +635,7 @@ const chartData = computed(() => {
                 </select>
                 <span class="text-sm text-gray-700">คำถาม/หน้า</span>
               </div>
-            </nav>
+            </div>
           </div>
         </div>
       </section>

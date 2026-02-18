@@ -345,7 +345,7 @@ const chartData = computed(() => {
         borderRadius: 3,
         borderWidth: 1,
         stack: 'current',
-        barThickness: 25
+        barThickness: 23
       };
     });
 
@@ -360,7 +360,7 @@ const chartData = computed(() => {
         borderRadius: 3,
         borderWidth: 1,
         stack: 'future',
-        barThickness: 25
+        barThickness: 23
       };
     });
 
@@ -409,6 +409,8 @@ const chartOptions = computed(() => {
     scales: {
       x: {
         stacked: true,
+        categoryPercentage: 0.75,
+        barPercentage: 0.9,
         grid: { 
           display: false
         },
