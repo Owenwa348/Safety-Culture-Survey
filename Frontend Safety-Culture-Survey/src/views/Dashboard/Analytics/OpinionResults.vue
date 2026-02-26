@@ -216,7 +216,7 @@ const fetchQuestions = async () => {
     const response = await axios.get('/api/questions');
     questions.value = response.data.map(q => ({
       ...q,
-      opinions: q.surveyAnswers.map(sa => ({
+      opinions: (q.survey_answers || []).map(sa => ({
         name: sa.user ? sa.user.name_user : 'ไม่ระบุชื่อ',
         comment: sa.comment
       }))

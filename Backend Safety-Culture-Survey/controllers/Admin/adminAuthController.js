@@ -11,7 +11,7 @@ const addAdmin = async (req, res) => {
   }
 
   try {
-    const existingAdmin = await prisma.adminList.findUnique({
+    const existingAdmin = await prisma.admin_list.findUnique({
       where: { email },
     });
 
@@ -19,7 +19,7 @@ const addAdmin = async (req, res) => {
       return res.status(409).json({ message: 'Admin with this email already exists.' });
     }
 
-    const newAdmin = await prisma.adminList.create({
+    const newAdmin = await prisma.admin_list.create({
       data: {
         email,
         companyName,
@@ -38,7 +38,7 @@ const addAdmin = async (req, res) => {
 // For SuperAdminList.vue to display admins
 const getAllAdmins = async (req, res) => {
   try {
-    const admins = await prisma.adminList.findMany({
+    const admins = await prisma.admin_list.findMany({
       select: {
         id: true,
         email: true,
@@ -66,7 +66,7 @@ const checkAdminEmail = async (req, res) => {
   }
 
   try {
-    const admin = await prisma.adminList.findUnique({
+    const admin = await prisma.admin_list.findUnique({
       where: { email },
     });
 
@@ -98,7 +98,7 @@ const setupAdminAccount = async (req, res) => {
   }
 
   try {
-    const admin = await prisma.adminList.findUnique({ where: { email } });
+    const admin = await prisma.admin_list.findUnique({ where: { email } });
 
     if (!admin || admin.status !== 'PENDING') {
       return res.status(404).json({ message: 'Account not found or already activated.' });
@@ -106,7 +106,7 @@ const setupAdminAccount = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const updatedAdmin = await prisma.adminList.update({
+    const updatedAdmin = await prisma.admin_list.update({
       where: { email },
       data: {
         firstName,
@@ -131,7 +131,7 @@ const updateAdmin = async (req, res) => {
     const { firstName, lastName, phone, companyName } = req.body;
 
     try {
-        const updatedAdmin = await prisma.adminList.update({
+        const updatedAdmin = await prisma.admin_list.update({
             where: { id: parseInt(id) },
             data: { firstName, lastName, phone, companyName },
         });
@@ -151,12 +151,12 @@ const toggleAdminStatus = async (req, res) => {
     }
 
     try {
-        const admin = await prisma.adminList.findUnique({ where: { id: parseInt(id) } });
+        const admin = await prisma.admin_list.findUnique({ where: { id: parseInt(id) } });
         if (!admin) {
             return res.status(404).json({ message: 'Admin not found.' });
         }
 
-        const updatedAdmin = await prisma.adminList.update({
+        const updatedAdmin = await prisma.admin_list.update({
             where: { id: parseInt(id) },
             data: { status },
         });
@@ -171,7 +171,7 @@ const toggleAdminStatus = async (req, res) => {
 const deleteAdmin = async (req, res) => {
     const { id } = req.params;
     try {
-        await prisma.adminList.delete({
+        await prisma.admin_list.delete({
             where: { id: parseInt(id) },
         });
         res.status(200).json({ message: 'Admin deleted successfully.' });
@@ -194,7 +194,7 @@ const adminLogin = async (req, res) => {
     }
 
     try {
-        const admin = await prisma.adminList.findUnique({
+        const admin = await prisma.admin_list.findUnique({
             where: { email },
         });
 
@@ -232,7 +232,7 @@ const verifyAdminForPasswordReset = async (req, res) => {
   }
 
   try {
-    const admin = await prisma.adminList.findUnique({
+    const admin = await prisma.admin_list.findUnique({
       where: {
         email: email,
       },
@@ -259,7 +259,7 @@ const resetAdminPassword = async (req, res) => {
   }
 
   try {
-    const admin = await prisma.adminList.findUnique({ where: { email } });
+    const admin = await prisma.admin_list.findUnique({ where: { email } });
 
     if (!admin) {
       return res.status(404).json({ message: 'Admin not found.' });
@@ -267,7 +267,7 @@ const resetAdminPassword = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    await prisma.adminList.update({
+    await prisma.admin_list.update({
       where: { email },
       data: {
         password: hashedPassword,

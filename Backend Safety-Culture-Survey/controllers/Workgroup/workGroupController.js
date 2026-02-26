@@ -3,7 +3,7 @@ const prisma = new PrismaClient()
 
 const getWorkGroups = async (req, res) => {
   try {
-    const workGroups = await prisma.workGroup.findMany({
+    const workGroups = await prisma.work_group.findMany({
       orderBy: { id: 'asc' },
     })
     res.status(200).json(workGroups)
@@ -19,11 +19,11 @@ const addWorkGroup = async (req, res) => {
     if (!name || !name.trim())
       return res.status(400).json({ message: 'ชื่อเป็นข้อมูลบังคับ' })
 
-    const existing = await prisma.workGroup.findFirst({ where: { name } })
+    const existing = await prisma.work_group.findFirst({ where: { name } })
     if (existing)
       return res.status(409).json({ message: 'มีรายการนี้แล้ว' })
 
-    const created = await prisma.workGroup.create({
+    const created = await prisma.work_group.create({
       data: { name: name.trim() },
     })
     res.status(201).json(created)
@@ -43,7 +43,7 @@ const updateWorkGroup = async (req, res) => {
     const workGroupId = parseInt(id);
 
     // Find the workGroup to get the old name
-    const existingWorkGroup = await prisma.workGroup.findUnique({
+    const existingWorkGroup = await prisma.work_group.findUnique({
       where: { id: workGroupId },
     });
 
@@ -61,7 +61,7 @@ const updateWorkGroup = async (req, res) => {
 
     // Use a transaction to update both workGroup and related users
     const [updatedWorkGroup] = await prisma.$transaction([
-      prisma.workGroup.update({
+      prisma.work_group.update({
         where: { id: workGroupId },
         data: { name: newName },
       }),
@@ -82,7 +82,7 @@ const updateWorkGroup = async (req, res) => {
 const deleteWorkGroup = async (req, res) => {
   try {
     const { id } = req.params
-    await prisma.workGroup.delete({
+    await prisma.work_group.delete({
       where: { id: parseInt(id) },
     })
     res.status(200).json({ message: 'ลบสำเร็จ' })
