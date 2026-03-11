@@ -4,7 +4,7 @@
     <!-- Header -->
     <div class="border-b border-gray-200 px-5 py-4">
       <h3 class="text-lg font-bold text-gray-800">กราฟผลการประเมินรายข้อ (บริษัท)</h3>
-      <p class="text-sm text-gray-600 mt-1">การวิเคราะห์การกระจายตัวของข้อมูลตามระดับแต่ละข้อ</p>
+      <p class="text-sm text-gray-600 mt-1">การวิเคราะห์การกระจายตัวของข้อมูลตามระดับแต่ละหมวดหมู่คำถาม</p>
       <!-- Company Name Display -->
       <div v-if="selectedAreaName" class="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
         <span class="text-sm font-medium text-blue-900">🏢 บริษัท: {{ selectedAreaName }}</span>
