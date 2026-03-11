@@ -11,7 +11,7 @@ const addSuperAdmin = async (req, res) => {
   }
 
   try {
-    const existingSuperAdmin = await prisma.superAdminList.findUnique({
+    const existingSuperAdmin = await prisma.super_admin_list.findUnique({
       where: { email },
     });
 
@@ -19,7 +19,7 @@ const addSuperAdmin = async (req, res) => {
       return res.status(409).json({ message: 'This email is already in the system.' });
     }
 
-    const newSuperAdmin = await prisma.superAdminList.create({
+    const newSuperAdmin = await prisma.super_admin_list.create({
       data: {
         email,
       },
@@ -35,7 +35,7 @@ const addSuperAdmin = async (req, res) => {
 // 2. Get All SuperAdmins (for SuperAdminList.vue)
 const getAllSuperAdmins = async (req, res) => {
   try {
-    const superAdmins = await prisma.superAdminList.findMany({
+    const superAdmins = await prisma.super_admin_list.findMany({
       orderBy: {
         createdAt: 'desc',
       },
@@ -54,7 +54,7 @@ const checkEmailAndStatus = async (req, res) => {
         return res.status(400).json({ message: 'Email is required.' });
     }
     try {
-        const superAdmin = await prisma.superAdminList.findUnique({
+        const superAdmin = await prisma.super_admin_list.findUnique({
             where: { email },
         });
 
@@ -93,7 +93,7 @@ const setupAccount = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
     const hashedPin = await bcrypt.hash(pin, salt);
 
-    const updatedSuperAdmin = await prisma.superAdminList.update({
+    const updatedSuperAdmin = await prisma.super_admin_list.update({
       where: { email },
       data: {
         phone,
@@ -122,7 +122,7 @@ const login = async (req, res) => {
     }
 
     try {
-        const superAdmin = await prisma.superAdminList.findUnique({
+        const superAdmin = await prisma.super_admin_list.findUnique({
             where: { email },
         });
 
@@ -137,7 +137,7 @@ const login = async (req, res) => {
         }
 
         // Update lastLogin timestamp
-        await prisma.superAdminList.update({
+        await prisma.super_admin_list.update({
             where: { email },
             data: { lastLogin: new Date() },
         });
@@ -157,7 +157,7 @@ const updateSuperAdmin = async (req, res) => {
     const { email, phone } = req.body; // Example: allow updating email and phone
 
     try {
-        const updatedSuperAdmin = await prisma.superAdminList.update({
+        const updatedSuperAdmin = await prisma.super_admin_list.update({
             where: { id: parseInt(id) },
             data: { email, phone },
         });
@@ -172,7 +172,7 @@ const updateSuperAdmin = async (req, res) => {
 const deleteSuperAdmin = async (req, res) => {
     const { id } = req.params;
     try {
-        await prisma.superAdminList.delete({
+        await prisma.super_admin_list.delete({
             where: { id: parseInt(id) },
         });
         res.status(200).json({ message: 'Super Admin deleted successfully.' });
@@ -195,7 +195,7 @@ const updateSuperAdminStatus = async (req, res) => {
     }
 
     try {
-        const superAdmin = await prisma.superAdminList.findUnique({
+        const superAdmin = await prisma.super_admin_list.findUnique({
             where: { id: parseInt(id) },
         });
 
@@ -203,7 +203,7 @@ const updateSuperAdminStatus = async (req, res) => {
             return res.status(404).json({ message: 'Cannot change status for a pending or non-existent user.' });
         }
 
-        const updatedAdmin = await prisma.superAdminList.update({
+        const updatedAdmin = await prisma.super_admin_list.update({
             where: { id: parseInt(id) },
             data: { status },
         });
@@ -224,7 +224,7 @@ const verifyForPasswordReset = async (req, res) => {
 
     try {
         // Check if email exists
-        const superAdmin = await prisma.superAdminList.findUnique({
+        const superAdmin = await prisma.super_admin_list.findUnique({
             where: { email },
         });
 
@@ -279,7 +279,7 @@ const resetPassword = async (req, res) => {
 
     try {
         // Verify email exists and is ACTIVE
-        const superAdmin = await prisma.superAdminList.findUnique({
+        const superAdmin = await prisma.super_admin_list.findUnique({
             where: { email },
         });
 
@@ -296,7 +296,7 @@ const resetPassword = async (req, res) => {
         const hashedPassword = await bcrypt.hash(newPassword, salt);
 
         // Update password
-        await prisma.superAdminList.update({
+        await prisma.super_admin_list.update({
             where: { email },
             data: {
                 password: hashedPassword,

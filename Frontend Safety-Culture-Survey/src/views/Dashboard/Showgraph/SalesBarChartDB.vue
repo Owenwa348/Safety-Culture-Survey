@@ -1,6 +1,6 @@
 <!-- SalesBarChartDB.vue -->
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
+  <div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4 sm:p-6 overflow-x-hidden">
     <!-- Loading State -->
     <div v-if="loading" class="flex items-center justify-center min-h-screen">
       <div class="text-center">
@@ -10,7 +10,7 @@
     </div>
 
     <!-- Main Content -->
-    <div v-else class="max-w-7xl mx-auto">
+    <div v-else class="max-w-7xl mx-auto space-y-6">
       <!-- Header Card -->
       <div class="bg-white rounded-xl shadow-md mb-6 overflow-hidden">
         <div class="bg-gradient-to-r px-8 py-6">
@@ -68,73 +68,69 @@
 
       <template v-if="chartData.datasets.length > 0">
         <!-- Chart Card -->
-        <div class="bg-white rounded-xl shadow-md mb-6 overflow-hidden">
-          <div class="px-8 py-5 border-b bg-gradient-to-r from-gray-50 to-white">
-            <h2 class="text-lg font-bold text-gray-800 flex items-center">
-              <span class="w-1 h-6 bg-blue-600 rounded-full mr-3"></span>
+        <div class="bg-white rounded-lg shadow">
+          <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <h2 class="text-lg font-bold text-gray-900">
               กราฟแสดงผลการประเมิน
             </h2>
-            <p class="text-sm text-gray-600 mt-1 ml-7">เปรียบเทียบคะแนนเฉลี่ยในแต่ละหมวดหมู่</p>
+            <p class="text-sm text-gray-600 mt-1">เปรียบเทียบคะแนนเฉลี่ยในแต่ละหมวดหมู่</p>
           </div>
           
-          <div class="px-8 py-8">
-            <div class="h-[450px]">
-              <Bar :data="chartData" :options="chartOptions" />
+          <div class="px-6 py-6">
+            <div class="h-[580px] w-full">
+              <Bar :key="chartRenderKey" :data="chartData" :options="chartOptions" />
             </div>
           </div>
         </div>
 
         <!-- Table Card -->
-        <div class="bg-white rounded-xl shadow-md overflow-hidden">
-          <div class="px-8 py-5 border-b bg-gradient-to-r from-gray-50 to-white">
-            <h2 class="text-lg font-bold text-gray-800 flex items-center">
-              <span class="w-1 h-6 bg-blue-600 rounded-full mr-3"></span>
+        <div class="bg-white rounded-lg shadow">
+          <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <h2 class="text-lg font-bold text-gray-900">
               ตารางข้อมูลรายละเอียด
             </h2>
-            <p class="text-sm text-gray-600 mt-1 ml-7">{{ getTableDescription }}</p>
+            <p class="text-sm text-gray-600 mt-1">{{ getTableDescription }}</p>
           </div>
           
-          <div class="overflow-x-auto max-w-full">
-            <table class="w-full divide-y divide-gray-200">
-              <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
+          <div class="overflow-x-auto" style="max-width: calc(100vw - 4rem);">
+            <table class="w-auto divide-y divide-gray-200">
+              <thead class="bg-gray-50">
                 <tr>
-                  <th class="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider sticky left-0 bg-gray-50 z-10 min-w-[200px] max-w-[250px]">
-                    <div class="truncate">{{ tableHeader }}</div>
+                  <th class="px-4 py-4 text-left text-sm font-bold text-gray-800 min-w-[200px] sticky left-0 bg-gray-50 z-10">
+                    {{ tableHeader }}
                   </th>
                   <th 
                     v-for="(label, index) in chartLabels" 
-                    :key="index" 
-                    class="px-3 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider min-w-[100px] max-w-[140px]"
+                    :key="`header-${index}`" 
+                    class="px-4 py-4 text-center text-sm font-semibold text-gray-800 min-w-[140px]"
                     :title="label"
                   >
-                    <div class="truncate">
-                      {{ label }}
-                    </div>
+                    <div class="line-clamp-3 leading-relaxed">{{ label }}</div>
                   </th>
                 </tr>
               </thead>
-              <tbody class="bg-white divide-y divide-gray-100">
+              <tbody class="divide-y divide-gray-200 bg-white">
                 <tr 
-                  v-for="(dataset, index) in chartData.datasets" 
-                  :key="index" 
-                  class="hover:bg-blue-50 transition-colors duration-200"
+                  v-for="(dataset, idx) in chartData.datasets" 
+                  :key="`row-${idx}`"
+                  class="hover:bg-gray-50"
                 >
-                  <td class="px-4 py-4 text-sm font-semibold text-gray-800 sticky left-0 bg-white z-10 border-r border-gray-100 min-w-[200px] max-w-[250px]">
+                  <td class="px-4 py-3 text-sm font-medium text-gray-900 min-w-[200px] sticky left-0 bg-white z-10">
                     <div class="flex items-center gap-2">
-                      <div 
-                        class="w-3 h-3 rounded flex-shrink-0 shadow-sm" 
+                      <span 
+                        class="w-2.5 h-2.5 rounded-sm flex-shrink-0" 
                         :style="{ backgroundColor: dataset.backgroundColor }"
-                      ></div>
-                      <span class="truncate text-xs">{{ dataset.label }}</span>
+                      ></span>
+                      <span class="truncate" :title="dataset.label">{{ dataset.label }}</span>
                     </div>
                   </td>
                   <td 
-                    v-for="(score, scoreIndex) in dataset.data" 
-                    :key="scoreIndex" 
-                    class="px-3 py-4 text-sm text-center font-semibold min-w-[100px] max-w-[140px]"
+                    v-for="(score, scoreIdx) in dataset.data" 
+                    :key="`score-${idx}-${scoreIdx}`" 
+                    class="px-4 py-3 text-center text-sm font-semibold min-w-[140px]"
                     :class="getScoreClass(score)"
                   >
-                    <div class="truncate">{{ formatScore(score) }}</div>
+                    {{ formatScore(score) }}
                   </td>
                 </tr>
               </tbody>
@@ -142,28 +138,32 @@
           </div>
           
           <!-- Footer Summary -->
-          <div class="px-4 sm:px-8 py-5 bg-gradient-to-r from-gray-50 to-blue-50 border-t overflow-x-auto">
-            <div class="space-y-4 min-w-[600px]">
-              <div class="flex items-center space-x-6 text-sm text-gray-700 flex-wrap">
-                <span class="font-semibold whitespace-nowrap">จำนวนกลุ่ม: <span class="text-blue-600">{{ chartData.datasets.length }}</span></span>
-                <span class="font-semibold whitespace-nowrap">จำนวนหมวดหมู่: <span class="text-blue-600">{{ chartLabels.length }}</span></span>
+          <div class="px-4 py-4 bg-gray-50 border-t border-gray-200">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div class="flex items-center gap-4 text-sm text-gray-700 flex-wrap">
+                <span class="font-semibold whitespace-nowrap">
+                  จำนวนกลุ่ม: <span class="text-blue-600">{{ chartData.datasets.length }}</span>
+                </span>
+                <span class="font-semibold whitespace-nowrap">
+                  จำนวนหมวดหมู่: <span class="text-blue-600">{{ chartLabels.length }}</span>
+                </span>
               </div>
               
-              <div class="flex flex-wrap items-center gap-3 text-xs sm:text-sm">
-                <div class="flex items-center space-x-2">
-                  <div class="w-3 h-3 bg-green-500 rounded shadow-sm flex-shrink-0"></div>
+              <div class="flex flex-wrap items-center gap-2.5 text-xs">
+                <div class="flex items-center gap-1.5">
+                  <span class="w-3 h-3 bg-green-500 rounded shadow-sm"></span>
                   <span class="text-gray-700 font-medium whitespace-nowrap">ดีเยี่ยม ≥ 4.5</span>
                 </div>
-                <div class="flex items-center space-x-2">
-                  <div class="w-3 h-3 bg-blue-500 rounded shadow-sm flex-shrink-0"></div>
+                <div class="flex items-center gap-1.5">
+                  <span class="w-3 h-3 bg-blue-500 rounded shadow-sm"></span>
                   <span class="text-gray-700 font-medium whitespace-nowrap">ดี 4.0 - 4.49</span>
                 </div>
-                <div class="flex items-center space-x-2">
-                  <div class="w-3 h-3 bg-yellow-500 rounded shadow-sm flex-shrink-0"></div>
+                <div class="flex items-center gap-1.5">
+                  <span class="w-3 h-3 bg-yellow-500 rounded shadow-sm"></span>
                   <span class="text-gray-700 font-medium whitespace-nowrap">ปานกลาง 3.5 - 3.99</span>
                 </div>
-                <div class="flex items-center space-x-2">
-                  <div class="w-3 h-3 bg-red-500 rounded shadow-sm flex-shrink-0"></div>
+                <div class="flex items-center gap-1.5">
+                  <span class="w-3 h-3 bg-red-500 rounded shadow-sm"></span>
                   <span class="text-gray-700 font-medium whitespace-nowrap">ต้องพัฒนา &lt; 3.5</span>
                 </div>
               </div>
@@ -171,9 +171,12 @@
           </div>
         </div>
       </template>
-      <div v-else class="mt-6 rounded-xl bg-white p-10 text-center shadow-md">
-        <p class="text-lg font-semibold text-gray-500">ยังไม่มีข้อมูลในระบบ</p>
-      </div>
+
+      <template v-else>
+        <div class="mt-6 rounded-xl bg-white p-10 text-center shadow-md">
+          <p class="text-lg font-semibold text-gray-500">ยังไม่มีข้อมูลในระบบ</p>
+        </div>
+      </template>
     </div>
   </div>
 </template>
@@ -208,6 +211,7 @@ const areaNameMap = ref({
 
 const availableYears = ref([]);
 const selectedYear = ref(new Date().getFullYear());
+const chartRenderKey = ref(0);
 
 const chartLabels = computed(() => {
   if (categories.value && categories.value.length > 0) {
@@ -228,9 +232,7 @@ const colors = {
   'พนักงาน': '#dc2626',
   'ผู้รับเหมาประจำ': '#f97316',
   'all_current': '#7c3aed',
-  'all_future': '#10b981',
-  'all_combined': '#1e40af',
-  'future_single': '#f59e0b'
+  'all_future': '#10b981'
 };
 
 const fetchAssessmentYears = async () => {
@@ -260,14 +262,15 @@ const fetchCompanies = async () => {
     }
     const companyNames = await response.json();
     
-    // Sort company names alphabetically to ensure consistent v1, v2 assignment
+    // เรียงชื่อบริษัทตามตัวอักษรเพื่อให้ลำดับ company_1, company_2, company_3... สอดคล้องกัน
+    // company_1 = บริษัทแรกตามลำดับตัวอักษร, company_2 = บริษัทที่สอง, ฯลฯ
     companyNames.sort();
     
     const companyOptions = [];
     const newAreaNameMap = { 'combined': 'บริษัททั้งหมด' };
 
     companyNames.forEach((name, index) => {
-      const versionId = `v${index + 1}`;
+      const versionId = `company_${index + 1}`; // company_1, company_2, company_3... เป็น ID อ้างอิงบริษัทจากฐานข้อมูล
       companyOptions.push({ id: versionId, name: name });
       newAreaNameMap[versionId] = name;
     });
@@ -330,7 +333,8 @@ const fetchData = async () => {
   }
 };
 
-// ฟังก์ชันคำนวณข้อมูลตามช่วงเวลา
+// ฟังก์ชันคำนวณข้อมูลตามช่วงเวลา (ไม่ได้ใช้แล้ว - เก็บไว้เผื่อขยายในอนาคต)
+// company_1, company_2 คือ ID ของบริษัทที่ดึงจากฐานข้อมูล ไม่ใช่ข้อมูลปลอม
 const getDataForTimePeriod = (timePeriod) => {
   if (!currentData.value || !futureData.value) return {};
   
@@ -342,8 +346,8 @@ const getDataForTimePeriod = (timePeriod) => {
     const combinedData = {};
     for (const group in currentData.value) {
       combinedData[group] = {
-        v1: currentData.value[group].v1.map((val, idx) => (val + futureData.value[group].v1[idx]) / 2),
-        v2: currentData.value[group].v2.map((val, idx) => (val + futureData.value[group].v2[idx]) / 2)
+        company_1: currentData.value[group].company_1.map((val, idx) => (val + futureData.value[group].company_1[idx]) / 2),
+        company_2: currentData.value[group].company_2.map((val, idx) => (val + futureData.value[group].company_2[idx]) / 2)
       };
     }
     return combinedData;
@@ -351,6 +355,9 @@ const getDataForTimePeriod = (timePeriod) => {
 };
 
 // Computed สำหรับข้อมูลกราฟ
+// โครงสร้างข้อมูลจาก API: { positionName: { company_1: [scores], company_2: [scores], ... } }
+// positionName = ชื่อตำแหน่ง (เช่น "ผู้บริหารระดับสูง / ผู้จัดการส่วน", "พนักงาน")
+// company_1, company_2, company_3... = ID บริษัทที่ 1, 2, 3... ที่ดึงจากฐานข้อมูล (ไม่ใช่ข้อมูลปลอม)
 const chartData = computed(() => {
   if (!currentData.value || !futureData.value || Object.keys(currentData.value).length === 0) {
     return { labels: chartLabels.value, datasets: [] };
@@ -364,37 +371,40 @@ const chartData = computed(() => {
   if (timePeriod === 'current' || timePeriod === 'future') {
     const rawData = (timePeriod === 'current') ? currentData.value : futureData.value;
     
-    for (const group in rawData) { // group is position name
+    // วนลูปแต่ละตำแหน่ง (group = positionName)
+    for (const group in rawData) {
       let dataPoints = [];
       
       if (version === 'combined') {
-        const v1Data = rawData[group].v1 || [];
-        const v2Data = rawData[group].v2 || [];
-        const maxLength = Math.max(v1Data.length, v2Data.length, chartLabels.value.length);
+        // รวมทุกบริษัท: คำนวณค่าเฉลี่ยของ company_1, company_2, company_3...
+        const company1Data = rawData[group].company_1 || [];
+        const company2Data = rawData[group].company_2 || [];
+        const maxLength = Math.max(company1Data.length, company2Data.length, chartLabels.value.length);
         for (let i = 0; i < maxLength; i++) {
-          const v1 = v1Data[i] || 0;
-          const v2 = v2Data[i] || 0;
-          if (v1 > 0 && v2 > 0) {
-            dataPoints.push((v1 + v2) / 2);
+          const company1 = company1Data[i] || 0;
+          const company2 = company2Data[i] || 0;
+          if (company1 > 0 && company2 > 0) {
+            dataPoints.push((company1 + company2) / 2);
           } else {
-            dataPoints.push(v1 || v2);
+            dataPoints.push(company1 || company2);
           }
         }
       } else {
-        // Specific version (e.g., 'v1') is selected
+        // บริษัทเฉพาะ (e.g., 'company_1', 'company_2') ถูกเลือก
         dataPoints = rawData[group][version] || [];
       }
       
       if (dataPoints.length > 0) {
         datasets.push({
-          label: `${areaNameMap.value[version]} / ${selectedYear.value}`,
+          label: `${group} - ${areaNameMap.value[version]}`,
           backgroundColor: colors[group] || '#a8a29e',
           data: dataPoints,
         });
       }
     }
-  } else { // 'all' - for comparing current vs future (aggregated view)
+  } else { // 'all' - สำหรับเปรียบเทียบ ปัจจุบัน vs อนาคต (แสดงค่าเฉลี่ยรวมทุกตำแหน่ง)
     if (version === "combined") {
+      // รวมทุกบริษัท: คำนวณค่าเฉลี่ยจาก company_1, company_2, company_3... ของทุกตำแหน่ง
       const currentCombined = currentData.value;
       const futureCombined = futureData.value;
       const totalGroups = Object.keys(currentCombined).length;
@@ -402,9 +412,10 @@ const chartData = computed(() => {
       const currentDataPoints = chartLabels.value.map((_, i) => {
         let sum = 0;
         for (const group in currentCombined) {
-          const v1 = currentCombined[group].v1?.[i] || 0;
-          const v2 = currentCombined[group].v2?.[i] || 0;
-          const avg = (v1 > 0 && v2 > 0) ? (v1 + v2) / 2 : (v1 || v2);
+          // company_1, company_2 = บริษัทที่ 1, 2 (มาจากฐานข้อมูล)
+          const company1 = currentCombined[group].company_1?.[i] || 0;
+          const company2 = currentCombined[group].company_2?.[i] || 0;
+          const avg = (company1 > 0 && company2 > 0) ? (company1 + company2) / 2 : (company1 || company2);
           sum += avg;
         }
         return totalGroups > 0 ? sum / totalGroups : 0;
@@ -413,9 +424,9 @@ const chartData = computed(() => {
       const futureDataPoints = chartLabels.value.map((_, i) => {
         let sum = 0;
         for (const group in futureCombined) {
-          const v1 = futureCombined[group].v1?.[i] || 0;
-          const v2 = futureCombined[group].v2?.[i] || 0;
-          const avg = (v1 > 0 && v2 > 0) ? (v1 + v2) / 2 : (v1 || v2);
+          const company1 = futureCombined[group].company_1?.[i] || 0;
+          const company2 = futureCombined[group].company_2?.[i] || 0;
+          const avg = (company1 > 0 && company2 > 0) ? (company1 + company2) / 2 : (company1 || company2);
           sum += avg;
         }
         return totalGroups > 0 ? sum / totalGroups : 0;
@@ -433,7 +444,7 @@ const chartData = computed(() => {
         data: futureDataPoints,
       });
 
-    } else { // 'all' for a specific version
+    } else { // บริษัทเฉพาะ (version = 'company_1', 'company_2', ...): แสดงค่าเฉลี่ยทุกตำแหน่งในบริษัทนั้น
       const currentRawData = currentData.value;
       const futureRawData = futureData.value;
       const totalGroups = Object.keys(currentRawData).length;
@@ -500,22 +511,34 @@ const getTableDescription = computed(() => {
   }
 });
 
-const chartOptions = {
+// Chart options as computed property
+const chartOptions = computed(() => ({
   responsive: true,
   maintainAspectRatio: false,
+  layout: {
+    padding: {
+      left: 5,
+      right: 5,
+      top: 5,
+      bottom: 50
+    }
+  },
   plugins: {
     legend: { 
-      position: 'top',
+      display: true,
+      position: 'bottom',
+      align: 'center',
       labels: {
-        font: { size: 13, weight: '600' },
-        padding: 20,
+        font: { size: 12, weight: '600' },
+        padding: 10,
         usePointStyle: true,
         pointStyle: 'circle',
-        boxWidth: 10,
-        boxHeight: 10,
+        boxWidth: 8,
+        boxHeight: 8,
       }
     },
     tooltip: {
+      enabled: true,
       backgroundColor: 'rgba(0, 0, 0, 0.85)',
       titleFont: { size: 14, weight: 'bold' },
       bodyFont: { size: 13 },
@@ -530,8 +553,9 @@ const chartOptions = {
   },
   scales: {
     y: {
-      suggestedMin: 2.0,
-      suggestedMax: 5.0,
+      beginAtZero: false,
+      min: 2.0,
+      max: 5.0,
       title: { 
         display: true, 
         text: 'คะแนนเฉลี่ย',
@@ -552,11 +576,23 @@ const chartOptions = {
     x: {
       ticks: {
         maxRotation: 45,
-        minRotation: 30,
-        font: { size: 11, weight: '500' },
-        color: '#6b7280'
+        minRotation: 45,
+        font: { size: 10, weight: '500' },
+        color: '#374151',
+        autoSkip: false,
+        padding: 4,
+        callback: function(value) {
+          const label = this.getLabelForValue(value);
+          if (label.length > 15) {
+            return label.substring(0, 15) + '...';
+          }
+          return label;
+        }
       },
-      grid: { display: false }
+      grid: { 
+        display: false,
+        drawBorder: true
+      }
     }
   },
   elements: {
@@ -565,13 +601,24 @@ const chartOptions = {
       borderRadius: 4
     }
   }
-};
+}));
 
+// Watch for changes
 watch(selectedYear, (newYear, oldYear) => {
   if (newYear !== oldYear) {
     fetchData();
   }
 });
+
+// Force re-render when filters change
+watch([selectedVersion, selectedTimePeriod], () => {
+  chartRenderKey.value++;
+}, { deep: true });
+
+// Force re-render when data changes
+watch(chartData, () => {
+  chartRenderKey.value++;
+}, { deep: true });
 
 // เรียกใช้งานตอนโหลดครั้งแรก
 onMounted(async () => {
@@ -600,14 +647,13 @@ select:focus {
   outline: none;
 }
 
-/* Scrollbar สำหรับตาราง */
+/* Custom scrollbar styling (not available in Tailwind without plugin) */
 .overflow-x-auto {
-  overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
 
 .overflow-x-auto::-webkit-scrollbar {
-  height: 10px;
+  height: 8px;
 }
 
 .overflow-x-auto::-webkit-scrollbar-track {
@@ -616,67 +662,28 @@ select:focus {
 }
 
 .overflow-x-auto::-webkit-scrollbar-thumb {
-  background: #9ca3af;
+  background: #cbd5e1;
   border-radius: 4px;
 }
 
 .overflow-x-auto::-webkit-scrollbar-thumb:hover {
-  background: #6b7280;
+  background: #94a3b8;
 }
 
-/* ป้องกันตารางล้น */
-table {
-  border-collapse: separate;
-  border-spacing: 0;
-  table-layout: auto;
-  width: 100%;
-  max-width: 100%;
+/* Line clamp utilities (with standard property for compatibility) */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-/* Sticky column shadow effect */
-th.sticky,
-td.sticky {
-  position: sticky;
-  left: 0;
-  z-index: 10;
-  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
-}
-
-th.sticky {
-  z-index: 20;
-}
-
-tbody tr:last-child td {
-  border-bottom: none;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .overflow-x-auto {
-    max-width: 100vw;
-    margin-left: -1.5rem;
-    margin-right: -1.5rem;
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
-  }
-  
-  table {
-    font-size: 0.875rem;
-  }
-  
-  th.sticky,
-  td.sticky {
-    min-width: 150px !important;
-  }
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.animate-spin {
-  animation: spin 1s linear infinite;
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 </style>

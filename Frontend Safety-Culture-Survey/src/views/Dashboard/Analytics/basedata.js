@@ -12,7 +12,7 @@ const fullLabels = [
 const baseData = {
   "ผู้บริหารระดับสูง": {
     labels: ["CEO", "REP", "COO", "CFO", "SSE", "PSE", "CME"],
-    v1: {
+    company_1: {
       current: [
         [2, 1, 1, 1, 1, 5, 1, 2, 4, 4, 1, 5, 3, 2, 1, 4, 5, 3, 5, 5],
         [1, 4, 2, 5, 3, 3, 4, 1, 5, 2, 4, 3, 1, 5, 2, 4, 3, 4, 5, 4],
@@ -32,7 +32,7 @@ const baseData = {
         [5, 4, 1, 2, 3, 5, 4, 1, 2, 3, 5, 4, 1, 2, 3, 5, 4, 1, 4, 5],
       ]
     },
-    v2: {
+    company_2: {
       current: [
         [4, 1, 5, 2, 3, 4, 1, 5, 2, 3, 4, 1, 5, 2, 3, 4, 1, 5, 3, 2],
         [2, 3, 4, 1, 5, 2, 3, 4, 1, 5, 2, 3, 4, 1, 5, 2, 3, 4, 2, 3],
@@ -55,7 +55,7 @@ const baseData = {
   },
   "ผู้จัดการส่วน": {
     labels: ["CEO", "REP", "COO", "CFO", "SSE", "PSE", "CME"],
-    v1: {
+    company_1: {
       current: [
         [3, 1, 4, 5, 2, 3, 1, 4, 5, 2, 3, 1, 4, 5, 2, 3, 1, 4, 3, 4],
         [1, 5, 2, 4, 3, 1, 5, 2, 4, 3, 1, 5, 2, 4, 3, 1, 5, 2, 2, 3],
@@ -75,7 +75,7 @@ const baseData = {
         [1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 5, 4],
       ]
     },
-    v2: {
+    company_2: {
       current: [
         [4, 2, 1, 5, 3, 4, 2, 1, 5, 3, 4, 2, 1, 5, 3, 4, 2, 1, 3, 4],
         [2, 5, 3, 1, 4, 2, 5, 3, 1, 4, 2, 5, 3, 1, 4, 2, 5, 3, 2, 3],
@@ -98,7 +98,7 @@ const baseData = {
   },
   "พนักงาน": {
     labels: ["CEO", "REP", "COO", "CFO", "SSE", "PSE", "CME"],
-    v1: {
+    company_1: {
       current: [
         [1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 2, 3],
         [5, 4, 3, 2, 1, 5, 4, 3, 2, 1, 5, 4, 3, 2, 1, 5, 4, 3, 3, 2],
@@ -118,7 +118,7 @@ const baseData = {
         [2, 4, 5, 3, 1, 2, 4, 5, 3, 1, 2, 4, 5, 3, 1, 2, 4, 5, 5, 5],
       ]
     },
-    v2: {
+    company_2: {
       current: [
         [3, 4, 1, 5, 2, 3, 4, 1, 5, 2, 3, 4, 1, 5, 2, 3, 4, 1, 2, 3],
         [1, 2, 5, 4, 3, 1, 2, 5, 4, 3, 1, 2, 5, 4, 3, 1, 2, 5, 3, 2],
@@ -141,7 +141,7 @@ const baseData = {
   },
   "ผู้รับเหมาประจำ": {
     labels: ["CEO", "REP", "COO", "CFO", "SSE", "PSE", "CME"],
-    v1: {
+    company_1: {
       current: [
         [2, 5, 3, 1, 4, 2, 5, 3, 1, 4, 2, 5, 3, 1, 4, 2, 5, 3, 3, 4],
         [4, 1, 2, 5, 3, 4, 1, 2, 5, 3, 4, 1, 2, 5, 3, 4, 1, 2, 2, 3],
@@ -161,7 +161,7 @@ const baseData = {
         [3, 5, 1, 2, 4, 3, 5, 1, 2, 4, 3, 5, 1, 2, 4, 3, 5, 1, 5, 4],
       ]
     },
-    v2: {
+    company_2: {
       current: [
         [1, 3, 4, 2, 5, 1, 3, 4, 2, 5, 1, 3, 4, 2, 5, 1, 3, 4, 3, 2],
         [5, 2, 1, 4, 3, 5, 2, 1, 4, 3, 5, 2, 1, 4, 3, 5, 2, 1, 2, 3],
@@ -189,36 +189,36 @@ const combineAllGroups = () => {
   const groups = ['ผู้บริหารระดับสูง', 'ผู้จัดการส่วน', 'พนักงาน', 'ผู้รับเหมาประจำ'];
   const combinedData = {
     labels: fullLabels,
-    v1: { current: [], future: [] },
-    v2: { current: [], future: [] }
+    company_1: { current: [], future: [] },
+    company_2: { current: [], future: [] }
   };
 
   // Initialize arrays for each question (20 questions now with S and T)
   for (let i = 0; i < 20; i++) {
-    combinedData.v1.current[i] = [];
-    combinedData.v1.future[i] = [];
-    combinedData.v2.current[i] = [];
-    combinedData.v2.future[i] = [];
+    combinedData.company_1.current[i] = [];
+    combinedData.company_1.future[i] = [];
+    combinedData.company_2.current[i] = [];
+    combinedData.company_2.future[i] = [];
   }
 
   // Combine data from all groups
   groups.forEach(group => {
     const groupData = baseData[group];
     
-    // Combine v1 data
-    groupData.v1.current.forEach((row, questionIndex) => {
-      combinedData.v1.current[questionIndex].push(...row);
+    // Combine company_1 data
+    groupData.company_1.current.forEach((row, questionIndex) => {
+      combinedData.company_1.current[questionIndex].push(...row);
     });
-    groupData.v1.future.forEach((row, questionIndex) => {
-      combinedData.v1.future[questionIndex].push(...row);
+    groupData.company_1.future.forEach((row, questionIndex) => {
+      combinedData.company_1.future[questionIndex].push(...row);
     });
     
-    // Combine v2 data
-    groupData.v2.current.forEach((row, questionIndex) => {
-      combinedData.v2.current[questionIndex].push(...row);
+    // Combine company_2 data
+    groupData.company_2.current.forEach((row, questionIndex) => {
+      combinedData.company_2.current[questionIndex].push(...row);
     });
-    groupData.v2.future.forEach((row, questionIndex) => {
-      combinedData.v2.future[questionIndex].push(...row);
+    groupData.company_2.future.forEach((row, questionIndex) => {
+      combinedData.company_2.future[questionIndex].push(...row);
     });
   });
 
