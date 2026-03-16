@@ -25,16 +25,27 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       const company = row.getCell(2).value?.toString().trim();
 
       if (email && company) {
-        rows.push({ email_user: email, company_user: company });
+        rows.push({ email_user: email, company_name: company });
       }
     });
 
     // insert เข้าฐานข้อมูล
     for (const row of rows) {
+      // หาหรือสร้าง company
+      const company = await prisma.company.upsert({
+        where: { name: row.company_name },
+        update: {},
+        create: { name: row.company_name }
+      });
+
+      // upsert user_excel พร้อม company_id
       await prisma.user_excel.upsert({
         where: { email_user: row.email_user },
-        update: { company_user: row.company_user },
-        create: row,
+        update: { company_id: company.id },
+        create: { 
+          email_user: row.email_user, 
+          company_id: company.id 
+        },
       });
     }
 

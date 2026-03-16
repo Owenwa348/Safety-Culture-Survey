@@ -7,11 +7,18 @@ const getAggregatedSurveyData = async (req, res) => {
   try {
     const { companyId } = req.query;
 
+    // หา company_id จาก company name (ถ้ามี)
+    let companyFilter = undefined;
+    if (companyId) {
+      const company = await prisma.company.findFirst({ where: { name: companyId } });
+      if (company) {
+        companyFilter = { user: { company_id: company.id } };
+      }
+    }
+
     const aggregatedData = await prisma.survey_answer.groupBy({
       by: ['questionId'],
-      where: companyId ? {
-        user: { company_user: companyId }
-      } : undefined,
+      where: companyFilter,
       _avg: { currentScore: true, expectedScore: true },
       _count: { id: true },
       _min: { createdAt: true },
@@ -54,9 +61,18 @@ const getDemographicAnalysis = async (req, res) => {
   try {
     const { companyId } = req.query;
 
+    // หา company_id จาก company name (ถ้ามี)
+    let companyFilter = undefined;
+    if (companyId) {
+      const company = await prisma.company.findFirst({ where: { name: companyId } });
+      if (company) {
+        companyFilter = { company_id: company.id };
+      }
+    }
+
     // ดึง user + survey_answers พร้อม position/department/work_group relations
     const users = await prisma.user.findMany({
-      where: companyId ? { company_user: companyId } : undefined,
+      where: companyFilter,
       include: {
         position: true,
         department: true,
@@ -103,6 +119,15 @@ const getTrendAnalysis = async (req, res) => {
     const startDate = new Date();
     startDate.setMonth(startDate.getMonth() - monthsNum);
 
+    // หา company_id จาก company name (ถ้ามี)
+    let companyCondition = prisma.$queryRaw``;
+    if (companyId) {
+      const company = await prisma.company.findFirst({ where: { name: companyId } });
+      if (company) {
+        companyCondition = prisma.$queryRaw`u.company_id = ${company.id} AND`;
+      }
+    }
+
     const trendData = await prisma.$queryRaw`
       SELECT 
         DATE_FORMAT(sa.createdAt, '%Y-%m') as month,
@@ -111,7 +136,7 @@ const getTrendAnalysis = async (req, res) => {
         COUNT(*) as responseCount
       FROM survey_answer sa
       JOIN user u ON sa.userId = u.id
-      WHERE ${companyId ? prisma.$queryRaw`u.company_user = ${companyId} AND` : prisma.$queryRaw``}
+      WHERE ${companyCondition}
         sa.createdAt >= ${startDate}
         AND sa.createdAt <= ${endDate}
       GROUP BY DATE_FORMAT(sa.createdAt, '%Y-%m')
@@ -129,7 +154,11 @@ const getTrendAnalysis = async (req, res) => {
 const getUserCompletionStatus = async (req, res) => {
   try {
     const potentialUsers = await prisma.user_excel.findMany({
-      select: { email_user: true, company_user: true }
+      select: {
+        email_user: true,
+        company_id: true,
+        company: { select: { name: true } }
+      }
     });
 
     const registeredUsers = await prisma.user.findMany({
@@ -145,7 +174,7 @@ const getUserCompletionStatus = async (req, res) => {
       return {
         id: potentialUser.email_user,
         name: potentialUser.email_user.split('@')[0],
-        area: potentialUser.company_user,
+        area: potentialUser.company?.name || '-',
         status: survey_status || 'not_registered',
       };
     });
@@ -181,8 +210,12 @@ const getSurveyDataForChart = async (req, res) => {
       }
     };
 
+    // หา company_id จาก company name (ถ้าไม่ใช่ combined)
     if (companyId !== 'combined') {
-      where.user = { company_user: companyId };
+      const company = await prisma.company.findFirst({ where: { name: companyId } });
+      if (company) {
+        where.user = { company_id: company.id };
+      }
     }
 
     const surveyAnswers = await prisma.survey_answer.findMany({  // ✅ survey_answer
@@ -190,7 +223,12 @@ const getSurveyDataForChart = async (req, res) => {
       select: {
         currentScore: true,
         expectedScore: true,
-        user: { select: { company_user: true } }
+        user: { 
+          select: {
+            company_id: true,
+            company: { select: { name: true } }
+          }
+        }
       }
     });
 
@@ -203,11 +241,11 @@ const getSurveyDataForChart = async (req, res) => {
 
     let companies = [];
     if (companyId === 'combined') {
-      const distinctCompanies = await prisma.user.findMany({
-        distinct: ['company_user'],
-        select: { company_user: true }
+      const allCompanies = await prisma.company.findMany({
+        select: { id: true, name: true },
+        orderBy: { name: 'asc' }
       });
-      companies = distinctCompanies.map(c => ({ id: c.company_user, name: c.company_user }));
+      companies = allCompanies.map(c => ({ id: c.name, name: c.name }));
     } else {
       companies = [{ id: companyId, name: companyId }];
     }
@@ -233,11 +271,11 @@ const getSurveyDataForChart = async (req, res) => {
 // ดึงรายชื่อบริษัท
 const getCompanies = async (req, res) => {
   try {
-    const companies = await prisma.user.findMany({
-      distinct: ['company_user'],
-      select: { company_user: true }
+    const companies = await prisma.company.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' }
     });
-    res.status(200).json(companies.map(c => ({ id: c.company_user, name: c.company_user })));
+    res.status(200).json(companies.map(c => ({ id: c.name, name: c.name })));
   } catch (error) {
     console.error('เกิดข้อผิดพลาดในการดึงรายชื่อบริษัท:', error);
     res.status(500).json({ error: 'เซิร์ฟเวอร์ขัดข้อง', message: error.message });
@@ -267,8 +305,12 @@ const getStackedChartData = async (req, res) => {
       }
     };
 
+    // หา company_id จาก company name (ถ้าไม่ใช่ combined)
     if (areaId !== 'combined') {
-      where.user = { company_user: areaId };
+      const company = await prisma.company.findFirst({ where: { name: areaId } });
+      if (company) {
+        where.user = { company_id: company.id };
+      }
     }
 
     const surveyAnswers = await prisma.survey_answer.findMany({  // ✅ survey_answer
@@ -309,11 +351,11 @@ const getStackedChartData = async (req, res) => {
 
     let areas = [];
     if (areaId === 'combined') {
-      const distinctAreas = await prisma.user.findMany({
-        distinct: ['company_user'],
-        select: { company_user: true }
+      const allAreas = await prisma.company.findMany({
+        select: { id: true, name: true },
+        orderBy: { name: 'asc' }
       });
-      areas = distinctAreas.map(a => ({ id: a.company_user, name: a.company_user }));
+      areas = allAreas.map(a => ({ id: a.name, name: a.name }));
     } else {
       areas = [{ id: areaId, name: areaId }];
     }
@@ -371,7 +413,12 @@ const getQuestionResultsData = async (req, res) => {
 
     // กรองตาม company
     const userWhere = {};
-    if (company && company !== 'All') userWhere.company_user = company;
+    if (company && company !== 'All') {
+      const companyRecord = await prisma.company.findFirst({ where: { name: company } });
+      if (companyRecord) {
+        userWhere.company_id = companyRecord.id;
+      }
+    }
 
     // กรองตาม position โดยใช้ relation
     if (position && position !== 'All') {
@@ -440,18 +487,22 @@ const getWorkGroupRawData = async (req, res) => {
       };
     }
 
-    const companies = await prisma.user.findMany({
-      distinct: ['company_user'],
-      select: { company_user: true },
-      orderBy: { company_user: 'asc' }
+    const companies = await prisma.company.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' }
     });
 
     if (company && company !== 'both' && company !== 'all') {
       let companyName = '';
-      if (company === 'company_1' && companies[0]) companyName = companies[0].company_user;
-      if (company === 'company_2' && companies[1]) companyName = companies[1].company_user;
-      if (company === 'company_3' && companies[2]) companyName = companies[2].company_user;
-      if (companyName) where.user = { company_user: companyName };
+      if (company === 'company_1' && companies[0]) companyName = companies[0].name;
+      if (company === 'company_2' && companies[1]) companyName = companies[1].name;
+      if (company === 'company_3' && companies[2]) companyName = companies[2].name;
+      if (companyName) {
+        const companyRecord = await prisma.company.findFirst({ where: { name: companyName } });
+        if (companyRecord) {
+          where.user = { company_id: companyRecord.id };
+        }
+      }
     }
 
     const answers = await prisma.survey_answer.findMany({  // ✅ survey_answer
@@ -461,6 +512,7 @@ const getWorkGroupRawData = async (req, res) => {
         expectedScore: true,
         user: {
           include: {
+            company: true,
             position: true,
             department: true,
             work_group: true,
@@ -471,7 +523,7 @@ const getWorkGroupRawData = async (req, res) => {
 
     const companyMap = {};
     companies.forEach((c, i) => {
-      if (c.company_user) companyMap[c.company_user] = `company_${i + 1}`;
+      if (c.name) companyMap[c.name] = `company_${i + 1}`;
     });
 
     const formattedData = answers.map(a => ({
@@ -480,7 +532,7 @@ const getWorkGroupRawData = async (req, res) => {
       position: a.user?.position?.name,           // ✅ ใช้ relation
       jobField: a.user?.department?.name,          // ✅ ใช้ relation
       workGroup: a.user?.work_group?.name,         // ✅ ใช้ relation
-      version: a.user ? companyMap[a.user.company_user] : null
+      version: a.user?.company ? companyMap[a.user.company.name] : null
     })).filter(d => d.position && d.jobField && d.workGroup && d.version);
 
     res.status(200).json(formattedData);
@@ -510,18 +562,22 @@ const getWorkGroupEvaluationData = async (req, res) => {
       if (ids.length > 0) userWhere.work_group_id = { in: ids };  // ✅ ใช้ FK id โดยตรง
     }
 
-    const companies = await prisma.user.findMany({
-      distinct: ['company_user'],
-      select: { company_user: true },
-      orderBy: { company_user: 'asc' }
+    const companies = await prisma.company.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' }
     });
 
     if (company && company !== 'both' && company !== 'all') {
       let companyName = '';
-      if (company === 'company_1' && companies[0]) companyName = companies[0].company_user;
-      if (company === 'company_2' && companies[1]) companyName = companies[1].company_user;
-      if (company === 'company_3' && companies[2]) companyName = companies[2].company_user;
-      if (companyName) userWhere.company_user = companyName;
+      if (company === 'company_1' && companies[0]) companyName = companies[0].name;
+      if (company === 'company_2' && companies[1]) companyName = companies[1].name;
+      if (company === 'company_3' && companies[2]) companyName = companies[2].name;
+      if (companyName) {
+        const companyRecord = await prisma.company.findFirst({ where: { name: companyName } });
+        if (companyRecord) {
+          userWhere.company_id = companyRecord.id;
+        }
+      }
     }
 
     const surveyAnswerWhere = { user: userWhere };
@@ -539,6 +595,7 @@ const getWorkGroupEvaluationData = async (req, res) => {
         expectedScore: true,
         user: {
           include: {
+            company: true,
             position: true,
             department: true,
             work_group: true,
@@ -555,7 +612,7 @@ const getWorkGroupEvaluationData = async (req, res) => {
         position_user: a.user?.position?.name,
         job_field_user: a.user?.department?.name,
         work_group_user: a.user?.work_group?.name,
-        company_user: a.user?.company_user,
+        company_user: a.user?.company?.name,
       }
     }));
 
@@ -572,15 +629,14 @@ const getEvaluationData = (scoreType) => async (req, res) => {
     const { year } = req.query;
     const scoreField = scoreType === 'current' ? 'currentScore' : 'expectedScore';
 
-    const companies = await prisma.user.findMany({
-      distinct: ['company_user'],
-      select: { company_user: true },
-      orderBy: { company_user: 'asc' },
+    const companies = await prisma.company.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
     });
 
     const companyMap = {};
     companies.forEach((c, i) => {
-      if (c.company_user) companyMap[c.company_user] = `company_${i + 1}`;
+      if (c.name) companyMap[c.name] = `company_${i + 1}`;
     });
 
     const categories = await prisma.category.findMany({ orderBy: { id: 'asc' } });
@@ -599,7 +655,7 @@ const getEvaluationData = (scoreType) => async (req, res) => {
       select: {
         [scoreField]: true,
         user: {
-          include: { position: true }  // ✅ ใช้ relation
+          include: { company: true, position: true }  // ✅ ใช้ relation
         },
         question: {
           select: { categoryId: true }
@@ -611,7 +667,7 @@ const getEvaluationData = (scoreType) => async (req, res) => {
 
     for (const answer of answers) {
       const position = answer.user?.position?.name;  // ✅ ใช้ relation
-      const company = answer.user?.company_user;
+      const company = answer.user?.company?.name;
       const categoryId = answer.question?.categoryId;
       const score = answer[scoreField];
 
