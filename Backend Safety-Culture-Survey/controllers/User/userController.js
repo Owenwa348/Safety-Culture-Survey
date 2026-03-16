@@ -18,7 +18,7 @@ const formatRegisteredUser = (user, excelIndex = 0) => {
     title_user: user.title_user || '-',
     name_user: user.name_user || '-',
     email_user: user.email_user,
-    company_user: user.company_user,
+    company_user: user.company?.name || '-',          // ✅ ใช้ relation
     phone_user: user.phone_user || '-',
     position_user: user.position?.name || '-',       // ✅ ใช้ relation
     job_field_user: user.department?.name || '-',    // ✅ ใช้ relation
@@ -44,12 +44,20 @@ const getStatusPriority = (status) => {
 const getAllUsers = async (req, res) => {
   try {
     const excelUsers = await prisma.user_excel.findMany({
-      select: { id: true, email_user: true, company_user: true, division_user: true, createdAt: true },
+      select: {
+        id: true,
+        email_user: true,
+        company_id: true,
+        division_user: true,
+        createdAt: true,
+        company: { select: { name: true } }
+      },
       orderBy: { id: 'asc' }
     });
 
     const registeredUsers = await prisma.user.findMany({
       include: {
+        company: true,     // ✅ include company relation
         position: true,    // ✅ include relations
         department: true,
         work_group: true,
@@ -71,7 +79,7 @@ const getAllUsers = async (req, res) => {
         title_user: '-',
         name_user: '-',
         email_user: excelUser.email_user,
-        company_user: excelUser.company_user,
+        company_user: excelUser.company?.name || '-',
         phone_user: '-',
         position_user: '-',
         job_field_user: '-',
@@ -113,7 +121,10 @@ const checkUserEmail = async (req, res) => {
   if (!email) return res.status(400).json({ message: 'Email is required.' });
 
   try {
-    const excelUser = await prisma.user_excel.findUnique({ where: { email_user: email } });
+    const excelUser = await prisma.user_excel.findUnique({ 
+      where: { email_user: email },
+      include: { company: true }
+    });
     if (!excelUser) return res.status(404).json({ message: 'Email not found in system.' });
 
     const registeredUser = await prisma.user.findUnique({ where: { email_user: email } });
@@ -122,7 +133,7 @@ const checkUserEmail = async (req, res) => {
         message: 'User already registered.',
         email,
         isRegistered: true,
-        company: excelUser.company_user,
+        company: excelUser.company?.name || '-',
         division: excelUser.division_user || '-',
         surveyStatus: registeredUser.survey_status,  // ✅ snake_case
         userId: registeredUser.id,
@@ -133,7 +144,7 @@ const checkUserEmail = async (req, res) => {
       message: 'Email found. Ready for registration.',
       email,
       isRegistered: false,
-      company: excelUser.company_user,
+      company: excelUser.company?.name || '-',
       division: excelUser.division_user || '-',
     });
   } catch (error) {
@@ -160,7 +171,8 @@ const registerUser = async (req, res) => {
     if (!excelUser) return res.status(404).json({ message: 'Email not found in system.' });
 
     // หา relation IDs จากชื่อที่รับมา
-    const [positionRecord, departmentRecord, workGroupRecord, experienceRecord] = await Promise.all([
+    const [companyRecord, positionRecord, departmentRecord, workGroupRecord, experienceRecord] = await Promise.all([
+      prisma.company.findFirst({ where: { name: company } }),
       prisma.position.findFirst({ where: { name: position } }),
       prisma.department.findFirst({ where: { name: department } }),
       prisma.work_group.findFirst({ where: { name: workGroup } }),
@@ -174,7 +186,7 @@ const registerUser = async (req, res) => {
         title_user: title,
         name_user: fullName,
         email_user: email,
-        company_user: company,
+        company_id: companyRecord?.id || null,       // ✅ ใช้ FK id
         phone_user: phone,
         position_id: positionRecord?.id || null,     // ✅ ใช้ FK id
         department_id: departmentRecord?.id || null, // ✅ ใช้ FK id
@@ -185,7 +197,7 @@ const registerUser = async (req, res) => {
         status: 'active',
         survey_status: 'not_started',               // ✅ snake_case
       },
-      include: { position: true, department: true, work_group: true, experience: true }
+      include: { company: true, position: true, department: true, work_group: true, experience: true }
     });
 
     res.status(201).json({
@@ -208,7 +220,7 @@ const loginUser = async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { email_user: email },
-      include: { position: true, department: true, work_group: true, experience: true }
+      include: { company: true, position: true, department: true, work_group: true, experience: true }
     });
 
     if (!user) return res.status(401).json({ message: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' });
