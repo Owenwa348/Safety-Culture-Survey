@@ -90,10 +90,11 @@ const updateLabels = () => {
 const fetchCompanies = async () => {
   try {
     const response = await axios.get('/api/companies');
-    const companies = response.data.map(companyName => ({
-      value: companyName,
-      label: companyName
+    const companies = response.data.map(company => ({
+      value: company.name,
+      label: company.name
     }));
+    companies.sort((a, b) => a.label.localeCompare(b.label));
     companyOptions.value.push(...companies);
   } catch (error) {
     console.error('เกิดข้อผิดพลาดในการดึงข้อมูลบริษัท:', error);
@@ -585,15 +586,17 @@ const chartData = computed(() => {
               </button>
 
               <!-- ปุ่มหมายเลขหน้า -->
-              <template v-for="(page, index) in paginationButtons" :key="index">
+              <template v-for="(page, index) in paginationButtons">
                 <span 
                   v-if="page === '...'" 
+                  :key="`dots-${index}`"
                   class="px-3 py-1.5 text-sm text-gray-500"
                 >
                   ...
                 </span>
                 <button
                   v-else
+                  :key="`page-${index}`"
                   @click="goToPage(page)"
                   class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors"
                   :class="currentPage === page

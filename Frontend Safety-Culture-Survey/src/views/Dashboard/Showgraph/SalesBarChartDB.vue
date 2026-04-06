@@ -260,7 +260,8 @@ const fetchCompanies = async () => {
     if (!response.ok) {
       throw new Error('ไม่สามารถดึงข้อมูลบริษัทได้');
     }
-    const companyNames = await response.json();
+    const data = await response.json();
+    const companyNames = data.map(company => company.name);
     
     // เรียงชื่อบริษัทตามตัวอักษรเพื่อให้ลำดับ company_1, company_2, company_3... สอดคล้องกัน
     // company_1 = บริษัทแรกตามลำดับตัวอักษร, company_2 = บริษัทที่สอง, ฯลฯ
