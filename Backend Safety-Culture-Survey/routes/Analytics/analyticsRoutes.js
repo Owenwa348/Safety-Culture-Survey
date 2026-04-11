@@ -13,7 +13,8 @@ const {
   getQuestionResultsData,
   getWorkGroupRawData,
   getWorkGroupEvaluationData,
-  getEvaluationData
+  getEvaluationData,
+  getRawAnswers
 } = require('../../controllers/Analytics/analyticsController');
 
 // Get aggregated data for graphs
@@ -53,5 +54,7 @@ router.get('/workgroup-evaluation', getWorkGroupEvaluationData);
 router.get('/evaluation/current', getEvaluationData('current'));
 router.get('/evaluation/future', getEvaluationData('future'));
 
+// Get raw per-user answers (for Excel export in ExportData.vue)
+router.get('/raw-answers', getRawAnswers);
 
 module.exports = router;

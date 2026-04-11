@@ -87,11 +87,11 @@
         </div>
 
         <!-- รายชื่อผู้ประเมิน -->
-        <router-link 
+        <router-link
           to="/user-list"
           class="relative flex items-center px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer group"
-          :class="isActivePath('/user-list') 
-            ? 'bg-[#7AE2CF] text-[#06202B] font-semibold shadow-lg' 
+          :class="isActivePath('/user-list')
+            ? 'bg-[#7AE2CF] text-[#06202B] font-semibold shadow-lg'
             : 'text-gray-300 hover:text-white hover:bg-white/10 hover:translate-x-1'"
         >
           <div class="flex items-center space-x-3">
@@ -101,7 +101,22 @@
             <span class="font-medium">รายชื่อผู้ประเมิน</span>
           </div>
         </router-link>
-        
+
+        <!-- ดาวน์โหลดข้อมูล (Excel) -->
+        <router-link
+          to="/export-data"
+          class="relative flex items-center px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer group"
+          :class="isActivePath('/export-data')
+            ? 'bg-[#7AE2CF] text-[#06202B] font-semibold shadow-lg'
+            : 'text-gray-300 hover:text-white hover:bg-white/10 hover:translate-x-1'"
+        >
+          <div class="flex items-center space-x-3">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            <span class="font-medium">ดาวน์โหลดรายงาน (Excel)</span>
+          </div>
+        </router-link>        
         <!-- ตั้งค่าระบบ (SuperAdmin only) -->
         <div v-if="isSuperAdmin">
           <button 

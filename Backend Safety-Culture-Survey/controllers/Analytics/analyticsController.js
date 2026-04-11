@@ -713,6 +713,51 @@ const getEvaluationData = (scoreType) => async (req, res) => {
   }
 };
 
+// Get raw per-user answers for Excel export
+const getRawAnswers = async (req, res) => {
+  try {
+    const { year } = req.query;
+    const targetYear = year ? parseInt(year) : new Date().getFullYear();
+
+    // Fetch all users with their survey answers
+    const users = await prisma.user.findMany({
+      include: {
+        survey_answers: {
+          include: {
+            question: true
+          }
+        }
+      }
+    });
+
+    // Build result array: [{ userEmail, email, answers: [{questionId, currentScore, futureScore}, ...] }, ...]
+    const result = users.map(user => {
+      // Filter answers by year based on createdAt
+      const answersInYear = user.survey_answers.filter(answer => {
+        const answerYear = new Date(answer.createdAt).getFullYear();
+        return answerYear === targetYear;
+      });
+
+      return {
+        userEmail: user.email_user || user.email_user,
+        email: user.email_user,
+        name: user.name_user || '-',
+        answers: answersInYear.map(answer => ({
+          questionId: answer.questionId,
+          currentScore: answer.currentScore,
+          futureScore: answer.expectedScore, // Note: DB uses 'expectedScore', API calls it 'futureScore'
+          comment: answer.comment
+        }))
+      };
+    });
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error('Error fetching raw answers:', error);
+    res.status(500).json({ error: 'Internal Server Error', message: error.message });
+  }
+};
+
 module.exports = {
   getAggregatedSurveyData,
   getDemographicAnalysis,
@@ -726,4 +771,5 @@ module.exports = {
   getWorkGroupRawData,
   getWorkGroupEvaluationData,
   getEvaluationData,
+  getRawAnswers,
 };
