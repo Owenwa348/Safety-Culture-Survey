@@ -11,10 +11,13 @@
         <!-- หน้าหลัก -->
         <router-link 
           to="/dashboard"
-          class="relative flex items-center px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer group"
-          :class="isActivePath('/dashboard') 
-            ? 'bg-[#7AE2CF] text-[#06202B] font-semibold shadow-lg' 
-            : 'text-gray-300 hover:text-white hover:bg-white/10 hover:translate-x-1'"
+          class="relative flex items-center px-4 py-3 rounded-xl transition-all duration-200 group"
+          :class="[
+            isSuperAdmin ? 'opacity-40 pointer-events-none' : 'cursor-pointer',
+            isActivePath('/dashboard') 
+              ? 'bg-[#7AE2CF] text-[#06202B] font-semibold shadow-lg' 
+              : 'text-gray-300 hover:text-white hover:bg-white/10 hover:translate-x-1'
+          ]"
         >
           <div class="flex items-center space-x-3">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -25,13 +28,14 @@
         </router-link>
         
         <!-- ผลลัพธ์การประเมิน -->
-        <div>
+        <div :class="{ 'opacity-40 pointer-events-none': isSuperAdmin }">
           <button 
             @click="toggleAssessmentMenu"
             class="relative flex items-center w-full px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer group"
             :class="isAssessmentActive 
               ? 'bg-[#7AE2CF] text-[#06202B] font-semibold shadow-lg' 
               : 'text-gray-300 hover:text-white hover:bg-white/10'"
+            :disabled="isSuperAdmin"
           >
             <div class="flex items-center justify-between w-full">
               <div class="flex items-center space-x-3">
@@ -89,10 +93,13 @@
         <!-- รายชื่อผู้ประเมิน -->
         <router-link
           to="/user-list"
-          class="relative flex items-center px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer group"
-          :class="isActivePath('/user-list')
-            ? 'bg-[#7AE2CF] text-[#06202B] font-semibold shadow-lg'
-            : 'text-gray-300 hover:text-white hover:bg-white/10 hover:translate-x-1'"
+          class="relative flex items-center px-4 py-3 rounded-xl transition-all duration-200 group"
+          :class="[
+            isSuperAdmin ? 'opacity-40 pointer-events-none' : 'cursor-pointer',
+            isActivePath('/user-list')
+              ? 'bg-[#7AE2CF] text-[#06202B] font-semibold shadow-lg'
+              : 'text-gray-300 hover:text-white hover:bg-white/10 hover:translate-x-1'
+          ]"
         >
           <div class="flex items-center space-x-3">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -105,10 +112,13 @@
         <!-- ดาวน์โหลดข้อมูล (Excel) -->
         <router-link
           to="/export-data"
-          class="relative flex items-center px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer group"
-          :class="isActivePath('/export-data')
-            ? 'bg-[#7AE2CF] text-[#06202B] font-semibold shadow-lg'
-            : 'text-gray-300 hover:text-white hover:bg-white/10 hover:translate-x-1'"
+          class="relative flex items-center px-4 py-3 rounded-xl transition-all duration-200 group"
+          :class="[
+            isSuperAdmin ? 'opacity-40 pointer-events-none' : 'cursor-pointer',
+            isActivePath('/export-data')
+              ? 'bg-[#7AE2CF] text-[#06202B] font-semibold shadow-lg'
+              : 'text-gray-300 hover:text-white hover:bg-white/10 hover:translate-x-1'
+          ]"
         >
           <div class="flex items-center space-x-3">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
