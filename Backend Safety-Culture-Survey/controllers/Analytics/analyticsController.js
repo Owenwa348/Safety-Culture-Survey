@@ -153,36 +153,34 @@ const getTrendAnalysis = async (req, res) => {
 // ดึงสถานะการทำแบบประเมินของผู้ใช้
 const getUserCompletionStatus = async (req, res) => {
   try {
-    const potentialUsers = await prisma.user_excel.findMany({
+    // ดึงข้อมูลผู้ใช้ทั้งหมด (ทั้งที่อัปโหลดและลงทะเบียน)
+    const allUsers = await prisma.user.findMany({
       select: {
+        id: true,
         email_user: true,
         company_id: true,
-        company: { select: { name: true } }
+        company: { select: { name: true } },
+        survey_status: true,
+        registration_status: true
       }
     });
 
-    const registeredUsers = await prisma.user.findMany({
-      select: { email_user: true, survey_status: true }  // ✅ ใช้ survey_status (snake_case)
-    });
+    // จัดรูปแบบการตอบกลับให้เข้ากับ PieChartDB (ใช้ field: id, area, status)
+    // Derive 4 states from registration_status + survey_status
+    const userCompletionData = allUsers.map(user => ({
+      id: user.email_user,
+      name: user.email_user.split('@')[0],
+      area: user.company?.name || '-',
+      status: user.registration_status === 'pending' ? 'not_registered' :
+              user.survey_status === 'done' ? 'done' :
+              user.survey_status === 'in_progress' ? 'in_progress' :
+              'not_started'
+    }));
 
-    const registeredUserMap = new Map(
-      registeredUsers.map(u => [u.email_user, u.survey_status])
-    );
-
-    const usersWithStatus = potentialUsers.map(potentialUser => {
-      const survey_status = registeredUserMap.get(potentialUser.email_user);
-      return {
-        id: potentialUser.email_user,
-        name: potentialUser.email_user.split('@')[0],
-        area: potentialUser.company?.name || '-',
-        status: survey_status || 'not_registered',
-      };
-    });
-
-    res.status(200).json(usersWithStatus);
+    res.status(200).json(userCompletionData);
   } catch (error) {
-    console.error('Error fetching user completion status:', error);
-    res.status(500).json({ error: 'Internal server error', message: error.message });
+    console.error('Get user completion status error:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 };
 

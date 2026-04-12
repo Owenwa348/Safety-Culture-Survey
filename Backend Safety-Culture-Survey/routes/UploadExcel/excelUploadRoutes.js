@@ -59,7 +59,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
 
       rows.push({ 
         email_user: email, 
-        company_user: company,
+        company_name: company,
         division_user: division
       });
     });
@@ -76,21 +76,21 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     let insertedCount = 0;
     let updatedCount = 0;
 
-    const existing = await prisma.user_excel.findMany({
+    const existing = await prisma.user.findMany({
       where: {
         email_user: { in: rows.map(r => r.email_user) }
       },
-      select: { email_user: true, company_user: true, division_user: true }
+      select: { email_user: true, company_id: true, section_user: true, registration_status: true }
     });
 
     const existingMap = new Map(
-      existing.map(e => [e.email_user, { company_user: e.company_user, division_user: e.division_user }])
+      existing.map(e => [e.email_user, { company_id: e.company_id, section_user: e.section_user, registration_status: e.registration_status }])
     );
 
     const allExist = rows.every(r => existingMap.has(r.email_user));
     const noChanges = rows.every(r => {
       const ex = existingMap.get(r.email_user);
-      return ex && ex.company_user === r.company_user && ex.division_user === r.division_user;
+      return ex && ex.section_user === r.division_user;
     });
 
     if (allExist && noChanges) {
@@ -102,20 +102,52 @@ router.post('/upload', upload.single('file'), async (req, res) => {
 
     for (const row of rows) {
       try {
-        const result = await prisma.user_excel.upsert({
-          where: { email_user: row.email_user },
-          update: { company_user: row.company_user, division_user: row.division_user },
-          create: row,
+        // Find or create company
+        const company = await prisma.company.upsert({
+          where: { name: row.company_name },
+          update: {},
+          create: { name: row.company_name }
         });
 
         const existed = existingMap.has(row.email_user);
-        const updated = existed && (
-          existingMap.get(row.email_user).company_user !== row.company_user ||
-          existingMap.get(row.email_user).division_user !== row.division_user
-        );
+        const existingUser = existingMap.get(row.email_user);
 
-        if (!existed) insertedCount++;
-        else if (updated) updatedCount++;
+        // For existing registered users, update only division if needed
+        // For new uploads, create pending user
+        if (existed && existingUser.registration_status === 'completed') {
+          // User already registered, just update section if different
+          if (existingUser.section_user !== row.division_user) {
+            await prisma.user.update({
+              where: { email_user: row.email_user },
+              data: { section_user: row.division_user }
+            });
+            updatedCount++;
+          }
+        } else if (existed && existingUser.registration_status === 'pending') {
+          // Update pending user
+          await prisma.user.update({
+            where: { email_user: row.email_user },
+            data: { 
+              company_id: company.id,
+              section_user: row.division_user 
+            }
+          });
+          updatedCount++;
+        } else {
+          // Create new pending user
+          await prisma.user.create({
+            data: {
+              email_user: row.email_user,
+              company_id: company.id,
+              section_user: row.division_user,
+              registration_status: 'pending',
+              status: 'not_registered',
+              role_user: 'user',
+              survey_status: 'not_started'
+            }
+          });
+          insertedCount++;
+        }
       } catch (err) {
         console.error(`Error saving ${row.email_user}:`, err);
       }

@@ -10,41 +10,32 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model user_excel {
-  id             Int      @id @default(autoincrement())
-  email_user     String   @unique
-  company_id     Int?
-  company        company? @relation(fields: [company_id], references: [id])
-  division_user  String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @default(now()) @updatedAt
-}
-
-// Add the User model for registered users
+// Unified User model for both uploaded and registered users
 model user {
-  id                Int           @id @default(autoincrement())
-  title_user        String?       // Added title field
-  name_user         String
-  email_user        String        @unique
-  company_id        Int?
-  company           company?      @relation(fields: [company_id], references: [id])
-  phone_user        String?
-  password_user     String?
-  position_id       Int?
-  position          position?     @relation(fields: [position_id], references: [id])
-  department_id     Int?
-  department        department?   @relation(fields: [department_id], references: [id])
-  experience_id     Int?
-  experience        experience?   @relation(fields: [experience_id], references: [id])
-  work_group_id     Int?
-  work_group        work_group?   @relation(fields: [work_group_id], references: [id])
-  section_user      String?       // This corresponds to division in the frontend
-  role_user         String        @default("user")
-  status            String        @default("registered") // registered, active, inactive
-  survey_status     String        @default("not_started") // not_started, in_progress, done
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-  survey_answers    survey_answer[]
+  id                    Int           @id @default(autoincrement())
+  title_user            String?       // Added title field
+  name_user             String?       // Made nullable for uploaded users
+  email_user            String        @unique
+  company_id            Int?
+  company               company?      @relation(fields: [company_id], references: [id])
+  phone_user            String?
+  password_user         String?
+  position_id           Int?
+  position              position?     @relation(fields: [position_id], references: [id])
+  department_id         Int?
+  department            department?   @relation(fields: [department_id], references: [id])
+  experience_id         Int?
+  experience            experience?   @relation(fields: [experience_id], references: [id])
+  work_group_id         Int?
+  work_group            work_group?   @relation(fields: [work_group_id], references: [id])
+  section_user          String?       // This corresponds to division in the frontend / from excel upload
+  role_user             String        @default("user")
+  status                String        @default("registered") // registered, active, inactive, not_registered (for uploaded users)
+  registration_status   String        @default("pending") // pending (uploaded), completed (registered)
+  survey_status         String        @default("not_started") // not_started, in_progress, done
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  survey_answers        survey_answer[]
 }
 
 model admin_list {
@@ -68,7 +59,6 @@ model company {
   id            Int          @id @default(autoincrement())
   name          String       @unique // ชื่อบริษัท
   users         user[]
-  user_excels   user_excel[]
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 }
