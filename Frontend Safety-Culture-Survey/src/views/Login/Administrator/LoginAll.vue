@@ -305,6 +305,7 @@ const handleLogin = async () => {
   try {
     if (loginType.value === 'admin') {
       const response = await axios.post('/api/admin/login', { email: userEmail, password: userPassword })
+      localStorage.setItem('adminToken', response.data.token) 
       localStorage.setItem('user', JSON.stringify({
         email: response.data.email,
         role: response.data.role,
@@ -315,6 +316,7 @@ const handleLogin = async () => {
       router.push('/dashboard')
     } else {
       const response = await axios.post('/api/super-admins/login', { email: userEmail, password: userPassword })
+      localStorage.setItem('adminToken', response.data.token);
       localStorage.setItem('user', JSON.stringify({ email: userEmail, role: response.data.role }))
       router.push('/settings')
     }

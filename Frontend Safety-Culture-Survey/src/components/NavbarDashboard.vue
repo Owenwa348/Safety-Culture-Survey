@@ -440,6 +440,7 @@ const logout = () => {
   console.log('Logout clicked')
   // Clear localStorage
   localStorage.removeItem('user')
+  localStorage.removeItem('adminToken')
   closeAllMenus()
   // Redirect to login page
   window.location.href = '/Login-all'

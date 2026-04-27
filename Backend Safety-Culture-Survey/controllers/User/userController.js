@@ -1,3 +1,4 @@
+// controllers/User/userController.js
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 const prisma = new PrismaClient();
@@ -47,8 +48,25 @@ const getStatusPriority = (status) => {
 // ========================================================
 const getAllUsers = async (req, res) => {
   try {
-    // ดึงข้อมูลผู้ใช้ทั้งหมด (ทั้งที่อัปโหลดและลงทะเบียนแล้ว)
+    const matchedCompanyIds = req.user?.matchedCompanyIds;
+    const normalizedRole = req.user?.role?.replace(/\s+/g, '') || 'Admin';
+
+    // ✅ สร้าง where clause ตาม role
+    let whereClause = {};
+
+    if (normalizedRole === 'SuperAdmin' || matchedCompanyIds === null) {
+      // SuperAdmin: ไม่ filter เห็นทุกบริษัท
+      whereClause = {};
+    } else if (Array.isArray(matchedCompanyIds) && matchedCompanyIds.length > 0) {
+      // Admin: เห็นเฉพาะบริษัทตัวเอง
+      whereClause = { company_id: { in: matchedCompanyIds } };
+    } else {
+      // Admin ที่ไม่มีบริษัท match เลย → ไม่แสดงข้อมูล
+      return res.status(200).json([]);
+    }
+
     const allUsers = await prisma.user.findMany({
+      where: whereClause,
       include: {
         company: true,
         position: true,
@@ -56,10 +74,9 @@ const getAllUsers = async (req, res) => {
         work_group: true,
         experience: true,
       },
-      orderBy: { createdAt: 'asc' }
+      orderBy: { createdAt: 'asc' },
     });
 
-    // จัดรูปแบบและเรียงลำดับ
     const formattedUsers = allUsers.map((u, idx) => formatRegisteredUser(u, idx));
 
     formattedUsers.sort((a, b) =>
@@ -74,7 +91,6 @@ const getAllUsers = async (req, res) => {
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 };
-
 // ========================================================
 // POST /api/users/check-email
 // ========================================================

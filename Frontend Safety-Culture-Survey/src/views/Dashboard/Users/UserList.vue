@@ -435,23 +435,35 @@ const userToDelete = ref(null)
 const deleteIndex = ref(-1)
 
 const originalUserData = ref({})
-
+// ✅ helper ดึง token + config header
+const getAuthHeader = () => {
+  const token = localStorage.getItem('adminToken');
+  return { headers: { Authorization: `Bearer ${token}` } };
+};
 // Function to fetch users from backend
 const fetchUsers = async () => {
   try {
-    loading.value = true
-    const response = await axios.get('/api/users/users')
+    loading.value = true;
+    const response = await axios.get('/api/users/users', getAuthHeader()); // ✅ แนบ token
     users.value = response.data.map(user => ({
       ...user,
       isEditing: false
-    }))
+    }));
   } catch (error) {
-    console.error('Error fetching users:', error)
-    users.value = []
+    console.error('Error fetching users:', error);
+    users.value = [];
+
+    // ✅ ถ้า 401 → token หมดอายุ/ไม่มี → ไล่ออก
+    if (error.response?.status === 401) {
+      localStorage.removeItem('adminToken');
+      localStorage.removeItem('user');
+      window.location.href = '/Login-all';
+    }
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
+
 
 // Function to refresh users data (to be called after registration)
 const refreshUsers = async () => {
@@ -685,12 +697,10 @@ async function confirmDelete() {
   if (userToDelete.value) {
     try {
       const email = userToDelete.value.email_user;
-      await axios.delete(`/api/users/by-email/${email}`);
-      // Refresh the user list from the server
-      await fetchUsers(); 
+      await axios.delete(`/api/users/by-email/${email}`, getAuthHeader()); // ✅ แนบ token ด้วย
+      await fetchUsers();
     } catch (error) {
       console.error('Error deleting user:', error);
-      // Optionally, show an error message to the user
     }
   }
   closeDeleteModal();

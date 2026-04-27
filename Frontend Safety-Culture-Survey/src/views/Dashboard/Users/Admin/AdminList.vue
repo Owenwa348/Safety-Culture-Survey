@@ -169,15 +169,19 @@ const editData = ref({ fullName: '', companyName: '' });
 const admins = ref([]);
 const loading = ref(true);
 
+const getAuthHeader = () => {
+  const token = localStorage.getItem('adminToken');
+  return { headers: { Authorization: `Bearer ${token}` } };
+};
+
 async function fetchAdmins() {
   loading.value = true;
   try {
-    const { data } = await axios.get(`${API_URL}/list`);
+    const { data } = await axios.get(`${API_URL}/list`, getAuthHeader());
     admins.value = Array.isArray(data) ? data : [];
   } catch (error) {
     console.error('Failed to fetch admins:', error);
     admins.value = [];
-    alert('ไม่สามารถโหลดข้อมูล Admin ได้');
   } finally {
     loading.value = false;
   }
@@ -217,18 +221,14 @@ async function saveAdmin(admin) {
   const firstName = nameParts[0] || '';
   const lastName = nameParts.slice(1).join(' ') || '';
 
-  const payload = {
-      firstName,
-      lastName,
-      companyName: editData.value.companyName
-  };
-
   try {
-    const { data } = await axios.put(`${API_URL}/update/${admin.id}`, payload);
+    const { data } = await axios.put(
+      `${API_URL}/update/${admin.id}`, 
+      { firstName, lastName, companyName: editData.value.companyName },
+      getAuthHeader()
+    );
     const index = admins.value.findIndex(a => a.id === admin.id);
-    if (index !== -1) {
-      admins.value[index] = { ...admins.value[index], ...data.admin };
-    }
+    if (index !== -1) admins.value[index] = { ...admins.value[index], ...data.admin };
     cancelEdit();
   } catch (error) {
     console.error('Failed to update admin:', error);
@@ -237,33 +237,25 @@ async function saveAdmin(admin) {
 }
 
 async function toggleStatus(admin) {
-  if (admin.status === 'PENDING') {
-      alert('ไม่สามารถเปลี่ยนสถานะผู้ที่ยังไม่ยืนยันตัวตนได้');
-      return;
-  }
+  if (admin.status === 'PENDING') return;
   const newStatus = admin.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-  const actionText = newStatus === 'INACTIVE' ? 'ปิดบัญชี' : 'เปิดบัญชี';
-
-  if (!confirm(`ต้องการ ${actionText} ของ ${admin.email} หรือไม่?`)) return;
+  if (!confirm(`ต้องการ${newStatus === 'INACTIVE' ? 'ปิด' : 'เปิด'}บัญชี ${admin.email}?`)) return;
 
   try {
-    await axios.put(`${API_URL}/status/${admin.id}`, { status: newStatus });
+    await axios.put(`${API_URL}/status/${admin.id}`, { status: newStatus }, getAuthHeader());
     admin.status = newStatus;
   } catch (error) {
     console.error('Failed to toggle status:', error);
-    alert(`เกิดข้อผิดพลาดในการ ${actionText}`);
   }
 }
 
 async function deleteAdmin(admin) {
-  if (!confirm(`ต้องการลบ ${admin.email} ออกจากระบบใช่หรือไม่?`)) return;
-  
+  if (!confirm(`ต้องการลบ ${admin.email}?`)) return;
   try {
-    await axios.delete(`${API_URL}/delete/${admin.id}`);
+    await axios.delete(`${API_URL}/delete/${admin.id}`, getAuthHeader());
     admins.value = admins.value.filter(a => a.id !== admin.id);
   } catch (error) {
     console.error('Failed to remove admin:', error);
-    alert('เกิดข้อผิดพลาดในการลบผู้ดูแล');
   }
 }
 

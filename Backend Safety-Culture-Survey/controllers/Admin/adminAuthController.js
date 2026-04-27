@@ -1,7 +1,9 @@
+// controllers/Admin/adminAuthController.js
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const bcrypt = require('bcryptjs');
-
+const jwt = require('jsonwebtoken');
+const { getMatchedCompanyIds } = require('../../services/companyService');
 // 1. SuperAdmin adds a new Admin
 const addAdmin = async (req, res) => {
   const { email, companyName } = req.body;
@@ -203,19 +205,35 @@ const adminLogin = async (req, res) => {
         }
 
         const isPasswordValid = await bcrypt.compare(password, admin.password);
-
         if (!isPasswordValid) {
             return res.status(401).json({ message: 'Authentication failed. Incorrect password.' });
         }
 
-        // Do not send the password back
+        // ✅ ดึง company IDs ที่ Admin คนนี้มีสิทธิ์เข้าถึง
+        const matchedCompanyIds = await getMatchedCompanyIds(admin.companyName);
+
+        // ✅ สร้าง JWT Token พร้อม matchedCompanyIds
+        const token = jwt.sign(
+            {
+                adminId: admin.id,
+                email: admin.email,
+                role: admin.role,
+                companyName: admin.companyName,
+                matchedCompanyIds, // ← array เช่น [1, 2, 5]
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
+        );
+
         res.status(200).json({
             message: 'Login successful',
+            token, // ✅ ส่ง token กลับไปให้ frontend เก็บ
             email: admin.email,
             firstName: admin.firstName,
             lastName: admin.lastName,
             role: admin.role,
             companyName: admin.companyName,
+            matchedCompanyIds,
         });
     } catch (error) {
         console.error('Admin login error:', error);
