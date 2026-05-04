@@ -146,6 +146,7 @@ import {
   Legend
 } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
+import { apiFetch } from '../../../utils/apiClient';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend, ChartDataLabels);
 
@@ -182,66 +183,37 @@ const colorsLight = ['#B5826F', '#fca5a5', '#fdba74', '#fde68a', '#86efac'];
 // Fetch available assessment years
 const fetchYears = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/analytics/assessment-years`);
+    const response = await apiFetch(`${API_BASE_URL}/analytics/assessment-years`);
     if (!response.ok) throw new Error('Failed to fetch years');
     const data = await response.json();
     availableYears.value = data;
-    if (data.length > 0) {
-      selectedYear.value = data[0]; // Default to the most recent year
-    }
-  } catch (err) {
-    console.error('Error fetching years:', err);
-    throw err;
-  }
+    if (data.length > 0) selectedYear.value = data[0];
+  } catch (err) { console.error('Error fetching years:', err); throw err; }
 };
 
 // Fetch areas/companies list
 const fetchAreas = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/analytics/companies`);
+    const response = await apiFetch(`${API_BASE_URL}/analytics/companies`);
     if (!response.ok) throw new Error('Failed to fetch areas');
-    const data = await response.json();
-    areas.value = data;
-  } catch (err) {
-    console.error('Error fetching areas:', err);
-    throw err;
-  }
+    areas.value = await response.json();
+  } catch (err) { console.error('Error fetching areas:', err); throw err; }
 };
 
 // Fetch stacked chart data
 const fetchChartData = async (year, areaId, timeframe) => {
-  if (!year) {
-    chartDataRaw.value = null; // Clear data if no year is selected
-    return;
-  }
-  
-  // แสดง loading overlay เฉพาะตอนไม่มีข้อมูลเลย
+  if (!year) { chartDataRaw.value = null; return; }
   const showLoading = !chartDataRaw.value;
   if (showLoading) loading.value = true;
-  
   try {
-    const params = new URLSearchParams({
-      areaId: areaId || 'combined',
-      timeframe: timeframe || 'comparison',
-      year: year
-    });
-    
-    const response = await fetch(`${API_BASE_URL}/analytics/stacked-chart-data?${params}`);
+    const params = new URLSearchParams({ areaId: areaId || 'combined', timeframe: timeframe || 'comparison', year });
+    const response = await apiFetch(`${API_BASE_URL}/analytics/stacked-chart-data?${params}`);
     if (!response.ok) throw new Error('Failed to fetch chart data');
     const data = await response.json();
     chartDataRaw.value = data;
-    
-    // อัปเดต categories จากข้อมูล API
-    if (data.categories) {
-      categories.value = data.categories;
-    }
-  } catch (err) {
-    console.error('Error fetching chart data:', err);
-    chartDataRaw.value = null; // Clear data on error
-    throw err;
-  } finally {
-    if (showLoading) loading.value = false;
-  }
+    if (data.categories) categories.value = data.categories;
+  } catch (err) { chartDataRaw.value = null; throw err; }
+  finally { if (showLoading) loading.value = false; }
 };
 // Fetch all data
 const fetchData = async () => {

@@ -193,6 +193,7 @@ import {
   Legend,
 } from 'chart.js';
 import { Bar } from 'vue-chartjs';
+import { apiFetch } from '../../../utils/apiClient';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -237,66 +238,38 @@ const colors = {
 
 const fetchAssessmentYears = async () => {
   try {
-    const response = await fetch('/api/analytics/assessment-years');
-    if (!response.ok) {
-      throw new Error('ไม่สามารถดึงข้อมูลปีได้');
-    }
+    const response = await apiFetch('/api/analytics/assessment-years');
+    if (!response.ok) throw new Error('ไม่สามารถดึงข้อมูลปีได้');
     const years = await response.json();
-    availableYears.value = years.sort((a, b) => b - a); // Sort descending
+    availableYears.value = years.sort((a, b) => b - a);
     if (!availableYears.value.includes(selectedYear.value)) {
       selectedYear.value = availableYears.value[0] || new Date().getFullYear();
     }
   } catch (err) {
     console.error(err.message);
-    if (availableYears.value.length === 0) {
-      availableYears.value = [new Date().getFullYear()];
-    }
+    if (availableYears.value.length === 0) availableYears.value = [new Date().getFullYear()];
   }
 };
 
 const fetchCompanies = async () => {
   try {
-    const response = await fetch('/api/companies');
-    if (!response.ok) {
-      throw new Error('ไม่สามารถดึงข้อมูลบริษัทได้');
-    }
+    const response = await apiFetch('/api/analytics/companies');
+    if (!response.ok) throw new Error('ไม่สามารถดึงข้อมูลบริษัทได้');
     const data = await response.json();
-    const companyNames = data.map(company => company.name);
-    
-    // เรียงชื่อบริษัทตามตัวอักษรเพื่อให้ลำดับ company_1, company_2, company_3... สอดคล้องกัน
-    // company_1 = บริษัทแรกตามลำดับตัวอักษร, company_2 = บริษัทที่สอง, ฯลฯ
-    companyNames.sort();
-    
-    const companyOptions = [];
-    const newAreaNameMap = { 'combined': 'บริษัททั้งหมด' };
-
-    companyNames.forEach((name, index) => {
-      const versionId = `company_${index + 1}`; // company_1, company_2, company_3... เป็น ID อ้างอิงบริษัทจากฐานข้อมูล
-      companyOptions.push({ id: versionId, name: name });
-      newAreaNameMap[versionId] = name;
-    });
-
-    companies.value = companyOptions;
-    areaNameMap.value = newAreaNameMap;
-
+    const companyNames = data.map(c => c.name).sort();
+    companies.value = companyNames.map((name, i) => ({ id: `company_${i + 1}`, name }));
+    areaNameMap.value = { 'combined': 'บริษัททั้งหมด', ...Object.fromEntries(companyNames.map((name, i) => [`company_${i + 1}`, name])) };
   } catch (err) {
     console.error(err.message);
-    companies.value = [];
-    areaNameMap.value = { 'combined': 'บริษัททั้งหมด' };
   }
 };
 
 const fetchCategories = async () => {
   try {
-    const response = await fetch('/api/categories');
-    if (!response.ok) {
-      throw new Error('ไม่สามารถดึงข้อมูลหมวดหมู่ได้');
-    }
+    const response = await apiFetch('/api/categories');
+    if (!response.ok) throw new Error('ไม่สามารถดึงข้อมูลหมวดหมู่ได้');
     categories.value = await response.json();
-  } catch (err) {
-    console.error(err.message);
-    categories.value = [];
-  }
+  } catch (err) { console.error(err.message); }
 };
 
 
@@ -308,24 +281,19 @@ const fetchData = async () => {
   futureData.value = {};
   try {
     const yearQuery = `?year=${selectedYear.value}`;
-    // เรียก API ทั้ง 2 endpoints พร้อมกัน
     const [currentResponse, futureResponse] = await Promise.all([
-      fetch(`/api/analytics/evaluation/current${yearQuery}`),
-      fetch(`/api/analytics/evaluation/future${yearQuery}`)
+      apiFetch(`/api/analytics/evaluation/current${yearQuery}`),
+      apiFetch(`/api/analytics/evaluation/future${yearQuery}`)
     ]);
-
-    if (!currentResponse.ok || !futureResponse.ok) {
-      throw new Error('ไม่สามารถดึงข้อมูลจากเซิร์ฟเวอร์ได้');
-    }
-
-    const currentResult = await currentResponse.json();
-    const futureResult = await futureResponse.json();
-
-    if (Object.keys(currentResult).length > 0 && Object.keys(futureResult).length > 0) {
+    if (!currentResponse.ok || !futureResponse.ok) throw new Error('ไม่สามารถดึงข้อมูลจากเซิร์ฟเวอร์ได้');
+    const [currentResult, futureResult] = await Promise.all([
+      currentResponse.json(),
+      futureResponse.json()
+    ]);
+    if (Object.keys(currentResult).length > 0) {
       currentData.value = currentResult;
       futureData.value = futureResult;
     }
-
   } catch (err) {
     console.error('Fetch error:', err);
     error.value = err.message;

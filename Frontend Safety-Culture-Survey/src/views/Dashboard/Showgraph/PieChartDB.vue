@@ -151,6 +151,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import axios from 'axios';
+import { apiGet } from '../../../utils/apiClient';
 
 // Props (if needed from parent)
 const props = defineProps({
@@ -179,9 +180,8 @@ const colorPalette = [
 const loadData = async () => {
   loading.value = true;
   error.value = null;
-  
   try {
-    const response = await axios.get('/api/analytics/completion-status');
+    const response = await apiGet('/api/analytics/completion-status'); 
     allUsers.value = response.data;
   } catch (err) {
     error.value = 'ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่อีกครั้ง';

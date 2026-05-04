@@ -1,9 +1,9 @@
 <!-- WorkGroupEvaluationResults.vue -->
 <script setup>
 import { ref, computed, onMounted, watch } from "vue";
-import axios from 'axios';
 import BetChart from "../Showgraph/BetChart.vue";
 import NavbarDashboard from '../../../components/NavbarDashboard.vue';
+import { axiosAuth as axios } from '../../../utils/apiClient';
 
 // ============================================
 // SECTION 1: STATE MANAGEMENT
@@ -143,7 +143,7 @@ const calculateAverage = (scores) => {
  */
 const fetchCompanyOptions = async () => {
   try {
-    const response = await axios.get('/api/companies');
+    const response = await axios.get('/api/analytics/companies');
     const companies = response.data;
 
     // สร้าง options โดยเริ่มจาก "ทั้งหมด"

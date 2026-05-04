@@ -198,6 +198,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+import { apiFetch } from '../../../utils/apiClient';
 
 // =======================================
 // API Configuration
@@ -228,13 +229,11 @@ const selectedView = ref('both');
 // Fetch available assessment years
 const fetchYears = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/analytics/assessment-years`);
+    const response = await apiFetch(`${API_BASE_URL}/analytics/assessment-years`);
     if (!response.ok) throw new Error('Failed to fetch years');
     const data = await response.json();
     availableYears.value = data;
-    if (data.length > 0) {
-      selectedYear.value = data[0]; // Default to the most recent year
-    }
+    if (data.length > 0) selectedYear.value = data[0];
   } catch (err) {
     console.error('Error fetching years:', err);
     throw err;
@@ -244,10 +243,9 @@ const fetchYears = async () => {
 // Fetch companies list
 const fetchCompanies = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/analytics/companies`);
+    const response = await apiFetch(`${API_BASE_URL}/analytics/companies`);
     if (!response.ok) throw new Error('Failed to fetch companies');
-    const data = await response.json();
-    companies.value = data;
+    companies.value = await response.json();
   } catch (err) {
     console.error('Error fetching companies:', err);
     throw err;
@@ -257,10 +255,9 @@ const fetchCompanies = async () => {
 // Fetch categories list
 const fetchCategories = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/categories`);
+    const response = await apiFetch(`${API_BASE_URL}/categories`);
     if (!response.ok) throw new Error('Failed to fetch categories');
     const data = await response.json();
-    // Sort by id
     categories.value = data.sort((a, b) => a.id - b.id);
   } catch (err) {
     console.error('Error fetching categories:', err);
@@ -271,15 +268,10 @@ const fetchCategories = async () => {
 // Fetch questions list
 const fetchQuestions = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/questions`);
+    const response = await apiFetch(`${API_BASE_URL}/questions`);
     if (!response.ok) throw new Error('Failed to fetch questions');
     const data = await response.json();
-    // Add number field and sort
-    const questionsWithNumbers = data.map((q, index) => ({
-      ...q,
-      number: `Q${index + 1}`
-    }));
-    questions.value = questionsWithNumbers;
+    questions.value = data.map((q, index) => ({ ...q, number: `Q${index + 1}` }));
   } catch (err) {
     console.error('Error fetching questions:', err);
     throw err;
@@ -288,31 +280,14 @@ const fetchQuestions = async () => {
 
 // Fetch survey data for specific question and company
 const fetchSurveyData = async (questionId, companyId, year) => {
-  if (!questionId || !year) {
-    surveyData.value = null;
-    return;
-  }
+  if (!questionId || !year) { surveyData.value = null; return; }
   try {
-    const params = new URLSearchParams({
-      questionId: questionId,
-      companyId: companyId || 'combined',
-      year: year
-    });
-    
-    const response = await fetch(`${API_BASE_URL}/analytics/survey-data?${params}`);
-    if (!response.ok) {
-        surveyData.value = null; // Clear data on error
-        const errorData = await response.json().catch(() => null);
-        if (response.status === 404) {
-            throw new Error('ไม่พบข้อมูลสำหรับคำถามและบริษัทที่เลือกในปีนี้');
-        }
-        throw new Error(errorData?.message || 'Failed to fetch survey data');
-    }
-    const data = await response.json();
-    surveyData.value = data;
+    const params = new URLSearchParams({ questionId, companyId: companyId || 'combined', year });
+    const response = await apiFetch(`${API_BASE_URL}/analytics/survey-data?${params}`);
+    if (!response.ok) { surveyData.value = null; throw new Error('Failed to fetch survey data'); }
+    surveyData.value = await response.json();
   } catch (err) {
-    console.error('Error fetching survey data:', err);
-    surveyData.value = null; // Clear data on error
+    surveyData.value = null;
     throw err;
   }
 };

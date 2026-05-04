@@ -1,6 +1,7 @@
+<!-- QuestionResults.vue -->
 <script setup>
 import { ref, computed, onMounted, watch } from "vue";
-import axios from 'axios';
+import { axiosAuth as axios } from '../../../utils/apiClient';
 import StackedBar from "../Showgraph/StackedBar.vue";
 import NavbarDashboard from '../../../components/NavbarDashboard.vue';
 
@@ -89,7 +90,7 @@ const updateLabels = () => {
  */
 const fetchCompanies = async () => {
   try {
-    const response = await axios.get('/api/companies');
+    const response = await axios.get('/api/analytics/companies');
     const companies = response.data.map(company => ({
       value: company.name,
       label: company.name

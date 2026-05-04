@@ -202,7 +202,7 @@
 
 <script setup>
 import { ref, onMounted, computed, nextTick } from 'vue';
-import axios from 'axios';
+import { axiosAuth as axios } from '../../../utils/apiClient';
 import NavbarDashboard from '../../../components/NavbarDashboard.vue';
 
 const questions = ref([]);
@@ -213,7 +213,7 @@ const questionRefs = ref({});
 
 const fetchQuestions = async () => {
   try {
-    const response = await axios.get('/api/questions');
+    const response = await axios.get('/api/analytics/opinions');
     questions.value = response.data.map(q => ({
       ...q,
       opinions: (q.survey_answers || []).map(sa => ({

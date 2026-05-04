@@ -57,7 +57,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import axios from 'axios'
+import { axiosAuth as axios } from '../../utils/apiClient'
 import ExcelJS from 'exceljs'
 import { saveAs } from 'file-saver'
 import { Chart, registerables } from 'chart.js'
@@ -151,15 +151,12 @@ const generateExcel = async () => {
   isGenerating.value = true
   try {
     const currentYear = new Date().getFullYear()
-    const token = localStorage.getItem('adminToken')
-    const authHeader = { headers: { Authorization: `Bearer ${token}` } }
-
     const [questionsRes, categoriesRes, resultsRes, completionRes, usersRes, rawAnswersRes] = await Promise.all([
       axios.get('/api/questions'),
       axios.get('/api/categories'),
       axios.get(`/api/analytics/question-results?year=${currentYear}`),
       axios.get('/api/analytics/completion-status'),
-      axios.get('/api/users/users', authHeader),
+      axios.get('/api/users/users'),               // ← ไม่ต้องส่ง authHeader แล้ว
       axios.get(`/api/analytics/raw-answers?year=${currentYear}`)
     ])
 
