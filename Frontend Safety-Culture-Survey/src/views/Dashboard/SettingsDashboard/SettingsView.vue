@@ -1,3 +1,4 @@
+<!-- Settings View.vue -->
 <script setup>
 import NavbarDashboard from '../../../components/NavbarDashboard.vue'
 import EditPosition from './Editlogin/EditPosition.vue'
