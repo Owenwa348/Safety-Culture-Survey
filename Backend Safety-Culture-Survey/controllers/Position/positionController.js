@@ -1,32 +1,64 @@
-// positionController.js
+// controllers/Position/positionController.js
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 
+const parseIds = (value) => {
+  if (!value) return []
+  if (Array.isArray(value)) return value.map(Number)
+  return String(value).split(',').map(Number).filter(Boolean)
+}
+
+// GET ?companyIds=1,2,3 — deduplicate by name
 const getPositions = async (req, res) => {
   try {
+    const ids = parseIds(req.query.companyIds)
+    if (!ids.length)
+      return res.status(400).json({ message: 'กรุณาระบุ companyIds' })
+
     const positions = await prisma.position.findMany({
+      where: { companyId: { in: ids } },
       orderBy: { id: 'asc' },
     })
-    res.status(200).json(positions)
+
+    // ✅ deduplicate by name — เก็บ record แรกของแต่ละชื่อ
+    const seen = new Set()
+    const deduped = positions.filter(p => {
+      if (seen.has(p.name)) return false
+      seen.add(p.name)
+      return true
+    })
+
+    res.status(200).json(deduped)
   } catch (error) {
     console.error('getPositions error:', error)
     res.status(500).json({ message: 'Internal server error' })
   }
 }
 
+// POST — สร้างให้ทุกบริษัทในกลุ่ม
 const addPosition = async (req, res) => {
   try {
-    const { name } = req.body
+    const { name, companyIds } = req.body
     if (!name || !name.trim())
       return res.status(400).json({ message: 'ชื่อเป็นข้อมูลบังคับ' })
 
-    const existing = await prisma.position.findFirst({ where: { name } })
-    if (existing)
-      return res.status(409).json({ message: 'มีรายการนี้แล้ว' })
+    const ids = parseIds(companyIds)
+    if (!ids.length)
+      return res.status(400).json({ message: 'กรุณาระบุ companyIds' })
 
-    const created = await prisma.position.create({
-      data: { name: name.trim() },
-    })
+    const created = []
+    for (const cId of ids) {
+      const existing = await prisma.position.findFirst({
+        where: { name: name.trim(), companyId: cId },
+      })
+      if (!existing) {
+        const pos = await prisma.position.create({
+          data: { name: name.trim(), companyId: cId },
+        })
+        created.push(pos)
+      }
+    }
+
     res.status(201).json(created)
   } catch (error) {
     console.error('addPosition error:', error)
@@ -34,58 +66,71 @@ const addPosition = async (req, res) => {
   }
 }
 
+// PUT /:id — แก้ไขทุก record ที่ชื่อเดิมในกลุ่มบริษัทเดียวกัน (sync)
 const updatePosition = async (req, res) => {
   try {
     const { id } = req.params
-    const { name } = req.body
+    const { name, companyIds } = req.body
     if (!name || !name.trim())
       return res.status(400).json({ message: 'ชื่อเป็นข้อมูลบังคับ' })
 
-    const positionId = parseInt(id);
+    // หา record ต้นทางก่อน
+    const target = await prisma.position.findUnique({ where: { id: parseInt(id) } })
+    if (!target)
+      return res.status(404).json({ message: 'ไม่พบตำแหน่งที่ต้องการแก้ไข' })
 
-    // Find the position to get the old name
-    const existingPosition = await prisma.position.findUnique({
-      where: { id: positionId },
-    });
+    const ids = parseIds(companyIds)
 
-    if (!existingPosition) {
-      return res.status(404).json({ message: "ไม่พบตำแหน่งที่ต้องการแก้ไข" });
+    if (ids.length > 0) {
+      // ✅ sync — อัปเดตทุก record ที่มีชื่อเดิม ในทุกบริษัทของกลุ่ม
+      await prisma.position.updateMany({
+        where: {
+          name: target.name,          // ชื่อเดิม
+          companyId: { in: ids },     // เฉพาะบริษัทในกลุ่มนี้
+        },
+        data: { name: name.trim() },
+      })
+    } else {
+      // fallback — แก้เฉพาะ record นี้
+      await prisma.position.update({
+        where: { id: parseInt(id) },
+        data: { name: name.trim() },
+      })
     }
 
-    const oldName = existingPosition.name;
-    const newName = name.trim();
-
-    // If the name is not changing, no need to update users
-    if (oldName === newName) {
-      return res.status(200).json(existingPosition);
-    }
-
-    // Use a transaction to update both position and related users
-    const [updatedPosition] = await prisma.$transaction([
-      prisma.position.update({
-        where: { id: positionId },
-        data: { name: newName },
-      }),
-      prisma.user.updateMany({
-        where: { position_user: oldName },
-        data: { position_user: newName },
-      }),
-    ]);
-
-    res.status(200).json(updatedPosition)
+    // คืน record ที่แก้ไขแล้ว
+    const updated = await prisma.position.findUnique({ where: { id: parseInt(id) } })
+    res.status(200).json(updated)
   } catch (error) {
     console.error('updatePosition error:', error)
     res.status(500).json({ message: 'Internal server error' })
   }
 }
 
-// แก้ให้ลบจริง
+// DELETE /:id — ลบทุก record ที่ชื่อเดิมในกลุ่มบริษัทเดียวกัน (sync)
 const deletePosition = async (req, res) => {
   try {
     const { id } = req.params
-    await prisma.position.delete({
-      where: { id: parseInt(id) },
-    })
+    const companyIds = req.query.companyIds  // รับ companyIds จาก query string
+
+    const target = await prisma.position.findUnique({ where: { id: parseInt(id) } })
+    if (!target)
+      return res.status(404).json({ message: 'ไม่พบตำแหน่ง' })
+
+    const ids = parseIds(companyIds)
+
+    if (ids.length > 0) {
+      // ✅ sync — ลบทุก record ที่มีชื่อเดิม ในทุกบริษัทของกลุ่ม
+      await prisma.position.deleteMany({
+        where: {
+          name: target.name,
+          companyId: { in: ids },
+        },
+      })
+    } else {
+      await prisma.position.delete({ where: { id: parseInt(id) } })
+    }
+
     res.status(200).json({ message: 'ลบสำเร็จ' })
   } catch (error) {
     console.error('deletePosition error:', error)
@@ -93,9 +138,4 @@ const deletePosition = async (req, res) => {
   }
 }
 
-module.exports = {
-  getPositions,
-  addPosition,
-  updatePosition,
-  deletePosition,
-}
+module.exports = { getPositions, addPosition, updatePosition, deletePosition }

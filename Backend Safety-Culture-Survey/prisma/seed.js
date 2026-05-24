@@ -1,61 +1,31 @@
-//seed.js
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 
 const prisma = new PrismaClient();
 
-/**
- * ฟังก์ชันหลักสำหรับใส่ข้อมูลเริ่มต้นลงฐานข้อมูล
- * เรียกใช้คำสั่ง: npx prisma db seed
- */
 async function main() {
     console.log('🌱 เริ่มการใส่ข้อมูลเริ่มต้น...\n');
 
     try {
-        // ============================================================
-        // ขั้นตอนที่ 0: ลบข้อมูลเก่า (เพื่อให้สามารถ seed ใหม่ได้)
-        // ============================================================
         console.log('🗑️  ลบข้อมูลเก่า...');
         await prisma.survey_answer.deleteMany({});
         await prisma.user.deleteMany({});
+        await prisma.option.deleteMany({});
+        await prisma.question.deleteMany({});
+        await prisma.category.deleteMany({});
+        await prisma.position.deleteMany({});
+        await prisma.department.deleteMany({});
+        await prisma.work_group.deleteMany({});
+        await prisma.experience.deleteMany({});
         await prisma.company.deleteMany({});
         console.log('✅ ลบข้อมูลเสร็จสิ้น\n');
 
-        // ============================================================
-        // ตอนที่ 0.5: สร้างข้อมูลบริษัท
-        // ============================================================
-        await ใส่ข้อมูลบริษัท();
-
-        // ============================================================
-        // ตอนที่ 1: ใส่ข้อมูลพื้นฐาน (ตำแหน่ง, สายงาน, กลุ่มงาน, อายุงาน)
-        // ============================================================
-        await ใส่ข้อมูลพื้นฐาน();
-
-        // ============================================================
-        // ตอนที่ 2: ใส่ข้อมูลแบบประเมิน (หมวดหมู่ คำถาม ตัวเลือกคำตอบ)
-        // ============================================================
-        await ใส่ข้อมูลแบบประเมิน();
-
-        // ============================================================
-        // ตอนที่ 3: ใส่ข้อมูลพนักงานทั้งหมด (ทุกคนลงทะเบียนและ done)
-        // ============================================================
-        // ตอนที่ 4: ใส่ข้อมูลพนักงานที่ลงทะเบียนแล้ว 100%
-        // ============================================================
-        await ใส่ข้อมูลพนักงานลงทะเบียน();
-
-        // ============================================================
-        // ตอนที่ 5: ใส่คะแนนประเมินสำหรับคนที่ทำแบบประเมินเสร็จแล้ว
-        // ============================================================
-        await ใส่คะแนนประเมิน();
-
-        // ============================================================
-        // ตอนที่ 6: ใส่ข้อมูลผู้ดูแลระบบ (SuperAdmin, Admin และ Assessor)
-        // ============================================================
-        await ใส่ข้อมูลผู้ดูแลระบบ();
-
-        // ============================================================
-        // ตอนที่ 7: ใส่ข้อมูลติดต่อสอบถาม (Inquiry)
-        // ============================================================
+        const บริษัท = await ใส่ข้อมูลบริษัท();
+        await ใส่ข้อมูลพื้นฐานตามบริษัท(บริษัท);
+        await ใส่ข้อมูลแบบประเมิน(บริษัท[0]);        // ✅ FIX: ส่งแค่บริษัทแรก สร้าง 1 ชุด
+        await ใส่ข้อมูลพนักงานลงทะเบียน(บริษัท);
+        await ใส่คะแนนประเมิน(บริษัท[0]);             // ✅ FIX: ดึง question จากบริษัทแรก
+        await ใส่ข้อมูลผู้ดูแลระบบ(บริษัท);
         await ใส่ข้อมูลติดต่อสอบถาม();
 
         console.log('\n✨ ใส่ข้อมูลทั้งหมดเรียบร้อยแล้ว!');
@@ -65,12 +35,8 @@ async function main() {
         console.log('     • SafeGuard Operations Co., Ltd.  : 11 คน');
         console.log('     • SafeGuard Engineering Co., Ltd. : 11 คน');
         console.log('     • SafeGuard Solutions Co., Ltd.   : 10 คน + Assessor 1 คน');
-        console.log('   - done        : 14 คน');
-        console.log('   - in_progress :  9 คน (บริษัทละ 3 คน)');
-        console.log('   - not_started :  9 คน (บริษัทละ 3 คน)');
-        console.log('   - คำถามในแบบประเมิน: 100 ข้อ (4 กลุ่ม)');
+        console.log('   - คำถามในแบบประเมิน: 100 ข้อ (20 หมวด) — 1 ชุดกลาง ทุก user ตอบชุดเดียวกัน');
         console.log('   - ผู้ดูแลระบบ: SuperAdmin, Admin, Assessor');
-        console.log('   - ข้อมูลติดต่อสอบถาม: 4 ข้อ');
 
     } catch (error) {
         console.error('❌ เกิดข้อผิดพลาดระหว่างใส่ข้อมูล:', error);
@@ -79,67 +45,47 @@ async function main() {
 }
 
 // ============================================================
-// ข้อมูลบริษัทในเครือ SafeGuard Group (ใช้ร่วมกันทุกฟังก์ชัน)
+// ข้อมูลบริษัทในเครือ SafeGuard Group
 // ============================================================
 
 const บริษัทในเครือ = [
-    {
-        ชื่อ: 'SafeGuard Operations Co., Ltd.',
-        prefix: 'sg_operations',
-        แผนก: 'Operations'
-    },
-    {
-        ชื่อ: 'SafeGuard Engineering Co., Ltd.',
-        prefix: 'sg_engineering',
-        แผนก: 'Engineering'
-    },
-    {
-        ชื่อ: 'SafeGuard Solutions Co., Ltd.',
-        prefix: 'sg_solutions',
-        แผนก: 'Support'
-    }
+    { ชื่อ: 'SafeGuard Operations Co., Ltd.',  prefix: 'sg_operations',  แผนก: 'Operations' },
+    { ชื่อ: 'SafeGuard Engineering Co., Ltd.', prefix: 'sg_engineering', แผนก: 'Engineering' },
+    { ชื่อ: 'SafeGuard Solutions Co., Ltd.',   prefix: 'sg_solutions',   แผนก: 'Support' }
 ];
 
 // ============================================================
-// ฟังก์ชันสำหรับสร้างข้อมูลบริษัท
+// ฟังก์ชันสร้างบริษัท — คืน array ของ company records
 // ============================================================
 
 async function ใส่ข้อมูลบริษัท() {
-    console.log('🏢 ตอนที่ 0.5: กำลังสร้างข้อมูลบริษัท');
+    console.log('🏢 ตอนที่ 1: กำลังสร้างข้อมูลบริษัท');
     console.log('----------------------------------------');
 
-    for (const บริษัท of บริษัทในเครือ) {
-        const existing = await prisma.company.findUnique({
-            where: { name: บริษัท.ชื่อ }
-        });
-        
-        if (!existing) {
-            await prisma.company.create({
-                data: { name: บริษัท.ชื่อ }
-            });
-            console.log(`  ✅ สร้างบริษัท: ${บริษัท.ชื่อ}`);
+    const บริษัทที่สร้าง = [];
+    for (const บ of บริษัทในเครือ) {
+        let record = await prisma.company.findUnique({ where: { name: บ.ชื่อ } });
+        if (!record) {
+            record = await prisma.company.create({ data: { name: บ.ชื่อ } });
+            console.log(`  ✅ สร้างบริษัท: ${บ.ชื่อ} (id=${record.id})`);
+        } else {
+            console.log(`  📌 บริษัทมีอยู่แล้ว: ${บ.ชื่อ} (id=${record.id})`);
         }
+        บริษัทที่สร้าง.push({ ...บ, id: record.id });
     }
     console.log('✅ สร้างข้อมูลบริษัทเสร็จสิ้น\n');
+    return บริษัทที่สร้าง;
 }
 
 // ============================================================
-// ฟังก์ชันสำหรับใส่ข้อมูลพื้นฐาน
+// ฟังก์ชันสำหรับใส่ข้อมูลพื้นฐาน — ผูก companyId ทุก record
+// ✅ Settings page query WHERE companyId IN [ids] จึงต้องสร้างแยกต่างหากต่อบริษัท
 // ============================================================
 
-async function ใส่ข้อมูลพื้นฐาน() {
-    console.log('📊 ตอนที่ 1: กำลังใส่ข้อมูลพื้นฐาน');
+async function ใส่ข้อมูลพื้นฐานตามบริษัท(บริษัท) {
+    console.log('📊 ตอนที่ 2: กำลังใส่ข้อมูลพื้นฐาน (แยกตามบริษัท)');
     console.log('----------------------------------------');
 
-    await ใส่ตำแหน่งงาน();
-    await ใส่สายงาน();
-    await ใส่กลุ่มงาน();
-    await ใส่อายุงาน();
-
-    console.log('✅ ใส่ข้อมูลพื้นฐานเรียบร้อย\n');
-}
-
-async function ใส่ตำแหน่งงาน() {
     const รายการตำแหน่ง = [
         'ผู้บริหารระดับสูง / ผู้จัดการส่วน',
         'ผู้จัดการแผนก / ผู้จัดการ',
@@ -148,49 +94,15 @@ async function ใส่ตำแหน่งงาน() {
         'ผู้รับเหมาประจำ'
     ];
 
-    console.log('กำลังใส่ตำแหน่งงาน...');
-    for (const ชื่อตำแหน่ง of รายการตำแหน่ง) {
-        const มีอยู่แล้ว = await prisma.position.findFirst({ where: { name: ชื่อตำแหน่ง } });
-        if (!มีอยู่แล้ว) {
-            await prisma.position.create({ data: { name: ชื่อตำแหน่ง } });
-            console.log(`  ✅ เพิ่มแล้ว: ${ชื่อตำแหน่ง}`);
-        }
-    }
-    console.log('  📌 ตำแหน่งงานครบแล้ว\n');
-}
-
-async function ใส่สายงาน() {
     const รายการสายงาน = ['CEO', 'REP', 'COO', 'CFO', 'SSE', 'PSE', 'CME'];
-    console.log('กำลังใส่สายงาน...');
-    for (const ชื่อสายงาน of รายการสายงาน) {
-        const มีอยู่แล้ว = await prisma.department.findFirst({ where: { name: ชื่อสายงาน } });
-        if (!มีอยู่แล้ว) {
-            await prisma.department.create({ data: { name: ชื่อสายงาน } });
-            console.log(`  ✅ เพิ่มแล้ว: ${ชื่อสายงาน}`);
-        }
-    }
-    console.log('  📌 สายงานครบแล้ว\n');
-}
 
-async function ใส่กลุ่มงาน() {
     const รายการกลุ่มงาน = [
         'หน่วยงานเดินเครื่อง (Operation)',
         'หน่วยงานบำรุงรักษา (Maintenance)',
         'หน่วยงานวิศวกรรม (Engineering)',
         'หน่วยงานสนับสนุน (Supporting functions)'
     ];
-    console.log('กำลังใส่กลุ่มงาน...');
-    for (const ชื่อกลุ่มงาน of รายการกลุ่มงาน) {
-        const มีอยู่แล้ว = await prisma.work_group.findFirst({ where: { name: ชื่อกลุ่มงาน } });
-        if (!มีอยู่แล้ว) {
-            await prisma.work_group.create({ data: { name: ชื่อกลุ่มงาน } });
-            console.log(`  ✅ เพิ่มแล้ว: ${ชื่อกลุ่มงาน}`);
-        }
-    }
-    console.log('  📌 กลุ่มงานครบแล้ว\n');
-}
 
-async function ใส่อายุงาน() {
     const รายการอายุงาน = [
         '0-3 ปี',
         '3 ปีขึ้นไป แต่ไม่เกิน 5 ปี',
@@ -198,44 +110,78 @@ async function ใส่อายุงาน() {
         '10 ปีขึ้นไป แต่ไม่เกิน 15 ปี',
         'มากกว่า 15 ปีขึ้นไป'
     ];
-    console.log('กำลังใส่อายุงาน...');
-    for (const ช่วงอายุ of รายการอายุงาน) {
-        const มีอยู่แล้ว = await prisma.experience.findFirst({ where: { name: ช่วงอายุ } });
-        if (!มีอยู่แล้ว) {
-            await prisma.experience.create({ data: { name: ช่วงอายุ } });
-            console.log(`  ✅ เพิ่มแล้ว: ${ช่วงอายุ}`);
+
+    for (const บ of บริษัท) {
+        console.log(`\n  🏢 สร้างข้อมูลพื้นฐานสำหรับ: ${บ.ชื่อ}`);
+
+        for (const ชื่อ of รายการตำแหน่ง) {
+            const มีแล้ว = await prisma.position.findFirst({ where: { name: ชื่อ, companyId: บ.id } });
+            if (!มีแล้ว) await prisma.position.create({ data: { name: ชื่อ, companyId: บ.id } });
         }
+        console.log(`    ✅ ตำแหน่งงาน: ${รายการตำแหน่ง.length} รายการ`);
+
+        for (const ชื่อ of รายการสายงาน) {
+            const มีแล้ว = await prisma.department.findFirst({ where: { name: ชื่อ, companyId: บ.id } });
+            if (!มีแล้ว) await prisma.department.create({ data: { name: ชื่อ, companyId: บ.id } });
+        }
+        console.log(`    ✅ สายงาน: ${รายการสายงาน.length} รายการ`);
+
+        for (const ชื่อ of รายการกลุ่มงาน) {
+            const มีแล้ว = await prisma.work_group.findFirst({ where: { name: ชื่อ, companyId: บ.id } });
+            if (!มีแล้ว) await prisma.work_group.create({ data: { name: ชื่อ, companyId: บ.id } });
+        }
+        console.log(`    ✅ กลุ่มงาน: ${รายการกลุ่มงาน.length} รายการ`);
+
+        for (const ชื่อ of รายการอายุงาน) {
+            const มีแล้ว = await prisma.experience.findFirst({ where: { name: ชื่อ, companyId: บ.id } });
+            if (!มีแล้ว) await prisma.experience.create({ data: { name: ชื่อ, companyId: บ.id } });
+        }
+        console.log(`    ✅ อายุงาน: ${รายการอายุงาน.length} รายการ`);
     }
-    console.log('  📌 อายุงานครบแล้ว\n');
+
+    console.log('\n✅ ใส่ข้อมูลพื้นฐานเรียบร้อย\n');
 }
 
 // ============================================================
-// ฟังก์ชันสำหรับใส่ข้อมูลแบบประเมิน
+// ฟังก์ชันสำหรับใส่แบบประเมิน
+// ✅ FIX: รับ "บริษัทแรก" เพียงบริษัทเดียว สร้าง category/question แค่ 1 ชุดกลาง
+//    เพราะคำถามเหมือนกันทุกบริษัทในกลุ่ม ไม่ต้องสร้างซ้ำต่อบริษัท
+//    Settings page ใช้ categoryController ที่ query WHERE companyId = primaryId (บริษัทแรก)
 // ============================================================
 
-async function ใส่ข้อมูลแบบประเมิน() {
-    console.log('📊 ตอนที่ 2: กำลังใส่ข้อมูลแบบประเมิน (5 คำถามสำหรับทดสอบ)');
+async function ใส่ข้อมูลแบบประเมิน(บริษัทแรก) {
+    console.log('📊 ตอนที่ 3: กำลังใส่ข้อมูลแบบประเมิน (1 ชุดกลาง)');
+    console.log(`  📌 ผูกกับ: ${บริษัทแรก.ชื่อ} (id=${บริษัทแรก.id})`);
     console.log('----------------------------------------');
 
     const หมวดหมู่ทั้งหมด = getข้อมูลหมวดหมู่();
     const ตัวเลือกคำตอบ = getตัวเลือกคำตอบ();
 
-    let ลำดับคำถามถัดไป = 1;
-    console.log(`\n🔢 เริ่มนับลำดับคำถามที่: ${ลำดับคำถามถัดไป}`);
-
-    for (const ข้อมูลหมวดหมู่ of หมวดหมู่ทั้งหมด) {
-        ลำดับคำถามถัดไป = await เพิ่มหมวดหมู่พร้อมคำถาม(ข้อมูลหมวดหมู่, ตัวเลือกคำตอบ, ลำดับคำถามถัดไป);
+    let ลำดับ = 1;
+    for (const หมวด of หมวดหมู่ทั้งหมด) {
+        await prisma.category.create({
+            data: {
+                name: หมวด.name,
+                companyId: บริษัทแรก.id,   // ✅ ผูกบริษัทแรกของกลุ่มเพียงแห่งเดียว
+                questions: {
+                    create: หมวด.questions.map((ข้อความ, idx) => ({
+                        text: ข้อความ,
+                        order: ลำดับ + idx,
+                        options: { create: ตัวเลือกคำตอบ }
+                    }))
+                }
+            }
+        });
+        ลำดับ += หมวด.questions.length;
+        console.log(`  ✅ หมวด: ${หมวด.name} (${หมวด.questions.length} ข้อ)`);
     }
 
-    console.log(`\n  📌 รวมคำถามทั้งหมด: ${ลำดับคำถามถัดไป - 1} ข้อ`);
-    console.log('  ✅ ใส่ข้อมูลแบบประเมินเรียบร้อย\n');
+    console.log(`\n  📌 รวมคำถามทั้งหมด: ${ลำดับ - 1} ข้อ`);
+    console.log('✅ ใส่ข้อมูลแบบประเมินเรียบร้อย\n');
 }
 
 function getข้อมูลหมวดหมู่() {
     return [
-        // ============================================================
-        // กลุ่มที่ 1: ความปลอดภัยด้านสารสนเทศและ Data Center (25 ข้อ)
-        // ============================================================
         {
             name: 'สารสนเทศ - ความคุ้นเคยและความสามารถในการปฏิบัติงาน',
             questions: [
@@ -286,10 +232,6 @@ function getข้อมูลหมวดหมู่() {
                 'ท่านรู้สึกว่านโยบายความปลอดภัยด้านเทคโนโลยีสารสนเทศขององค์กร สามารถปฏิบัติได้จริงและไม่เป็นอุปสรรคต่อการทำงานหรือไม่'
             ]
         },
-
-        // ============================================================
-        // กลุ่มที่ 2: ความปลอดภัยด้านอัคคีภัย (25 ข้อ)
-        // ============================================================
         {
             name: 'อัคคีภัย - ความรู้ความเข้าใจและทักษะ',
             questions: [
@@ -340,10 +282,6 @@ function getข้อมูลหมวดหมู่() {
                 'โดยภาพรวม ท่านมีความมั่นใจในมาตรฐานความปลอดภัยของแผนป้องกันอัคคีภัยฉบับนี้'
             ]
         },
-
-        // ============================================================
-        // กลุ่มที่ 3: ความปลอดภัยด้านแผ่นดินไหว (25 ข้อ)
-        // ============================================================
         {
             name: 'แผ่นดินไหว - ความคุ้นเคยและขีดความสามารถในการปฏิบัติงาน',
             questions: [
@@ -394,10 +332,6 @@ function getข้อมูลหมวดหมู่() {
                 'ท่านเชื่อมั่นว่าแผนปฏิบัติการฉบับนี้ จะสามารถลดความสูญเสียได้จริงเมื่อนำไปปฏิบัติหรือไม่'
             ]
         },
-
-        // ============================================================
-        // กลุ่มที่ 4: ความปลอดภัยด้านอุทกภัย/น้ำท่วม (25 ข้อ)
-        // ============================================================
         {
             name: 'อุทกภัย - ความชัดเจนและการรับรู้ข้อมูลข่าวสาร',
             questions: [
@@ -447,7 +381,7 @@ function getข้อมูลหมวดหมู่() {
                 'มีการประชุมวางแผนและทบทวนแผนงานร่วมกันก่อนเริ่มปฏิบัติงานจริง',
                 'เมื่อเกิดข้อผิดพลาด ทีมงานสามารถช่วยเหลือและแก้ไขสถานการณ์ได้อย่างทันท่วงที'
             ]
-        }
+        },
     ];
 }
 
@@ -461,400 +395,270 @@ function getตัวเลือกคำตอบ() {
     ];
 }
 
-async function เพิ่มหมวดหมู่พร้อมคำถาม(ข้อมูลหมวดหมู่, ตัวเลือกคำตอบ, ลำดับเริ่มต้น) {
-    let ลำดับปัจจุบัน = ลำดับเริ่มต้น;
-
-    const มีหมวดหมู่แล้ว = await prisma.category.findFirst({
-        where: {
-            name: ข้อมูลหมวดหมู่.name,
-            questions: { some: {} }
-        }
-    });
-
-    if (!มีหมวดหมู่แล้ว) {
-        console.log(`\n📁 กำลังสร้างหมวดหมู่ใหม่: ${ข้อมูลหมวดหมู่.name}`);
-
-        const รายการคำถามที่จะสร้าง = ข้อมูลหมวดหมู่.questions.map((ข้อความคำถาม, index) => {
-            console.log(`  ✏️  คำถามที่ ${ลำดับปัจจุบัน + index}: ${ข้อความคำถาม.substring(0, 60)}...`);
-            return {
-                text: ข้อความคำถาม,
-                order: ลำดับปัจจุบัน + index,
-                options: { create: ตัวเลือกคำตอบ }
-            };
-        });
-
-        await prisma.category.create({
-            data: {
-                name: ข้อมูลหมวดหมู่.name,
-                questions: { create: รายการคำถามที่จะสร้าง }
-            }
-        });
-
-        console.log(`  ✅ สร้างหมวดหมู่เรียบร้อย: ${ข้อมูลหมวดหมู่.name}`);
-        ลำดับปัจจุบัน += ข้อมูลหมวดหมู่.questions.length;
-
-    } else {
-        console.log(`\n📁 หมวดหมู่ "${ข้อมูลหมวดหมู่.name}" มีอยู่แล้ว กำลังอัปเดตลำดับคำถาม...`);
-
-        const คำถามที่มีอยู่ = await prisma.question.findMany({
-            where: { categoryId: มีหมวดหมู่แล้ว.id },
-            orderBy: { id: 'asc' }
-        });
-
-        for (let i = 0; i < คำถามที่มีอยู่.length; i++) {
-            console.log(`  🔄 อัปเดตคำถาม ID ${คำถามที่มีอยู่[i].id} เป็นลำดับที่ ${ลำดับปัจจุบัน}`);
-            await prisma.question.update({
-                where: { id: คำถามที่มีอยู่[i].id },
-                data: { order: ลำดับปัจจุบัน }
-            });
-            ลำดับปัจจุบัน++;
-        }
-    }
-
-    return ลำดับปัจจุบัน;
-}
-
 // ============================================================
 // ฟังก์ชันสำหรับใส่ข้อมูลพนักงาน
 // ============================================================
 
-async function ใส่ข้อมูลพนักงานลงทะเบียน() {
-    console.log('📊 ตอนที่ 4: กำลังใส่ข้อมูลพนักงานที่ลงทะเบียนแล้ว');
+async function ใส่ข้อมูลพนักงานลงทะเบียน(บริษัท) {
+    console.log('📊 ตอนที่ 4: กำลังใส่ข้อมูลพนักงาน');
     console.log('----------------------------------------');
 
-    const [ตำแหน่งทั้งหมด, สายงานทั้งหมด, กลุ่มงานทั้งหมด, อายุงานทั้งหมด, บริษัททั้งหมด] = await Promise.all([
-        prisma.position.findMany(),
-        prisma.department.findMany(),
-        prisma.work_group.findMany(),
-        prisma.experience.findMany(),
-        prisma.company.findMany()
-    ]);
+    const รายการตำแหน่ง    = {};
+    const รายการสายงาน     = {};
+    const รายการกลุ่มงาน   = {};
+    const รายการอายุงาน    = {};
 
-    const พนักงานทั้งหมด = สร้างข้อมูลพนักงานทั้งหมด(
-        ตำแหน่งทั้งหมด,
-        สายงานทั้งหมด,
-        กลุ่มงานทั้งหมด,
-        อายุงานทั้งหมด,
-        บริษัททั้งหมด
-    );
-
-    console.log('📝 Step 1: ลงทะเบียนพนักงาน...');
-    let done = 0, inProgress = 0, notStarted = 0;
-    const companyCount = {};
-    for (const บ of บริษัทในเครือ) companyCount[บ.ชื่อ] = 0;
-
-    for (const ข้อมูลพนักงาน of พนักงานทั้งหมด) {
-        const มีอยู่แล้ว = await prisma.user.findUnique({
-            where: { email_user: ข้อมูลพนักงาน.email_user },
-        });
-        if (!มีอยู่แล้ว) {
-            await prisma.user.create({ data: ข้อมูลพนักงาน.data });
-            if (ข้อมูลพนักงาน.data.survey_status === 'done') done++;
-            else if (ข้อมูลพนักงาน.data.survey_status === 'in_progress') inProgress++;
-            else notStarted++;
-            companyCount[ข้อมูลพนักงาน.company_name]++;
-            console.log(`  ✅ ลงทะเบียน: ${ข้อมูลพนักงาน.data.name_user} (${ข้อมูลพนักงาน.company_name}) [${ข้อมูลพนักงาน.data.survey_status}]`);
-        }
+    for (const บ of บริษัท) {
+        รายการตำแหน่ง[บ.id]  = await prisma.position.findMany({ where: { companyId: บ.id } });
+        รายการสายงาน[บ.id]   = await prisma.department.findMany({ where: { companyId: บ.id } });
+        รายการกลุ่มงาน[บ.id] = await prisma.work_group.findMany({ where: { companyId: บ.id } });
+        รายการอายุงาน[บ.id]  = await prisma.experience.findMany({ where: { companyId: บ.id } });
     }
 
-    console.log(`\n  📌 สรุปพนักงานที่ลงทะเบียนแล้ว:`);
-    console.log(`     • ทำเสร็จแล้ว (done): ${done} คน`);
-    console.log(`     • กำลังทำ (in_progress): ${inProgress} คน`);
-    console.log(`     • ยังไม่เริ่ม (not_started): ${notStarted} คน`);
-    console.log(`\n  🏢 จำนวนพนักงานแต่ละบริษัทในเครือ SafeGuard Group:`);
-    for (const [company, count] of Object.entries(companyCount)) {
-        console.log(`     • ${company}: ${count} คน`);
-    }
-    console.log('  🔑 รหัสผ่านตัวอย่าง: User@123\n');
-}
-
-function สร้างข้อมูลพนักงานทั้งหมด(ตำแหน่ง, สายงาน, กลุ่มงาน, อายุงาน, บริษัททั้งหมด) {
     const ข้อมูลพนักงาน = [
-        // ============================================================
-        // SafeGuard Operations Co., Ltd. (บริษัท 0) — done 5 คน
-        // ============================================================
+        // SafeGuard Operations Co., Ltd. (index 0)
         { ลำดับ: 1,  บริษัทIndex: 0, ชื่อ: 'สมชาย ใจดี',        คำนำหน้า: 'นาย',    สถานะ: 'done' },
         { ลำดับ: 2,  บริษัทIndex: 0, ชื่อ: 'วิไล สุขสันต์',      คำนำหน้า: 'นาง',    สถานะ: 'done' },
         { ลำดับ: 3,  บริษัทIndex: 0, ชื่อ: 'ประสิทธิ์ วิริยะ',   คำนำหน้า: 'นาย',    สถานะ: 'done' },
         { ลำดับ: 4,  บริษัทIndex: 0, ชื่อ: 'ศิริพร เจริญสุข',    คำนำหน้า: 'นางสาว', สถานะ: 'done' },
         { ลำดับ: 14, บริษัทIndex: 0, ชื่อ: 'พิชัย มั่นคง',       คำนำหน้า: 'นาย',    สถานะ: 'done' },
-        // in_progress 3 คน
         { ลำดับ: 16, บริษัทIndex: 0, ชื่อ: 'ชัยวัฒน์ ทองแดง',   คำนำหน้า: 'นาย',    สถานะ: 'in_progress' },
         { ลำดับ: 17, บริษัทIndex: 0, ชื่อ: 'รัตนา สมบูรณ์',     คำนำหน้า: 'นางสาว', สถานะ: 'in_progress' },
         { ลำดับ: 18, บริษัทIndex: 0, ชื่อ: 'ณรงค์ ภักดี',       คำนำหน้า: 'นาย',    สถานะ: 'in_progress' },
-        // not_started 3 คน
         { ลำดับ: 19, บริษัทIndex: 0, ชื่อ: 'กมลา ประเสริฐ',     คำนำหน้า: 'นางสาว', สถานะ: 'not_started' },
         { ลำดับ: 20, บริษัทIndex: 0, ชื่อ: 'สุรชัย แสงดาว',     คำนำหน้า: 'นาย',    สถานะ: 'not_started' },
         { ลำดับ: 21, บริษัทIndex: 0, ชื่อ: 'เพ็ญพรรณ วงศ์ทอง',  คำนำหน้า: 'นาง',    สถานะ: 'not_started' },
 
-        // ============================================================
-        // SafeGuard Engineering Co., Ltd. (บริษัท 1) — done 5 คน
-        // ============================================================
+        // SafeGuard Engineering Co., Ltd. (index 1)
         { ลำดับ: 5,  บริษัทIndex: 1, ชื่อ: 'อนุชา พัฒนา',        คำนำหน้า: 'นาย',    สถานะ: 'done' },
         { ลำดับ: 6,  บริษัทIndex: 1, ชื่อ: 'สมหญิง รุ่งเรือง',    คำนำหน้า: 'นาง',    สถานะ: 'done' },
         { ลำดับ: 7,  บริษัทIndex: 1, ชื่อ: 'วีระ ศรีสุข',         คำนำหน้า: 'นาย',    สถานะ: 'done' },
         { ลำดับ: 8,  บริษัทIndex: 1, ชื่อ: 'นภา มั่นคง',          คำนำหน้า: 'นางสาว', สถานะ: 'done' },
         { ลำดับ: 15, บริษัทIndex: 1, ชื่อ: 'สายใจ เมืองไทย',      คำนำหน้า: 'นางสาว', สถานะ: 'done' },
-        // in_progress 3 คน
         { ลำดับ: 22, บริษัทIndex: 1, ชื่อ: 'ธีรพงษ์ จันทร์เพ็ญ', คำนำหน้า: 'นาย',    สถานะ: 'in_progress' },
         { ลำดับ: 23, บริษัทIndex: 1, ชื่อ: 'อัจฉรา นิลสุวรรณ',   คำนำหน้า: 'นางสาว', สถานะ: 'in_progress' },
         { ลำดับ: 24, บริษัทIndex: 1, ชื่อ: 'ปิยะ รอดภัย',         คำนำหน้า: 'นาย',    สถานะ: 'in_progress' },
-        // not_started 3 คน
         { ลำดับ: 25, บริษัทIndex: 1, ชื่อ: 'วรรณา ศิริโสภา',      คำนำหน้า: 'นาง',    สถานะ: 'not_started' },
         { ลำดับ: 26, บริษัทIndex: 1, ชื่อ: 'ภาณุวัฒน์ ดีงาม',     คำนำหน้า: 'นาย',    สถานะ: 'not_started' },
         { ลำดับ: 27, บริษัทIndex: 1, ชื่อ: 'จิราภรณ์ คำสอน',      คำนำหน้า: 'นางสาว', สถานะ: 'not_started' },
 
-        // ============================================================
-        // SafeGuard Solutions Co., Ltd. (บริษัท 2) — done 4 คน
-        // (+ Assessor อีก 1 คน = รวม 5 คน done)
-        // ============================================================
+        // SafeGuard Solutions Co., Ltd. (index 2)
         { ลำดับ: 9,  บริษัทIndex: 2, ชื่อ: 'ธนา เพียร',           คำนำหน้า: 'นาย',    สถานะ: 'done' },
         { ลำดับ: 10, บริษัทIndex: 2, ชื่อ: 'อรุณ แก้ว',           คำนำหน้า: 'นาย',    สถานะ: 'done' },
         { ลำดับ: 11, บริษัทIndex: 2, ชื่อ: 'สุดา ทองดี',          คำนำหน้า: 'นางสาว', สถานะ: 'done' },
         { ลำดับ: 12, บริษัทIndex: 2, ชื่อ: 'มานะ สว่างวงศ์',      คำนำหน้า: 'นาย',    สถานะ: 'done' },
-        // in_progress 3 คน
         { ลำดับ: 28, บริษัทIndex: 2, ชื่อ: 'พงษ์ศักดิ์ บุญมา',   คำนำหน้า: 'นาย',    สถานะ: 'in_progress' },
         { ลำดับ: 29, บริษัทIndex: 2, ชื่อ: 'ลลิตา สุริยา',        คำนำหน้า: 'นางสาว', สถานะ: 'in_progress' },
         { ลำดับ: 30, บริษัทIndex: 2, ชื่อ: 'สมศักดิ์ ฤทธิ์เดช',  คำนำหน้า: 'นาย',    สถานะ: 'in_progress' },
-        // not_started 3 คน
         { ลำดับ: 31, บริษัทIndex: 2, ชื่อ: 'นิตยา แก้วมณี',       คำนำหน้า: 'นาง',    สถานะ: 'not_started' },
         { ลำดับ: 32, บริษัทIndex: 2, ชื่อ: 'อภิชาติ โชติช่วง',    คำนำหน้า: 'นาย',    สถานะ: 'not_started' },
         { ลำดับ: 33, บริษัทIndex: 2, ชื่อ: 'ปาริชาต มีสุข',        คำนำหน้า: 'นางสาว', สถานะ: 'not_started' },
     ];
 
-    return ข้อมูลพนักงาน.map(p => {
-        const บ = บริษัทในเครือ[p.บริษัทIndex];
-        const companyRecord = บริษัททั้งหมด.find(c => c.name === บ.ชื่อ);
+    let done = 0, inProgress = 0, notStarted = 0;
 
-        return {
+    for (const p of ข้อมูลพนักงาน) {
+        const บ = บริษัท[p.บริษัทIndex];
+        const email = `${บ.prefix}_user${p.ลำดับ}@safeguardgroup.co.th`;
+
+        const มีแล้ว = await prisma.user.findUnique({ where: { email_user: email } });
+        if (มีแล้ว) continue;
+
+        const ตำแหน่ง  = รายการตำแหน่ง[บ.id];
+        const สายงาน   = รายการสายงาน[บ.id];
+        const กลุ่มงาน = รายการกลุ่มงาน[บ.id];
+        const อายุงาน  = รายการอายุงาน[บ.id];
+
+        await prisma.user.create({
             data: {
-                title_user: p.คำนำหน้า,
-                name_user: p.ชื่อ,
-                email_user: `${บ.prefix}_user${p.ลำดับ}@safeguardgroup.co.th`,
-                company_id: companyRecord?.id || null,
-                phone_user: `08${String(p.ลำดับ).padStart(8, '0')}`,
-                password_user: bcrypt.hashSync('User@123', 10),
-                position_id: ตำแหน่ง[p.ลำดับ % ตำแหน่ง.length]?.id || null,
-                department_id: สายงาน[p.ลำดับ % สายงาน.length]?.id || null,
-                work_group_id: กลุ่มงาน[p.ลำดับ % กลุ่มงาน.length]?.id || null,
-                experience_id: อายุงาน[p.ลำดับ % อายุงาน.length]?.id || null,
-                section_user: บ.แผนก,
-                status: 'active',
-                survey_status: p.สถานะ,
+                title_user:          p.คำนำหน้า,
+                name_user:           p.ชื่อ,
+                email_user:          email,
+                company_id:          บ.id,
+                phone_user:          `08${String(p.ลำดับ).padStart(8, '0')}`,
+                password_user:       bcrypt.hashSync('User@123', 10),
+                position_id:         ตำแหน่ง[p.ลำดับ % ตำแหน่ง.length]?.id || null,
+                department_id:       สายงาน[p.ลำดับ % สายงาน.length]?.id || null,
+                work_group_id:       กลุ่มงาน[p.ลำดับ % กลุ่มงาน.length]?.id || null,
+                experience_id:       อายุงาน[p.ลำดับ % อายุงาน.length]?.id || null,
+                section_user:        บ.แผนก,
+                status:              'active',
+                survey_status:       p.สถานะ,
                 registration_status: 'completed'
-            },
-            company_name: บ.ชื่อ,
-            email_user: `${บ.prefix}_user${p.ลำดับ}@safeguardgroup.co.th`
-        };
-    });
+            }
+        });
+
+        if (p.สถานะ === 'done') done++;
+        else if (p.สถานะ === 'in_progress') inProgress++;
+        else notStarted++;
+
+        console.log(`  ✅ ${p.ชื่อ} (${บ.ชื่อ}) [${p.สถานะ}]`);
+    }
+
+    console.log(`\n  📌 done: ${done} | in_progress: ${inProgress} | not_started: ${notStarted}`);
+    console.log('  🔑 รหัสผ่าน: User@123\n');
 }
 
 // ============================================================
 // ฟังก์ชันสำหรับใส่คะแนนประเมิน
+// ✅ FIX: รับ "บริษัทแรก" — ดึง question จากชุดกลางเดียว
+//    ทุก user (ทุกบริษัท) ตอบ question ชุดเดียวกัน
+//    ไม่ query ตาม company_id ของ user อีกต่อไป
 // ============================================================
 
-async function ใส่คะแนนประเมิน() {
+async function ใส่คะแนนประเมิน(บริษัทแรก) {
     console.log('📊 ตอนที่ 5: กำลังใส่คะแนนประเมิน');
     console.log('----------------------------------------');
 
-    const พนักงานทำเสร็จ = await prisma.user.findMany({ where: { survey_status: 'done' } });
-    const พนักงานกำลังทำ = await prisma.user.findMany({ where: { survey_status: 'in_progress' } });
-    const คำถามทั้งหมด = await prisma.question.findMany({ orderBy: { order: 'asc' } });
+    // ✅ ดึง question จากชุดกลาง (บริษัทแรก) — ใช้ร่วมกันทุก user ทุกบริษัท
+    const คำถามทั้งหมด = await prisma.question.findMany({
+        where: { category: { companyId: บริษัทแรก.id } },
+        orderBy: { order: 'asc' }
+    });
+    console.log(`  📝 คำถามทั้งหมด: ${คำถามทั้งหมด.length} ข้อ`);
 
-    console.log(`📝 สร้างคะแนน done users: ${พนักงานทำเสร็จ.length} คน (ครบทุกคำถาม)`);
-    console.log(`📝 สร้างคะแนน in_progress users: ${พนักงานกำลังทำ.length} คน (50% ของคำถาม)`);
+    const พนักงานทำเสร็จ = await prisma.user.findMany({ where: { survey_status: 'done', role_user: 'user' } });
+    const พนักงานกำลังทำ = await prisma.user.findMany({ where: { survey_status: 'in_progress' } });
 
     let จำนวนที่สร้าง = 0;
-    let สถิติExpectedScore = { '5': 0, '4': 0, '3': 0 };
 
+    // done — ตอบครบทุกข้อ
     for (const พนักงาน of พนักงานทำเสร็จ) {
-        for (const คำถาม of คำถามทั้งหมด) {
-            const มีคะแนนแล้ว = await prisma.survey_answer.findUnique({
-                where: { userId_questionId: { userId: พนักงาน.id, questionId: คำถาม.id } }
+        for (const q of คำถามทั้งหมด) {
+            const มีแล้ว = await prisma.survey_answer.findUnique({
+                where: { userId_questionId: { userId: พนักงาน.id, questionId: q.id } }
             });
-            if (!มีคะแนนแล้ว) {
-                const currentScore = Math.floor(Math.random() * 5) + 1;
-                let expectedScore;
-                const random = Math.random() * 100;
-                if (random < 55) expectedScore = 5;
-                else if (random < 90) expectedScore = 4;
-                else expectedScore = 3;
-                if (expectedScore < currentScore) expectedScore = currentScore;
+            if (มีแล้ว) continue;
 
-                await prisma.survey_answer.create({
-                    data: {
-                        userId: พนักงาน.id,
-                        questionId: คำถาม.id,
-                        currentScore,
-                        expectedScore,
-                        comment: currentScore < 3 ? 'ควรปรับปรุง' : null
-                    }
-                });
-                สถิติExpectedScore[expectedScore]++;
-                จำนวนที่สร้าง++;
-            }
+            const currentScore = Math.floor(Math.random() * 5) + 1;
+            const r = Math.random() * 100;
+            let expectedScore = r < 55 ? 5 : r < 90 ? 4 : 3;
+            if (expectedScore < currentScore) expectedScore = currentScore;
+
+            await prisma.survey_answer.create({
+                data: {
+                    userId:       พนักงาน.id,
+                    questionId:   q.id,
+                    currentScore,
+                    expectedScore,
+                    comment: currentScore < 3 ? 'ควรปรับปรุง' : null
+                }
+            });
+            จำนวนที่สร้าง++;
         }
         console.log(`  ✅ ${พนักงาน.name_user}: ครบ ${คำถามทั้งหมด.length} ข้อ`);
     }
 
+    // in_progress — ตอบ 50%
     for (const พนักงาน of พนักงานกำลังทำ) {
-        const จำนวนคำถามที่ทำ = Math.ceil(คำถามทั้งหมด.length / 2);
-        const ดัชนีคำถามที่ทำ = Array.from({ length: จำนวนคำถามที่ทำ }, (_, i) => i);
+        const คำถามที่ทำ = คำถามทั้งหมด.slice(0, Math.ceil(คำถามทั้งหมด.length / 2));
 
-        for (const ดัชนี of ดัชนีคำถามที่ทำ) {
-            const คำถาม = คำถามทั้งหมด[ดัชนี];
-            const มีคะแนนแล้ว = await prisma.survey_answer.findUnique({
-                where: { userId_questionId: { userId: พนักงาน.id, questionId: คำถาม.id } }
+        for (const q of คำถามที่ทำ) {
+            const มีแล้ว = await prisma.survey_answer.findUnique({
+                where: { userId_questionId: { userId: พนักงาน.id, questionId: q.id } }
             });
-            if (!มีคะแนนแล้ว) {
-                const currentScore = Math.floor(Math.random() * 5) + 1;
-                let expectedScore;
-                const random = Math.random() * 100;
-                if (random < 55) expectedScore = 5;
-                else if (random < 90) expectedScore = 4;
-                else expectedScore = 3;
-                if (expectedScore < currentScore) expectedScore = currentScore;
+            if (มีแล้ว) continue;
 
-                await prisma.survey_answer.create({
-                    data: {
-                        userId: พนักงาน.id,
-                        questionId: คำถาม.id,
-                        currentScore,
-                        expectedScore,
-                        comment: currentScore < 3 ? 'ควรปรับปรุง' : null
-                    }
-                });
-                สถิติExpectedScore[expectedScore]++;
-                จำนวนที่สร้าง++;
-            }
+            const currentScore = Math.floor(Math.random() * 5) + 1;
+            const r = Math.random() * 100;
+            let expectedScore = r < 55 ? 5 : r < 90 ? 4 : 3;
+            if (expectedScore < currentScore) expectedScore = currentScore;
+
+            await prisma.survey_answer.create({
+                data: {
+                    userId:       พนักงาน.id,
+                    questionId:   q.id,
+                    currentScore,
+                    expectedScore,
+                    comment: currentScore < 3 ? 'ควรปรับปรุง' : null
+                }
+            });
+            จำนวนที่สร้าง++;
         }
-        console.log(`  ✅ ${พนักงาน.name_user}: ทำได้ ${จำนวนคำถามที่ทำ}/${คำถามทั้งหมด.length} ข้อ`);
+        console.log(`  ✅ ${พนักงาน.name_user}: ${คำถามที่ทำ.length}/${คำถามทั้งหมด.length} ข้อ`);
     }
 
     console.log(`\n  📌 สร้างคะแนนประเมินทั้งหมด: ${จำนวนที่สร้าง} รายการ`);
-    console.log(`  📊 สถิติคะแนนที่คาดหวัง (Expected Score):`);
-    console.log(`     • คะแนน 5 (มากที่สุด): ${สถิติExpectedScore['5']} ครั้ง (~55%)`);
-    console.log(`     • คะแนน 4 (มาก): ${สถิติExpectedScore['4']} ครั้ง (~35%)`);
-    console.log(`     • คะแนน 3 (ปานกลาง): ${สถิติExpectedScore['3']} ครั้ง (~10%)`);
-    console.log('  ✅ ใส่คะแนนประเมินเรียบร้อย\n');
+    console.log('✅ ใส่คะแนนประเมินเรียบร้อย\n');
 }
 
 // ============================================================
-// ฟังก์ชันสำหรับใส่ข้อมูลผู้ดูแลระบบ
+// ฟังก์ชันสำหรับใส่ผู้ดูแลระบบ
 // ============================================================
 
-async function ใส่ข้อมูลผู้ดูแลระบบ() {
+async function ใส่ข้อมูลผู้ดูแลระบบ(บริษัท) {
     console.log('📊 ตอนที่ 6: กำลังใส่ข้อมูลผู้ดูแลระบบ');
     console.log('----------------------------------------');
 
     const รหัสผ่านเข้ารหัส = await bcrypt.hash('Admin@123', 10);
-    const pinเข้ารหัส = await bcrypt.hash('123456', 10);
+    const pinเข้ารหัส      = await bcrypt.hash('123456', 10);
 
-    await เพิ่มSuperAdmin(รหัสผ่านเข้ารหัส, pinเข้ารหัส);
-    await เพิ่มAdmin(รหัสผ่านเข้ารหัส);
-    await เพิ่มAssessor(รหัสผ่านเข้ารหัส);
-
-    console.log('  ✅ ใส่ข้อมูลผู้ดูแลระบบเรียบร้อย\n');
-}
-
-async function เพิ่มSuperAdmin(รหัสผ่านเข้ารหัส, pinเข้ารหัส) {
-    const มีSuperAdminแล้ว = await prisma.super_admin_list.findFirst({
-        where: { email: 'superadmin@safeguardgroup.co.th' }
-    });
-
-    if (!มีSuperAdminแล้ว) {
+    // SuperAdmin
+    const มีSuperAdmin = await prisma.super_admin_list.findFirst({ where: { email: 'superadmin@safeguardgroup.co.th' } });
+    if (!มีSuperAdmin) {
         await prisma.super_admin_list.create({
             data: {
-                email: 'superadmin@safeguardgroup.co.th',
-                phone: '0812345678',
+                email:    'superadmin@safeguardgroup.co.th',
+                phone:    '0812345678',
                 password: รหัสผ่านเข้ารหัส,
-                pin: pinเข้ารหัส,
-                role: 'SuperAdmin',
-                status: 'ACTIVE',
+                pin:      pinเข้ารหัส,
+                role:     'SuperAdmin',
+                status:   'ACTIVE',
             }
         });
-        console.log('  ✅ เพิ่ม SuperAdmin แล้ว:');
-        console.log('     📧 อีเมล: superadmin@safeguardgroup.co.th');
-        console.log('     🔑 รหัสผ่าน: Admin@123');
-        console.log('     📌 PIN: 123456');
-    } else {
-        console.log('  📌 SuperAdmin มีอยู่แล้ว');
+        console.log('  ✅ SuperAdmin: superadmin@safeguardgroup.co.th / Admin@123 / PIN: 123456');
     }
-}
 
-async function เพิ่มAdmin(รหัสผ่านเข้ารหัส) {
-    const มีAdminแล้ว = await prisma.admin_list.findFirst({
-        where: { email: 'admin@safeguardgroup.co.th' }
-    });
-
-    if (!มีAdminแล้ว) {
+    // Admin
+    const มีAdmin = await prisma.admin_list.findFirst({ where: { email: 'admin@safeguardgroup.co.th' } });
+    if (!มีAdmin) {
         await prisma.admin_list.create({
             data: {
-                email: 'admin@safeguardgroup.co.th',
+                email:       'admin@safeguardgroup.co.th',
                 companyName: 'SafeGuard Group',
-                firstName: 'Admin',
-                lastName: 'User',
-                phone: '0823456789',
-                password: รหัสผ่านเข้ารหัส,
-                role: 'Admin',
-                status: 'ACTIVE',
+                firstName:   'Admin',
+                lastName:    'User',
+                phone:       '0823456789',
+                password:    รหัสผ่านเข้ารหัส,
+                role:        'Admin',
+                status:      'ACTIVE',
             }
         });
-        console.log('  ✅ เพิ่ม Admin แล้ว:');
-        console.log('     📧 อีเมล: admin@safeguardgroup.co.th');
-        console.log('     🔑 รหัสผ่าน: Admin@123');
-        console.log('     🏢 บริษัท: SafeGuard Group');
-    } else {
-        console.log('  📌 Admin มีอยู่แล้ว');
+        console.log('  ✅ Admin: admin@safeguardgroup.co.th / Admin@123');
     }
-}
 
-async function เพิ่มAssessor(รหัสผ่านเข้ารหัส) {
-    const มีAssessorแล้ว = await prisma.user.findUnique({
-        where: { email_user: 'assessor@safeguardgroup.co.th' }
-    });
-
-    if (!มีAssessorแล้ว) {
-        const companyRecord = await prisma.company.findFirst({
-            where: { name: 'SafeGuard Solutions Co., Ltd.' }
-        });
-
-        const [ตำแหน่ง, สายงาน, กลุ่มงาน, อายุงาน] = await Promise.all([
-            prisma.position.findFirst({ where: { name: 'ผู้จัดการแผนก / ผู้จัดการ' } }),
-            prisma.department.findFirst({ where: { name: 'CEO' } }),
-            prisma.work_group.findFirst({ where: { name: 'หน่วยงานสนับสนุน (Supporting functions)' } }),
-            prisma.experience.findFirst({ where: { name: '5 ปีขึ้นไป แต่ไม่เกิน 10 ปี' } })
-        ]);
+    // Assessor — ผูกกับ SafeGuard Solutions Co., Ltd.
+    const มีAssessor = await prisma.user.findUnique({ where: { email_user: 'assessor@safeguardgroup.co.th' } });
+    if (!มีAssessor) {
+        const solutions = บริษัท.find(b => b.ชื่อ === 'SafeGuard Solutions Co., Ltd.');
+        const ตำแหน่ง  = await prisma.position.findFirst({ where: { name: 'ผู้จัดการแผนก / ผู้จัดการ', companyId: solutions.id } });
+        const สายงาน   = await prisma.department.findFirst({ where: { name: 'CEO', companyId: solutions.id } });
+        const กลุ่มงาน = await prisma.work_group.findFirst({ where: { name: 'หน่วยงานสนับสนุน (Supporting functions)', companyId: solutions.id } });
+        const อายุงาน  = await prisma.experience.findFirst({ where: { name: '5 ปีขึ้นไป แต่ไม่เกิน 10 ปี', companyId: solutions.id } });
 
         await prisma.user.create({
             data: {
-                title_user: 'นาย',
-                name_user: 'ผู้ประเมิน ทดสอบ',
-                email_user: 'assessor@safeguardgroup.co.th',
-                company_id: companyRecord?.id || null,
-                phone_user: '0834567890',
-                password_user: รหัสผ่านเข้ารหัส,
-                position_id: ตำแหน่ง?.id || null,
-                department_id: สายงาน?.id || null,
-                work_group_id: กลุ่มงาน?.id || null,
-                experience_id: อายุงาน?.id || null,
-                section_user: 'Support',
-                role_user: 'assessor',
-                status: 'active',
-                survey_status: 'done',
+                title_user:          'นาย',
+                name_user:           'ผู้ประเมิน ทดสอบ',
+                email_user:          'assessor@safeguardgroup.co.th',
+                company_id:          solutions.id,
+                phone_user:          '0834567890',
+                password_user:       รหัสผ่านเข้ารหัส,
+                position_id:         ตำแหน่ง?.id || null,
+                department_id:       สายงาน?.id || null,
+                work_group_id:       กลุ่มงาน?.id || null,
+                experience_id:       อายุงาน?.id || null,
+                section_user:        'Support',
+                role_user:           'assessor',
+                status:              'active',
+                survey_status:       'done',
                 registration_status: 'completed'
             }
         });
-
-        console.log('  ✅ เพิ่ม Assessor แล้ว (ใน User table):');
-        console.log('     📧 อีเมล: assessor@safeguardgroup.co.th');
-        console.log('     🔑 รหัสผ่าน: Admin@123');
-        console.log('     🏢 บริษัท: SafeGuard Solutions Co., Ltd.');
-        console.log('     👤 ชื่อ: ผู้ประเมิน ทดสอบ');
-        console.log('     🎭 Role: assessor');
-    } else {
-        console.log('  📌 Assessor มีอยู่แล้ว');
+        console.log('  ✅ Assessor: assessor@safeguardgroup.co.th / Admin@123');
     }
+
+    console.log('✅ ใส่ข้อมูลผู้ดูแลระบบเรียบร้อย\n');
 }
 
 // ============================================================
@@ -865,49 +669,21 @@ async function ใส่ข้อมูลติดต่อสอบถาม()
     console.log('📊 ตอนที่ 7: กำลังใส่ข้อมูลติดต่อสอบถาม');
     console.log('----------------------------------------');
 
-    const ข้อมูลติดต่อ = [
-        {
-            name: 'วิไล สุขสันต์',
-            email: 'vilay.suk@safeguardgroup.co.th',
-            phone: '0812345670',
-            message: 'ฉันมีปัญหาในการทำแบบประเมิน ระบบตัดฉันออกเมื่อทำไปประมาณครึ่งทาง ขอให้ช่วยแก้ไขหรือให้ฉันดำเนินการต่อได้'
-        },
-        {
-            name: 'ประสิทธิ์ วิริยะ',
-            email: 'prasit.wiri@safeguardgroup.co.th',
-            phone: '0898765432',
-            message: 'ติดต่อเพื่อขอสเตทัสการประเมินของบริษัทของเรา อยากทราบว่าพนักงานให้การประเมินเสร็จได้กี่เปอร์เซ็นต์แล้ว'
-        },
-        {
-            name: 'นภา มั่นคง',
-            email: 'napa.mun@safeguardgroup.co.th',
-            phone: '0865432198',
-            message: 'มีข้อมูลในแบบประเมินที่จำเป็นต้องปรับปรุง กรุณาตรวจสอบข้อมูลส่วนตัวของฉันอีกครั้ง เพราะมีการลงทะเบียนสองครั้ง'
-        },
-        {
-            name: 'ธนา เพียร',
-            email: 'thana.pian@safeguardgroup.co.th',
-            phone: '0845678901',
-            message: 'ขอเรียนว่า เมื่อฉันเข้าสู่ระบบแล้วไม่สามารถเห็นแบบประเมินได้ เป็นปัญหาของระบบหรือการตั้งค่าสิทธิ์ ขอให้ช่วยตรวจสอบ'
-        }
+    const รายการ = [
+        { name: 'วิไล สุขสันต์',    email: 'vilay.suk@safeguardgroup.co.th',    phone: '0812345670', message: 'ฉันมีปัญหาในการทำแบบประเมิน ระบบตัดฉันออกเมื่อทำไปประมาณครึ่งทาง' },
+        { name: 'ประสิทธิ์ วิริยะ',  email: 'prasit.wiri@safeguardgroup.co.th',  phone: '0898765432', message: 'ติดต่อเพื่อขอสเตทัสการประเมินของบริษัทของเรา' },
+        { name: 'นภา มั่นคง',        email: 'napa.mun@safeguardgroup.co.th',      phone: '0865432198', message: 'มีข้อมูลในแบบประเมินที่จำเป็นต้องปรับปรุง กรุณาตรวจสอบข้อมูลส่วนตัวของฉัน' },
+        { name: 'ธนา เพียร',         email: 'thana.pian@safeguardgroup.co.th',    phone: '0845678901', message: 'เมื่อฉันเข้าสู่ระบบแล้วไม่สามารถเห็นแบบประเมินได้' }
     ];
 
-    console.log(`กำลังใส่ข้อมูลติดต่อสอบถาม ${ข้อมูลติดต่อ.length} ข้อ...`);
-    let จำนวนที่เพิ่ม = 0;
-
-    for (const ข้อมูล of ข้อมูลติดต่อ) {
-        const มีอยู่แล้ว = await prisma.inquiry.findFirst({
-            where: { AND: [{ name: ข้อมูล.name }, { email: ข้อมูล.email }] }
-        });
-        if (!มีอยู่แล้ว) {
-            await prisma.inquiry.create({ data: ข้อมูล });
-            จำนวนที่เพิ่ม++;
-            console.log(`  ✅ เพิ่มแล้ว: ${ข้อมูล.name} (${ข้อมูล.email})`);
+    for (const ข of รายการ) {
+        const มีแล้ว = await prisma.inquiry.findFirst({ where: { email: ข.email } });
+        if (!มีแล้ว) {
+            await prisma.inquiry.create({ data: ข });
+            console.log(`  ✅ ${ข.name}`);
         }
     }
-
-    console.log(`  📌 เพิ่มข้อมูลติดต่อสอบถามทั้งหมด: ${จำนวนที่เพิ่ม} ข้อ`);
-    console.log('  ✅ ใส่ข้อมูลติดต่อสอบถามเรียบร้อย\n');
+    console.log('✅ ใส่ข้อมูลติดต่อสอบถามเรียบร้อย\n');
 }
 
 // ============================================================

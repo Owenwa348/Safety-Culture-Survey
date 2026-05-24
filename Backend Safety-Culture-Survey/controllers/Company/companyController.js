@@ -1,13 +1,15 @@
+// controllers/Company/companyController.js
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-// Get all companies
+// ✅ import เฉพาะ getCompanyGroups จาก companyService.js
+const { getCompanyGroups } = require('../../services/companyService');
+
+// Get all companies 
 const getAllCompanies = async (req, res) => {
   try {
     const companies = await prisma.company.findMany({
-      orderBy: {
-        name: 'asc',
-      },
+      orderBy: { name: 'asc' },
     });
     res.status(200).json(companies);
   } catch (error) {
@@ -20,15 +22,12 @@ const getAllCompanies = async (req, res) => {
 const createCompany = async (req, res) => {
   try {
     const { name } = req.body;
-    
     if (!name) {
       return res.status(400).json({ message: 'Company name is required' });
     }
-
     const company = await prisma.company.create({
       data: { name },
     });
-    
     res.status(201).json(company);
   } catch (error) {
     console.error('Error creating company:', error);
@@ -44,16 +43,13 @@ const updateCompany = async (req, res) => {
   try {
     const { id } = req.params;
     const { name } = req.body;
-    
     if (!name) {
       return res.status(400).json({ message: 'Company name is required' });
     }
-
     const company = await prisma.company.update({
       where: { id: parseInt(id) },
       data: { name },
     });
-    
     res.status(200).json(company);
   } catch (error) {
     console.error('Error updating company:', error);
@@ -71,11 +67,9 @@ const updateCompany = async (req, res) => {
 const deleteCompany = async (req, res) => {
   try {
     const { id } = req.params;
-    
     await prisma.company.delete({
       where: { id: parseInt(id) },
     });
-    
     res.status(200).json({ message: 'Company deleted successfully' });
   } catch (error) {
     console.error('Error deleting company:', error);
@@ -86,9 +80,24 @@ const deleteCompany = async (req, res) => {
   }
 };
 
+// ใหม่ — GET /api/companies/groups
+// SuperAdmin (matchedCompanyIds = null) → เห็นทุกกลุ่ม
+// Admin (matchedCompanyIds = [1,2,3])   → เห็นเฉพาะกลุ่มที่ตัวเองมีสิทธิ์
+const getGroups = async (req, res) => {
+  try {
+    const scope = req.user?.matchedCompanyIds ?? null;
+    const groups = await getCompanyGroups(scope);
+    res.status(200).json(groups);
+  } catch (error) {
+    console.error('getGroups error:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+};
+
 module.exports = {
   getAllCompanies,
   createCompany,
   updateCompany,
   deleteCompany,
+  getGroups, 
 };

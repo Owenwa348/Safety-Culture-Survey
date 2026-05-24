@@ -2,38 +2,63 @@
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 
-// GET / -> ดึงรายการสายงาน (isActive = true)
+const parseIds = (value) => {
+  if (!value) return []
+  if (Array.isArray(value)) return value.map(Number)
+  return String(value).split(',').map(Number).filter(Boolean)
+}
+
+// GET ?companyIds=1,2,3 — deduplicate by name
 const getDepartments = async (req, res) => {
   try {
+    const ids = parseIds(req.query.companyIds)
+    if (!ids.length)
+      return res.status(400).json({ message: 'กรุณาระบุ companyIds' })
+
     const departments = await prisma.department.findMany({
-        orderBy: { id: 'asc' },
+      where: { companyId: { in: ids } },
+      orderBy: { id: 'asc' },
     })
-    res.status(200).json(departments)
+
+    // ✅ deduplicate by name
+    const seen = new Set()
+    const deduped = departments.filter(d => {
+      if (seen.has(d.name)) return false
+      seen.add(d.name)
+      return true
+    })
+
+    res.status(200).json(deduped)
   } catch (error) {
     console.error('getDepartments error:', error)
     res.status(500).json({ message: 'Internal server error' })
   }
 }
 
-// POST / -> เพิ่มสายงาน
+// POST — สร้างให้ทุกบริษัทในกลุ่ม
 const addDepartment = async (req, res) => {
   try {
-    const { name } = req.body
-    if (!name || !name.trim()) {
+    const { name, companyIds } = req.body
+    if (!name || !name.trim())
       return res.status(400).json({ message: 'ชื่อสายงานเป็นข้อมูลบังคับ' })
+
+    const ids = parseIds(companyIds)
+    if (!ids.length)
+      return res.status(400).json({ message: 'กรุณาระบุ companyIds' })
+
+    const created = []
+    for (const cId of ids) {
+      const existing = await prisma.department.findFirst({
+        where: { name: name.trim(), companyId: cId },
+      })
+      if (!existing) {
+        const dept = await prisma.department.create({
+          data: { name: name.trim(), companyId: cId },
+        })
+        created.push(dept)
+      }
     }
 
-    // ตรวจสอบซ้ำ (optional)
-    const existing = await prisma.department.findFirst({
-      where: { name },
-    })
-    if (existing) {
-      return res.status(409).json({ message: 'มีสายงานชื่อนี้ในระบบแล้ว' })
-    }
-
-    const created = await prisma.department.create({
-      data: { name: name.trim() },
-    })
     res.status(201).json(created)
   } catch (error) {
     console.error('addDepartment error:', error)
@@ -41,60 +66,68 @@ const addDepartment = async (req, res) => {
   }
 }
 
-// PUT /:id -> แก้ไขชื่อสายงาน
+// PUT /:id — sync อัปเดตทุก record ที่ชื่อเดิมในกลุ่ม
 const updateDepartment = async (req, res) => {
   try {
     const { id } = req.params
-    const { name } = req.body
-    if (!name || !name.trim()) {
+    const { name, companyIds } = req.body
+    if (!name || !name.trim())
       return res.status(400).json({ message: 'ชื่อสายงานเป็นข้อมูลบังคับ' })
+
+    const target = await prisma.department.findUnique({ where: { id: parseInt(id) } })
+    if (!target)
+      return res.status(404).json({ message: 'ไม่พบสายงานที่ต้องการแก้ไข' })
+
+    const ids = parseIds(companyIds)
+
+    if (ids.length > 0) {
+      // ✅ sync — อัปเดตทุก record ที่มีชื่อเดิม ในทุกบริษัทของกลุ่ม
+      await prisma.department.updateMany({
+        where: {
+          name: target.name,
+          companyId: { in: ids },
+        },
+        data: { name: name.trim() },
+      })
+    } else {
+      await prisma.department.update({
+        where: { id: parseInt(id) },
+        data: { name: name.trim() },
+      })
     }
 
-    const departmentId = parseInt(id);
-
-    // Find the department to get the old name
-    const existingDepartment = await prisma.department.findUnique({
-      where: { id: departmentId },
-    });
-
-    if (!existingDepartment) {
-      return res.status(404).json({ message: "ไม่พบสายงานที่ต้องการแก้ไข" });
-    }
-
-    const oldName = existingDepartment.name;
-    const newName = name.trim();
-
-    // If the name is not changing, no need to update users
-    if (oldName === newName) {
-      return res.status(200).json(existingDepartment);
-    }
-
-    // Use a transaction to update both department and related users
-    const [updatedDepartment] = await prisma.$transaction([
-      prisma.department.update({
-        where: { id: departmentId },
-        data: { name: newName },
-      }),
-      prisma.user.updateMany({
-        where: { job_field_user: oldName },
-        data: { job_field_user: newName },
-      }),
-    ]);
-    
-    res.status(200).json(updatedDepartment)
+    const updated = await prisma.department.findUnique({ where: { id: parseInt(id) } })
+    res.status(200).json(updated)
   } catch (error) {
     console.error('updateDepartment error:', error)
     res.status(500).json({ message: 'Internal server error' })
   }
 }
 
-// DELETE /:id -> ลบออกจากฐานข้อมูลจริง
+// DELETE /:id — sync ลบทุก record ที่ชื่อเดิมในกลุ่ม
 const deleteDepartment = async (req, res) => {
   try {
     const { id } = req.params
-    await prisma.department.delete({
-      where: { id: parseInt(id) },
-    })
+    const companyIds = req.query.companyIds
+
+    const target = await prisma.department.findUnique({ where: { id: parseInt(id) } })
+    if (!target)
+      return res.status(404).json({ message: 'ไม่พบสายงาน' })
+
+    const ids = parseIds(companyIds)
+
+    if (ids.length > 0) {
+      // ✅ sync — ลบทุก record ที่มีชื่อเดิม ในทุกบริษัทของกลุ่ม
+      await prisma.department.deleteMany({
+        where: {
+          name: target.name,
+          companyId: { in: ids },
+        },
+      })
+    } else {
+      await prisma.department.delete({ where: { id: parseInt(id) } })
+    }
+
     res.status(200).json({ message: 'ลบสำเร็จ' })
   } catch (error) {
     console.error('deleteDepartment error:', error)
@@ -102,9 +135,4 @@ const deleteDepartment = async (req, res) => {
   }
 }
 
-module.exports = {
-  getDepartments,
-  addDepartment,
-  updateDepartment,
-  deleteDepartment,
-}
+module.exports = { getDepartments, addDepartment, updateDepartment, deleteDepartment }
