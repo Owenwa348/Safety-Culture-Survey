@@ -1,7 +1,7 @@
 // routes/Analytics/analyticsRoutes.js
 const express = require('express');
 const router = express.Router();
-const { authMiddleware } = require('../../middleware/authMiddleware'); // ✅ เพิ่ม
+const { authMiddleware } = require('../../middleware/authMiddleware');
 const { 
   getAggregatedSurveyData,
   getDemographicAnalysis,
@@ -17,9 +17,10 @@ const {
   getEvaluationData,
   getRawAnswers,
   getOpinionsData,
+  getQuestionsWithCategory, // ✅ import ใหม่
 } = require('../../controllers/Analytics/analyticsController');
 
-// ✅ ใช้ authMiddleware กับทุก route เพื่อให้ req.user.matchedCompanyIds พร้อมใช้งาน
+// ✅ ใช้ authMiddleware กับทุก route
 router.use(authMiddleware);
 
 router.get('/aggregated', getAggregatedSurveyData);
@@ -37,4 +38,6 @@ router.get('/evaluation/current', getEvaluationData('current'));
 router.get('/evaluation/future', getEvaluationData('future'));
 router.get('/raw-answers', getRawAnswers);
 router.get('/opinions', getOpinionsData);
+router.get('/questions', getQuestionsWithCategory); // ✅ route ใหม่
+
 module.exports = router;
