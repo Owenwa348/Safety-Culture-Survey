@@ -899,16 +899,52 @@ const getRawAnswers = async (req, res) => {
 // ========================================================
 const getOpinionsData = async (req, res) => {
   try {
+    const { companyId } = req.query;
     const scope = getCompanyScope(req);
+
+    // --------------------------------------------------------
+    // สร้าง user filter สำหรับ survey_answers
+    // รวม scope (Admin/SuperAdmin) + companyId (ถ้ามี)
+    // --------------------------------------------------------
+    let userCompanyFilter = {};
+
+    if (scope !== null) {
+      userCompanyFilter = { company_id: { in: scope } };
+    }
+
+    if (companyId && companyId !== 'All') {
+      const company = await prisma.company.findFirst({ where: { name: companyId } });
+      if (company && (scope === null || scope.includes(company.id))) {
+        userCompanyFilter = { company_id: company.id };
+      }
+    }
 
     const surveyAnswerWhere = {
       comment: { not: null },
-      ...(scope !== null && {
-        user: { company_id: { in: scope } }
+      ...(Object.keys(userCompanyFilter).length > 0 && {
+        user: userCompanyFilter
       })
     };
 
+    // --------------------------------------------------------
+    // สร้าง question filter ตาม companyId (กรองผ่าน category)
+    // --------------------------------------------------------
+    let questionWhere = {};
+
+    if (companyId && companyId !== 'All') {
+      const company = await prisma.company.findFirst({ where: { name: companyId } });
+      if (company && (scope === null || scope.includes(company.id))) {
+        questionWhere = { category: { companyId: company.id } };
+      }
+    } else if (scope !== null && scope.length > 0) {
+      // Admin ที่ไม่ได้เลือก companyId เฉพาะ → แสดงคำถามของบริษัทแรกใน scope
+      // (สอดคล้องกับ getQuestionsWithCategory)
+      const primaryCompanyId = Math.min(...scope);
+      questionWhere = { category: { companyId: primaryCompanyId } };
+    }
+
     const questions = await prisma.question.findMany({
+      where: questionWhere,
       orderBy: { order: 'asc' },
       select: {
         id: true,
@@ -941,7 +977,6 @@ const getOpinionsData = async (req, res) => {
     res.status(500).json({ error: 'เซิร์ฟเวอร์ขัดข้อง', message: error.message });
   }
 };
-
 // ========================================================
 // ✅ getQuestionsWithCategory (ใหม่)
 // ดึง questions พร้อม categoryId โดยใช้ auth scope แทน companyIds query param
