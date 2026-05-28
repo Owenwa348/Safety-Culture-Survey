@@ -1,6 +1,7 @@
 // routes/Position/positionRoutes.js
 const express = require('express')
 const router = express.Router()
+const { authMiddleware } = require('../../middleware/authMiddleware')
 const {
   getPositions,
   addPosition,
@@ -8,9 +9,9 @@ const {
   deletePosition,
 } = require('../../controllers/Position/positionController')
 
-router.get('/', getPositions)
-router.post('/', addPosition)
-router.put('/:id', updatePosition)
-router.delete('/:id', deletePosition)
+router.get('/', authMiddleware, getPositions)
+router.post('/', authMiddleware, addPosition)
+router.put('/:id', authMiddleware, updatePosition)
+router.delete('/:id', authMiddleware, deletePosition)
 
 module.exports = router

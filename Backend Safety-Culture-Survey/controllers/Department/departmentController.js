@@ -8,34 +8,36 @@ const parseIds = (value) => {
   return String(value).split(',').map(Number).filter(Boolean)
 }
 
-// GET ?companyIds=1,2,3 — deduplicate by name
 const getDepartments = async (req, res) => {
   try {
-    const ids = parseIds(req.query.companyIds)
+    const ids =
+      req.user?.matchedCompanyIds?.length ? req.user.matchedCompanyIds.map(Number) :
+      req.user?.companyIds?.length        ? req.user.companyIds.map(Number) :
+      req.user?.companyId                 ? [Number(req.user.companyId)] :
+      parseIds(req.query.companyIds);
+
     if (!ids.length)
-      return res.status(400).json({ message: 'กรุณาระบุ companyIds' })
+      return res.status(400).json({ message: 'ไม่พบข้อมูลบริษัทจาก token' });
 
     const departments = await prisma.department.findMany({
       where: { companyId: { in: ids } },
       orderBy: { id: 'asc' },
-    })
+    });
 
-    // ✅ deduplicate by name
-    const seen = new Set()
+    const seen = new Set();
     const deduped = departments.filter(d => {
-      if (seen.has(d.name)) return false
-      seen.add(d.name)
-      return true
-    })
+      if (seen.has(d.name)) return false;
+      seen.add(d.name);
+      return true;
+    });
 
-    res.status(200).json(deduped)
+    res.status(200).json(deduped);
   } catch (error) {
-    console.error('getDepartments error:', error)
-    res.status(500).json({ message: 'Internal server error' })
+    console.error('getDepartments error:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
-}
+};
 
-// POST — สร้างให้ทุกบริษัทในกลุ่ม
 const addDepartment = async (req, res) => {
   try {
     const { name, companyIds } = req.body
@@ -66,7 +68,6 @@ const addDepartment = async (req, res) => {
   }
 }
 
-// PUT /:id — sync อัปเดตทุก record ที่ชื่อเดิมในกลุ่ม
 const updateDepartment = async (req, res) => {
   try {
     const { id } = req.params
@@ -81,12 +82,8 @@ const updateDepartment = async (req, res) => {
     const ids = parseIds(companyIds)
 
     if (ids.length > 0) {
-      // ✅ sync — อัปเดตทุก record ที่มีชื่อเดิม ในทุกบริษัทของกลุ่ม
       await prisma.department.updateMany({
-        where: {
-          name: target.name,
-          companyId: { in: ids },
-        },
+        where: { name: target.name, companyId: { in: ids } },
         data: { name: name.trim() },
       })
     } else {
@@ -104,7 +101,6 @@ const updateDepartment = async (req, res) => {
   }
 }
 
-// DELETE /:id — sync ลบทุก record ที่ชื่อเดิมในกลุ่ม
 const deleteDepartment = async (req, res) => {
   try {
     const { id } = req.params
@@ -117,12 +113,8 @@ const deleteDepartment = async (req, res) => {
     const ids = parseIds(companyIds)
 
     if (ids.length > 0) {
-      // ✅ sync — ลบทุก record ที่มีชื่อเดิม ในทุกบริษัทของกลุ่ม
       await prisma.department.deleteMany({
-        where: {
-          name: target.name,
-          companyId: { in: ids },
-        },
+        where: { name: target.name, companyId: { in: ids } },
       })
     } else {
       await prisma.department.delete({ where: { id: parseInt(id) } })

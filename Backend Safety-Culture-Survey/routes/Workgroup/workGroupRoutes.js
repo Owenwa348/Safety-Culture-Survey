@@ -1,6 +1,7 @@
 // routes/Workgroup/workGroupRoutes.js
 const express = require('express')
 const router = express.Router()
+const { authMiddleware } = require('../../middleware/authMiddleware')
 const {
   getWorkGroups,
   addWorkGroup,
@@ -8,9 +9,9 @@ const {
   deleteWorkGroup,
 } = require('../../controllers/Workgroup/workGroupController')
 
-router.get('/', getWorkGroups)
-router.post('/', addWorkGroup)
-router.put('/:id', updateWorkGroup)
-router.delete('/:id', deleteWorkGroup)
+router.get('/', authMiddleware, getWorkGroups)
+router.post('/', authMiddleware, addWorkGroup)
+router.put('/:id', authMiddleware, updateWorkGroup)
+router.delete('/:id', authMiddleware, deleteWorkGroup)
 
 module.exports = router

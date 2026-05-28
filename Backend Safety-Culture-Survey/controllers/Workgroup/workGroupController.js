@@ -8,34 +8,36 @@ const parseIds = (value) => {
   return String(value).split(',').map(Number).filter(Boolean)
 }
 
-// GET ?companyIds=1,2,3 — deduplicate by name
 const getWorkGroups = async (req, res) => {
   try {
-    const ids = parseIds(req.query.companyIds)
+    const ids =
+      req.user?.matchedCompanyIds?.length ? req.user.matchedCompanyIds.map(Number) :
+      req.user?.companyIds?.length        ? req.user.companyIds.map(Number) :
+      req.user?.companyId                 ? [Number(req.user.companyId)] :
+      parseIds(req.query.companyIds);
+
     if (!ids.length)
-      return res.status(400).json({ message: 'กรุณาระบุ companyIds' })
+      return res.status(400).json({ message: 'ไม่พบข้อมูลบริษัทจาก token' });
 
     const workGroups = await prisma.work_group.findMany({
       where: { companyId: { in: ids } },
       orderBy: { id: 'asc' },
-    })
+    });
 
-    // ✅ deduplicate by name
-    const seen = new Set()
+    const seen = new Set();
     const deduped = workGroups.filter(wg => {
-      if (seen.has(wg.name)) return false
-      seen.add(wg.name)
-      return true
-    })
+      if (seen.has(wg.name)) return false;
+      seen.add(wg.name);
+      return true;
+    });
 
-    res.status(200).json(deduped)
+    res.status(200).json(deduped);
   } catch (error) {
-    console.error('getWorkGroups error:', error)
-    res.status(500).json({ message: 'Internal server error' })
+    console.error('getWorkGroups error:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
-}
+};
 
-// POST — สร้างให้ทุกบริษัทในกลุ่ม
 const addWorkGroup = async (req, res) => {
   try {
     const { name, companyIds } = req.body
@@ -66,7 +68,6 @@ const addWorkGroup = async (req, res) => {
   }
 }
 
-// PUT /:id — sync อัปเดตทุก record ที่ชื่อเดิมในกลุ่ม
 const updateWorkGroup = async (req, res) => {
   try {
     const { id } = req.params
@@ -81,12 +82,8 @@ const updateWorkGroup = async (req, res) => {
     const ids = parseIds(companyIds)
 
     if (ids.length > 0) {
-      // ✅ sync — อัปเดตทุก record ที่มีชื่อเดิม ในทุกบริษัทของกลุ่ม
       await prisma.work_group.updateMany({
-        where: {
-          name: target.name,
-          companyId: { in: ids },
-        },
+        where: { name: target.name, companyId: { in: ids } },
         data: { name: name.trim() },
       })
     } else {
@@ -104,7 +101,6 @@ const updateWorkGroup = async (req, res) => {
   }
 }
 
-// DELETE /:id — sync ลบทุก record ที่ชื่อเดิมในกลุ่ม
 const deleteWorkGroup = async (req, res) => {
   try {
     const { id } = req.params
@@ -117,12 +113,8 @@ const deleteWorkGroup = async (req, res) => {
     const ids = parseIds(companyIds)
 
     if (ids.length > 0) {
-      // ✅ sync — ลบทุก record ที่มีชื่อเดิม ในทุกบริษัทของกลุ่ม
       await prisma.work_group.deleteMany({
-        where: {
-          name: target.name,
-          companyId: { in: ids },
-        },
+        where: { name: target.name, companyId: { in: ids } },
       })
     } else {
       await prisma.work_group.delete({ where: { id: parseInt(id) } })
