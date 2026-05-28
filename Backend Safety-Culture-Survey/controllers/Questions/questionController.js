@@ -8,13 +8,17 @@ const parseIds = (value) => {
   return String(value).split(',').map(Number).filter(Boolean)
 }
 
-// GET ?companyIds=1,2,3
+// GET — ดึง companyIds จาก JWT token ก่อน ถ้าไม่มีค่อย fallback จาก query string
 // ✅ question มีแค่ 1 ชุด ผูกกับ category ของบริษัทแรก (primaryId)
 const getQuestions = async (req, res) => {
   try {
-    const ids = parseIds(req.query.companyIds)
+    const ids =
+      req.user?.matchedCompanyIds?.length ? req.user.matchedCompanyIds.map(Number) :
+      req.user?.companyId                 ? [Number(req.user.companyId)] :
+      parseIds(req.query.companyIds);
+
     if (!ids.length)
-      return res.status(400).json({ message: 'กรุณาระบุ companyIds' })
+      return res.status(400).json({ message: 'ไม่พบข้อมูลบริษัทจาก token' })
 
     const primaryId = Math.min(...ids)
 

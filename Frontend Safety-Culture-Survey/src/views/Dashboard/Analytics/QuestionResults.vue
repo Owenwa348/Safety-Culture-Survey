@@ -48,12 +48,13 @@ const availableYears = ref([]);
 // ========================================
 
 /**
- * ดึงข้อมูลคำถามทั้งหมดจาก API เพื่อนำมาแสดงเป็นป้ายกำกับในกราฟ
- * แสดงหมายเลขและตัวอย่างคำถามสั้นๆ เช่น "Q1: ทักษะการทำงาน..."
+ * ดึงข้อมูลคำถามจาก analytics endpoint
+ * ✅ ใช้ /api/analytics/questions แทน /api/questions
+ *    เพื่อรองรับ SuperAdmin และไม่ต้องส่ง companyIds
  */
 const fetchQuestions = async () => {
   try {
-    const response = await axios.get('/api/questions');
+    const response = await axios.get('/api/analytics/questions');
     allQuestions.value = response.data;
     updateLabels();
   } catch (error) {
@@ -66,22 +67,19 @@ const fetchQuestions = async () => {
  */
 const updateLabels = () => {
   let filteredQuestions = allQuestions.value;
-  
-  // กรองตาม category
+
   if (selectedCategory.value !== 'All') {
     filteredQuestions = filteredQuestions.filter(
       q => q.categoryId === parseInt(selectedCategory.value)
     );
   }
-  
-  // แสดงหมายเลขพร้อมตัวอย่างคำถามสั้นๆ
+
+  const maxLength = 25;
   fullLabels.value = filteredQuestions.map((q, index) => {
-    const questionText = q.text;
-    const maxLength = 25;
-    const truncatedText = questionText.length > maxLength 
-      ? questionText.substring(0, maxLength) + '...' 
-      : questionText;
-    return `Q${index + 1}: ${truncatedText}`;
+    const truncated = q.text.length > maxLength
+      ? q.text.substring(0, maxLength) + '...'
+      : q.text;
+    return `Q${index + 1}: ${truncated}`;
   });
 };
 
@@ -119,7 +117,7 @@ const fetchCategories = async () => {
 };
 
 /**
- * ดึงข้อมูลตำแหน่งทั้งหมดจาก API 
+ * ดึงข้อมูลตำแหน่งทั้งหมดจาก API
  */
 const fetchPositions = async () => {
   try {
@@ -154,10 +152,10 @@ const fetchYears = async () => {
  */
 const fetchChartData = async () => {
   if (!selectedYear.value) return;
-  
+
   isLoading.value = true;
   chartAPIData.value = null;
-  
+
   try {
     const params = {
       year: selectedYear.value,
@@ -165,7 +163,7 @@ const fetchChartData = async () => {
       position: selectedPosition.value,
       categoryId: selectedCategory.value,
     };
-    
+
     const { data } = await axios.get('/api/analytics/question-results', { params });
     chartAPIData.value = data;
   } catch (error) {
@@ -188,14 +186,14 @@ onMounted(async () => {
     fetchCompanies(),
     fetchCategories()
   ]);
-  
+
   if (selectedYear.value) {
     fetchChartData();
   }
 });
 
 watch([selectedYear, selectedCompany, selectedPosition, selectedCategory], () => {
-  currentPage.value = 1; // Reset to first page
+  currentPage.value = 1;
   fetchChartData();
 }, { deep: true });
 
@@ -222,73 +220,49 @@ const getCategoryLabel = () => {
   return option ? option.label : 'ทุกหมวดหมู่';
 };
 
-/**
- * คำนวณจำนวนหน้าทั้งหมด
- */
 const totalPages = computed(() => {
   return Math.ceil(fullLabels.value.length / questionsPerPage.value);
 });
 
-/**
- * คำนวณ range ของคำถามในหน้าปัจจุบัน
- */
 const currentQuestionRange = computed(() => {
   const start = (currentPage.value - 1) * questionsPerPage.value;
   const end = Math.min(start + questionsPerPage.value, fullLabels.value.length);
   return { start, end };
 });
 
-/**
- * ดึง labels สำหรับหน้าปัจจุบัน
- */
 const paginatedLabels = computed(() => {
   const { start, end } = currentQuestionRange.value;
   return fullLabels.value.slice(start, end);
 });
 
-/**
- * ข้อมูลสำหรับ pagination buttons
- */
 const paginationButtons = computed(() => {
   const total = totalPages.value;
   const current = currentPage.value;
   const buttons = [];
-  
-  // แสดงเฉพาะหน้าบางหน้าถ้ามีเยอะ
+
   if (total <= 7) {
-    for (let i = 1; i <= total; i++) {
-      buttons.push(i);
-    }
+    for (let i = 1; i <= total; i++) buttons.push(i);
   } else {
     buttons.push(1);
     if (current > 3) buttons.push('...');
-    
+
     const start = Math.max(2, current - 1);
     const end = Math.min(total - 1, current + 1);
-    
-    for (let i = start; i <= end; i++) {
-      buttons.push(i);
-    }
-    
+    for (let i = start; i <= end; i++) buttons.push(i);
+
     if (current < total - 2) buttons.push('...');
     buttons.push(total);
   }
-  
+
   return buttons;
 });
 
-/**
- * เปลี่ยนหน้า
- */
 const goToPage = (page) => {
   if (page >= 1 && page <= totalPages.value) {
     currentPage.value = page;
   }
 };
 
-/**
- * จัดเตรียมข้อมูลสำหรับแสดงกราฟ (พร้อม pagination)
- */
 const chartData = computed(() => {
   if (!chartAPIData.value || isLoading.value || fullLabels.value.length === 0) {
     return null;
@@ -328,16 +302,10 @@ const chartData = computed(() => {
 
 <template>
   <div class="flex min-h-screen bg-gray-50">
-    <!-- ========================================
-         แถบเมนูด้านข้าง (Sidebar)
-         ======================================== -->
     <NavbarDashboard />
 
-    <!-- ========================================
-         บริษัทเนื้อหาหลัก
-         ======================================== -->
     <main class="flex-1 ml-60 p-6">
-      
+
       <!-- หัวข้อหน้า -->
       <header class="mb-6">
         <h1 class="text-2xl font-bold text-gray-800">
@@ -348,18 +316,13 @@ const chartData = computed(() => {
         </p>
       </header>
 
-      <!-- ========================================
-           ส่วนตัวกรองข้อมูล (Filter Section)
-           ======================================== -->
+      <!-- ส่วนตัวกรองข้อมูล -->
       <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          
+
           <!-- ตัวกรองบริษัท -->
           <div class="space-y-2">
-            <label 
-              for="company-select" 
-              class="block text-sm font-medium text-gray-700"
-            >
+            <label for="company-select" class="block text-sm font-medium text-gray-700">
               เลือกบริษัท
             </label>
             <select
@@ -367,11 +330,7 @@ const chartData = computed(() => {
               v-model="selectedCompany"
               class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 transition-colors"
             >
-              <option 
-                v-for="option in companyOptions" 
-                :key="option.value" 
-                :value="option.value"
-              >
+              <option v-for="option in companyOptions" :key="option.value" :value="option.value">
                 {{ option.label }}
               </option>
             </select>
@@ -379,10 +338,7 @@ const chartData = computed(() => {
 
           <!-- ตัวกรองตำแหน่ง -->
           <div class="space-y-2">
-            <label 
-              for="position-select" 
-              class="block text-sm font-medium text-gray-700"
-            >
+            <label for="position-select" class="block text-sm font-medium text-gray-700">
               เลือกตำแหน่ง
             </label>
             <select
@@ -390,22 +346,15 @@ const chartData = computed(() => {
               v-model="selectedPosition"
               class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 transition-colors"
             >
-              <option 
-                v-for="option in positionOptions" 
-                :key="option.value" 
-                :value="option.value"
-              >
+              <option v-for="option in positionOptions" :key="option.value" :value="option.value">
                 {{ option.label }}
               </option>
             </select>
           </div>
 
-          <!-- ตัวกรอง Category (ใหม่) -->
+          <!-- ตัวกรอง Category -->
           <div class="space-y-2">
-            <label 
-              for="category-select" 
-              class="block text-sm font-medium text-gray-700"
-            >
+            <label for="category-select" class="block text-sm font-medium text-gray-700">
               เลือกหมวดหมู่
             </label>
             <select
@@ -413,11 +362,7 @@ const chartData = computed(() => {
               v-model="selectedCategory"
               class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 transition-colors"
             >
-              <option 
-                v-for="option in categoryOptions" 
-                :key="option.value" 
-                :value="option.value"
-              >
+              <option v-for="option in categoryOptions" :key="option.value" :value="option.value">
                 {{ option.label }}
               </option>
             </select>
@@ -425,10 +370,7 @@ const chartData = computed(() => {
 
           <!-- ตัวกรองปี -->
           <div class="space-y-2">
-            <label 
-              for="year-select" 
-              class="block text-sm font-medium text-gray-700"
-            >
+            <label for="year-select" class="block text-sm font-medium text-gray-700">
               เลือกปี
             </label>
             <select
@@ -437,25 +379,14 @@ const chartData = computed(() => {
               :disabled="availableYears.length === 0"
               class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed transition-colors"
             >
-              <option v-if="availableYears.length === 0" :value="null">
-                ไม่มีข้อมูลปี
-              </option>
-              <option 
-                v-for="year in availableYears" 
-                :key="year" 
-                :value="year"
-              >
-                {{ year }}
-              </option>
+              <option v-if="availableYears.length === 0" :value="null">ไม่มีข้อมูลปี</option>
+              <option v-for="year in availableYears" :key="year" :value="year">{{ year }}</option>
             </select>
           </div>
 
           <!-- ตัวกรองช่วงเวลา -->
           <div class="space-y-2">
-            <label 
-              for="timeframe-select" 
-              class="block text-sm font-medium text-gray-700"
-            >
+            <label for="timeframe-select" class="block text-sm font-medium text-gray-700">
               ช่วงเวลา
             </label>
             <select
@@ -463,36 +394,24 @@ const chartData = computed(() => {
               v-model="selectedTimeframe"
               class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 transition-colors"
             >
-              <option 
-                v-for="option in timeframeOptions" 
-                :key="option.value" 
-                :value="option.value"
-              >
+              <option v-for="option in timeframeOptions" :key="option.value" :value="option.value">
                 {{ option.label }}
               </option>
             </select>
           </div>
         </div>
-        
+
         <!-- สรุปตัวกรองที่เลือก -->
         <div class="mt-4 pt-4 border-t border-gray-200">
           <div class="flex flex-wrap items-center gap-2 text-sm text-gray-600">
             <span class="font-semibold text-gray-700">กำลังแสดง:</span>
-            <span class="px-2 py-1 bg-green-50 text-green-700 rounded">
-              {{ getCompanyLabel() }}
-            </span>
+            <span class="px-2 py-1 bg-green-50 text-green-700 rounded">{{ getCompanyLabel() }}</span>
             <span class="text-gray-400">•</span>
-            <span class="px-2 py-1 bg-blue-50 text-blue-700 rounded">
-              {{ getPositionLabel() }}
-            </span>
+            <span class="px-2 py-1 bg-blue-50 text-blue-700 rounded">{{ getPositionLabel() }}</span>
             <span class="text-gray-400">•</span>
-            <span class="px-2 py-1 bg-indigo-50 text-indigo-700 rounded">
-              {{ getCategoryLabel() }}
-            </span>
+            <span class="px-2 py-1 bg-indigo-50 text-indigo-700 rounded">{{ getCategoryLabel() }}</span>
             <span class="text-gray-400">•</span>
-            <span class="px-2 py-1 bg-purple-50 text-purple-700 rounded">
-              ปี {{ selectedYear }}
-            </span>
+            <span class="px-2 py-1 bg-purple-50 text-purple-700 rounded">ปี {{ selectedYear }}</span>
             <span class="text-gray-400">•</span>
             <span class="px-2 py-1 bg-orange-50 text-orange-700 rounded">
               {{ timeframeOptions.find(opt => opt.value === selectedTimeframe)?.label }}
@@ -505,125 +424,90 @@ const chartData = computed(() => {
         </div>
       </section>
 
-      <!-- ========================================
-           ส่วนแสดงกราฟ
-           ======================================== -->
+      <!-- ส่วนแสดงกราฟ -->
       <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <!-- หัวข้อของกราฟ -->
         <header class="mb-6 pb-4 border-b border-gray-200">
-          <h2 class="text-lg font-semibold text-gray-800">
-            {{ getPositionLabel() }}
-          </h2>
-          <p class="text-sm text-gray-500 mt-1">
-            {{ getCompanyLabel() }}
-          </p>
+          <h2 class="text-lg font-semibold text-gray-800">{{ getPositionLabel() }}</h2>
+          <p class="text-sm text-gray-500 mt-1">{{ getCompanyLabel() }}</p>
         </header>
-        
-        <!-- แสดงข้อความโหลด -->
+
+        <!-- Loading -->
         <div v-if="isLoading" class="flex justify-center items-center" style="height: 450px;">
           <p class="text-gray-500">กำลังโหลดข้อมูล...</p>
         </div>
-        
-        <!-- แสดงกราฟ -->
+
+        <!-- กราฟ -->
         <div v-else-if="chartData && chartData.datasets" class="w-full" style="height: 450px;">
-          <StackedBar 
+          <StackedBar
             :chart-data="chartData"
             :bar-percentage="0.5"
             :category-percentage="0.6"
           />
         </div>
 
-        <!-- แสดงข้อความเมื่อไม่พบข้อมูล -->
+        <!-- ไม่พบข้อมูล -->
         <div v-else class="flex flex-col justify-center items-center text-center" style="height: 450px;">
-          <svg 
-            class="mx-auto h-12 w-12 text-gray-400" 
-            fill="none" 
-            viewBox="0 0 24 24" 
-            stroke="currentColor"
-          >
-            <path 
-              stroke-linecap="round" 
-              stroke-linejoin="round" 
-              stroke-width="2" 
-              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" 
-            />
+          <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
-          <h3 class="mt-4 text-lg font-medium text-gray-900">
-            ไม่พบข้อมูล
-          </h3>
-          <p class="mt-2 text-sm text-gray-500">
-            ไม่พบข้อมูลสำหรับการเลือกปัจจุบัน กรุณาเลือกตัวกรองอื่น
-          </p>
+          <h3 class="mt-4 text-lg font-medium text-gray-900">ไม่พบข้อมูล</h3>
+          <p class="mt-2 text-sm text-gray-500">ไม่พบข้อมูลสำหรับการเลือกปัจจุบัน กรุณาเลือกตัวกรองอื่น</p>
         </div>
 
-        <!-- ========================================
-             ส่วน Pagination Controls (ใหม่)
-             ======================================== -->
+        <!-- Pagination Controls -->
         <div v-if="!isLoading && chartData" class="mt-6 pt-4 border-t border-gray-200">
           <div class="flex items-center justify-between flex-wrap gap-4">
+
             <!-- ข้อมูลหน้าปัจจุบัน -->
             <div class="text-sm text-gray-700">
-              แสดงคำถามที่ <span class="font-semibold">{{ currentQuestionRange.start + 1 }}</span> ถึง 
-              <span class="font-semibold">{{ currentQuestionRange.end }}</span> จากทั้งหมด 
+              แสดงคำถามที่ <span class="font-semibold">{{ currentQuestionRange.start + 1 }}</span> ถึง
+              <span class="font-semibold">{{ currentQuestionRange.end }}</span> จากทั้งหมด
               <span class="font-semibold">{{ fullLabels.length }}</span> คำถาม
             </div>
 
-            <!-- Pagination Controls Container -->
             <div class="flex items-center gap-4">
-              <!-- Pagination Buttons (แสดงเฉพาะเมื่อมีหลายหน้า) -->
+              <!-- Pagination Buttons -->
               <nav v-if="totalPages > 1" class="flex items-center space-x-1">
-              <!-- ปุ่มย้อนกลับ -->
-              <button
-                @click="goToPage(currentPage - 1)"
-                :disabled="currentPage === 1"
-                class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors"
-                :class="currentPage === 1 
-                  ? 'text-gray-400 cursor-not-allowed' 
-                  : 'text-gray-700 hover:bg-gray-100'"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-
-              <!-- ปุ่มหมายเลขหน้า -->
-              <template v-for="(page, index) in paginationButtons">
-                <span 
-                  v-if="page === '...'" 
-                  :key="`dots-${index}`"
-                  class="px-3 py-1.5 text-sm text-gray-500"
-                >
-                  ...
-                </span>
                 <button
-                  v-else
-                  :key="`page-${index}`"
-                  @click="goToPage(page)"
+                  @click="goToPage(currentPage - 1)"
+                  :disabled="currentPage === 1"
                   class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors"
-                  :class="currentPage === page
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'text-gray-700 hover:bg-gray-100'"
+                  :class="currentPage === 1 ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-100'"
                 >
-                  {{ page }}
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                  </svg>
                 </button>
-              </template>
 
-              <!-- ปุ่มถัดไป -->
-              <button
-                @click="goToPage(currentPage + 1)"
-                :disabled="currentPage === totalPages"
-                class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors"
-                :class="currentPage === totalPages 
-                  ? 'text-gray-400 cursor-not-allowed' 
-                  : 'text-gray-700 hover:bg-gray-100'"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
+                <template v-for="(page, index) in paginationButtons">
+                  <span
+                    v-if="page === '...'"
+                    :key="`dots-${index}`"
+                    class="px-3 py-1.5 text-sm text-gray-500"
+                  >...</span>
+                  <button
+                    v-else
+                    :key="`page-${index}`"
+                    @click="goToPage(page)"
+                    class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors"
+                    :class="currentPage === page ? 'bg-blue-600 text-white hover:bg-blue-700' : 'text-gray-700 hover:bg-gray-100'"
+                  >{{ page }}</button>
+                </template>
+
+                <button
+                  @click="goToPage(currentPage + 1)"
+                  :disabled="currentPage === totalPages"
+                  class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors"
+                  :class="currentPage === totalPages ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-100'"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
               </nav>
 
-              <!-- ตัวเลือกจำนวนต่อหน้า (แสดงเสมอ) -->
+              <!-- จำนวนต่อหน้า -->
               <div class="flex items-center space-x-2">
                 <label for="per-page" class="text-sm text-gray-700">แสดง:</label>
                 <select
@@ -652,19 +536,15 @@ const chartData = computed(() => {
 select {
   transition: all 0.2s ease;
 }
-
 select:hover:not(:disabled) {
   border-color: #9ca3af;
 }
-
 select:focus {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
-
 button {
   transition: all 0.15s ease;
 }
-
 button:disabled {
   opacity: 0.5;
   cursor: not-allowed;

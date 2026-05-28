@@ -13,8 +13,7 @@ const getPositions = async (req, res) => {
   try {
     const ids =
       req.user?.matchedCompanyIds?.length ? req.user.matchedCompanyIds.map(Number) :
-      req.user?.companyIds?.length ? req.user.companyIds.map(Number) :
-      req.user?.companyId        ? [Number(req.user.companyId)] :
+      req.user?.companyId                 ? [Number(req.user.companyId)] :
       parseIds(req.query.companyIds);
 
     if (!ids.length)

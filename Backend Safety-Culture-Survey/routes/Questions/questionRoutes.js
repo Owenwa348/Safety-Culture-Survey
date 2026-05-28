@@ -1,6 +1,7 @@
 // routes/Questions/questionRoutes.js
 const express = require('express')
 const router = express.Router()
+const { authMiddleware } = require('../../middleware/authMiddleware')
 const {
   getQuestions,
   addQuestion,
@@ -9,10 +10,10 @@ const {
   moveQuestion
 } = require('../../controllers/Questions/questionController')
 
-router.get('/', getQuestions)
-router.post('/', addQuestion)
-router.put('/:id', updateQuestion)
-router.delete('/:id', deleteQuestion)
-router.put('/:id/move', moveQuestion)
+router.get('/',        authMiddleware, getQuestions)
+router.post('/',       authMiddleware, addQuestion)
+router.put('/:id',     authMiddleware, updateQuestion)
+router.delete('/:id',  authMiddleware, deleteQuestion)
+router.put('/:id/move',authMiddleware, moveQuestion)
 
 module.exports = router
