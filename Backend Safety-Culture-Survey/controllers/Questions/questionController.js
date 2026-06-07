@@ -47,27 +47,59 @@ const addQuestion = async (req, res) => {
     if (!categoryId || !text || !text.trim())
       return res.status(400).json({ message: 'ข้อมูลไม่ครบ' })
 
-    // ตรวจว่า category นี้เป็นของบริษัทแรกของกลุ่ม
     const ids = parseIds(companyIds)
-    if (ids.length) {
-      const primaryId = Math.min(...ids)
+    const primaryId = ids.length ? Math.min(...ids) : null
+
+    if (primaryId) {
       const category = await prisma.category.findUnique({ where: { id: parseInt(categoryId) } })
       if (!category || category.companyId !== primaryId)
         return res.status(403).json({ message: 'หมวดหมู่นี้ไม่ใช่ของกลุ่มบริษัทที่เลือก' })
     }
 
-    const maxOrder = await prisma.question.aggregate({ _max: { order: true } })
-    const nextOrder = (maxOrder._max.order !== null ? maxOrder._max.order : -1) + 1
+    // ✅ หา max order ของ category นี้โดยเฉพาะ
+    const lastInCategory = await prisma.question.findFirst({
+      where: { categoryId: parseInt(categoryId) },
+      select: { order: true },
+      orderBy: { order: 'desc' },
+    })
 
+    // ✅ หา order ถัดไปใน category นี้ = lastOrder + 1
+    // แต่ถ้า category นี้ยังไม่มีคำถาม ให้แทรกต่อจาก category ก่อนหน้า
+    let insertOrder
+
+    if (lastInCategory) {
+      // มีคำถามใน category นี้แล้ว → แทรกต่อท้าย category นี้
+      insertOrder = lastInCategory.order + 1
+    } else {
+      // category นี้ยังว่าง → หา max order ของทั้งบริษัทแล้วต่อท้าย
+      const lastInCompany = await prisma.question.findFirst({
+        where: primaryId ? { category: { companyId: primaryId } } : {},
+        select: { order: true },
+        orderBy: { order: 'desc' },
+      })
+      insertOrder = lastInCompany ? lastInCompany.order + 1 : 0
+    }
+
+    // ✅ ดัน order ของทุกคำถามที่ order >= insertOrder ขึ้น +1
+    await prisma.question.updateMany({
+      where: {
+        order: { gte: insertOrder },
+        ...(primaryId ? { category: { companyId: primaryId } } : {}),
+      },
+      data: { order: { increment: 1 } },
+    })
+
+    // ✅ สร้างคำถามใหม่ที่ insertOrder
     const created = await prisma.question.create({
       data: {
         text: text.trim(),
         categoryId: parseInt(categoryId),
-        order: nextOrder,
+        order: insertOrder,
         options: { create: (options || []).map(o => ({ text: o.text })) },
       },
       include: { options: true },
     })
+
     res.status(201).json(created)
   } catch (error) {
     console.error('addQuestion error:', error)

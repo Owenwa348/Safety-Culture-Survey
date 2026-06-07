@@ -1,11 +1,10 @@
-<!-- EditQuestions.vue -->
 <template>
   <div class="bg-white rounded-lg border border-gray-300 p-6">
     <!-- Header -->
     <div class="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
       <h4 class="text-xl font-semibold text-gray-800">จัดการคำถามและหมวดหมู่</h4>
       <div class="flex gap-3">
-        <button @click="showCategoryForm = true" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-medium">+ เพิ่มหมวดหมู่</button>
+        <button @click="openCategoryForm" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-medium">+ เพิ่มหมวดหมู่</button>
         <button @click="showAddForm = true" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium">+ เพิ่มคำถาม</button>
       </div>
     </div>
@@ -33,10 +32,24 @@
       <!-- Add Category Form -->
       <div v-if="showCategoryForm" class="mb-6 p-4 bg-gray-50 rounded border border-gray-300">
         <h5 class="font-medium text-gray-800 mb-3">เพิ่มหมวดหมู่ใหม่</h5>
-        <div class="flex gap-2">
-          <input v-model="newCategoryName" type="text" placeholder="ชื่อหมวดหมู่" class="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent" @keyup.enter="addCategory" />
-          <button @click="addCategory" :disabled="submitting" class="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-4 py-2 rounded text-sm font-medium">{{ submitting ? 'กำลังบันทึก...' : 'บันทึก' }}</button>
-          <button @click="cancelCategoryForm" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm font-medium">ยกเลิก</button>
+        <div class="space-y-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อหมวดหมู่</label>
+            <input v-model="newCategoryName" type="text" placeholder="ชื่อหมวดหมู่" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent" @keyup.enter="addCategory" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">แทรกที่ตำแหน่ง</label>
+            <select v-model="newCategoryOrder" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
+              <option v-for="(cat, idx) in categories" :key="cat.id" :value="idx">
+                ก่อนลำดับที่ {{ idx + 1 }} — {{ cat.name }}
+              </option>
+              <option :value="categories.length">ท้ายสุด (ลำดับที่ {{ categories.length + 1 }})</option>
+            </select>
+          </div>
+          <div class="flex gap-2">
+            <button @click="addCategory" :disabled="submitting" class="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-4 py-2 rounded text-sm font-medium">{{ submitting ? 'กำลังบันทึก...' : 'บันทึก' }}</button>
+            <button @click="cancelCategoryForm" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm font-medium">ยกเลิก</button>
+          </div>
         </div>
       </div>
 
@@ -84,11 +97,37 @@
       <!-- Categories and Questions List -->
       <div class="space-y-6">
         <div v-for="(category, catIndex) in categories" :key="category.id" class="border border-gray-300 rounded overflow-hidden">
+
           <!-- Category Header -->
           <div class="bg-gray-100 px-4 py-3 border-b border-gray-300">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-3">
+
+                <div class="flex flex-col gap-0.5">
+                  <button
+                    @click="reorderCategory(category.id, 'up')"
+                    :disabled="catIndex === 0 || submitting"
+                    class="text-gray-500 hover:text-gray-800 disabled:opacity-20 disabled:cursor-not-allowed"
+                    title="เลื่อนหมวดหมู่ขึ้น"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                    </svg>
+                  </button>
+                  <button
+                    @click="reorderCategory(category.id, 'down')"
+                    :disabled="catIndex === categories.length - 1 || submitting"
+                    class="text-gray-500 hover:text-gray-800 disabled:opacity-20 disabled:cursor-not-allowed"
+                    title="เลื่อนหมวดหมู่ลง"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                </div>
+
                 <span class="inline-flex items-center justify-center w-6 h-6 bg-gray-700 text-white rounded text-xs font-semibold">{{ catIndex + 1 }}</span>
+
                 <div v-if="!category.editing" class="flex items-center gap-2">
                   <h5 class="font-semibold text-gray-800 text-base">{{ category.name }}</h5>
                   <button @click="startCategoryEdit(category)" class="text-blue-600 hover:text-blue-800" title="แก้ไข">
@@ -120,14 +159,12 @@
                 :class="editingQuestionId === question.id ? 'bg-blue-50 border-blue-400' : 'bg-white'"
               >
                 <div class="flex gap-3 min-w-0">
-                  <!-- Question Number -->
                   <div class="flex flex-col gap-1 flex-shrink-0">
-                    <input v-if="editingQuestionId === question.id" v-model="inlineEditData.displayNumber" type="text" class="w-16 h-8 text-center bg-blue-600 text-white rounded text-sm font-semibold border-2 border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500" title="เลขข้อ (ใส่อะไรก็ได้)" placeholder="เลข" />
+                    <input v-if="editingQuestionId === question.id" v-model="inlineEditData.displayNumber" type="text" class="w-16 h-8 text-center bg-blue-600 text-white rounded text-sm font-semibold border-2 border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500" title="เลขข้อ" placeholder="เลข" />
                     <span v-else class="inline-flex items-center justify-center w-16 h-8 bg-blue-600 text-white rounded text-sm font-semibold">{{ question.sequentialNumber }}</span>
                     <span v-if="editingQuestionId === question.id" class="text-xs text-gray-500 text-center">แก้ไขได้</span>
                   </div>
 
-                  <!-- Question Content -->
                   <div class="flex-1 min-w-0 overflow-hidden">
                     <div class="mb-3">
                       <div v-if="editingQuestionId !== question.id" class="flex items-start justify-between gap-2">
@@ -140,34 +177,30 @@
                         <textarea v-model="inlineEditData.text" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" @keyup.escape="cancelInlineEdit"></textarea>
                       </div>
                     </div>
-                    
-                    <!-- Answer Options -->
+
                     <div class="bg-gray-50 rounded p-3 border border-gray-200">
                       <label class="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">ตัวเลือกคำตอบ</label>
                       <div class="space-y-2">
-                        <!-- ✅ แก้ไข: เพิ่ม min-w-0 overflow-hidden -->
                         <div
                           v-for="(option, optIndex) in editingQuestionId === question.id ? inlineEditData.options : question.options"
                           :key="option.id || optIndex"
                           class="flex items-center gap-2 min-w-0 overflow-hidden"
                         >
                           <template v-if="editingQuestionId === question.id">
-                            <button v-if="optIndex > 0" @click="moveOptionUp(optIndex, 'edit')" class="text-gray-500 hover:text-gray-700 flex-shrink-0" title="เลื่อนขึ้น">
+                            <button v-if="optIndex > 0" @click="moveOptionUp(optIndex, 'edit')" class="text-gray-500 hover:text-gray-700 flex-shrink-0">
                               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" /></svg>
                             </button>
                             <div v-else class="w-4 h-4 flex-shrink-0"></div>
-                            <button v-if="optIndex < inlineEditData.options.length - 1" @click="moveOptionDown(optIndex, 'edit')" class="text-gray-500 hover:text-gray-700 flex-shrink-0" title="เลื่อนลง">
+                            <button v-if="optIndex < inlineEditData.options.length - 1" @click="moveOptionDown(optIndex, 'edit')" class="text-gray-500 hover:text-gray-700 flex-shrink-0">
                               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                             </button>
                             <div v-else class="w-4 h-4 flex-shrink-0"></div>
                           </template>
 
                           <span class="inline-flex items-center justify-center w-6 h-6 bg-blue-600 text-white rounded-full text-xs font-semibold flex-shrink-0">{{ optIndex + 1 }}</span>
-                          <!-- ✅ แก้ไข: เพิ่ม min-w-0 ใน input -->
                           <input v-if="editingQuestionId === question.id" v-model="option.text" type="text" class="flex-1 min-w-0 text-gray-700 text-sm px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-                          <!-- ✅ แก้ไข: เพิ่ม break-all min-w-0 ใน span -->
                           <span v-else class="text-gray-700 text-sm flex-1 min-w-0 break-all">{{ option.text }}</span>
-                          <button v-if="editingQuestionId === question.id && inlineEditData.options.length > 1" @click="removeInlineEditOption(optIndex)" class="text-red-600 hover:text-red-800 flex-shrink-0" title="ลบตัวเลือก">
+                          <button v-if="editingQuestionId === question.id && inlineEditData.options.length > 1" @click="removeInlineEditOption(optIndex)" class="text-red-600 hover:text-red-800 flex-shrink-0">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                           </button>
                         </div>
@@ -181,13 +214,12 @@
                     </div>
                   </div>
 
-                  <!-- Action Buttons -->
                   <div class="flex flex-col gap-2 flex-shrink-0">
                     <select :value="question.categoryId" @change="moveQuestion(question.id, $event.target.value)" class="text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" title="ย้ายหมวดหมู่">
                       <option value="">ย้ายไป...</option>
                       <option v-for="cat in categories" :key="cat.id" :value="cat.id" :disabled="cat.id === question.categoryId">{{ cat.name }}</option>
                     </select>
-                    <button @click="deleteQuestion(question.id)" class="text-red-600 hover:text-red-800 text-xs font-medium border border-red-300 rounded px-2 py-1 hover:bg-red-50" title="ลบคำถาม">ลบ</button>
+                    <button @click="deleteQuestion(question.id)" class="text-red-600 hover:text-red-800 text-xs font-medium border border-red-300 rounded px-2 py-1 hover:bg-red-50">ลบ</button>
                   </div>
                 </div>
               </div>
@@ -195,6 +227,7 @@
             <div v-if="getQuestionsByCategory(category.id).length === 0" class="text-center py-8 text-gray-500 text-sm">ไม่มีคำถามในหมวดหมู่นี้</div>
           </div>
         </div>
+
         <div v-if="categories.length === 0" class="text-center py-12 text-gray-500 border-2 border-dashed border-gray-300 rounded">
           <p class="font-medium">ไม่มีหมวดหมู่</p>
           <p class="text-sm mt-1">กรุณาเพิ่มหมวดหมู่ใหม่เพื่อเริ่มต้น</p>
@@ -211,7 +244,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, nextTick } from 'vue'
 import { axiosAuth as axios } from '../../../../utils/apiClient'
 
 const API_BASE_URL = 'http://localhost:5000/api'
@@ -231,26 +264,35 @@ const newQuestion = ref({ categoryId: '', text: '', options: [{ text: '' }, { te
 const showAddForm = ref(false)
 const showCategoryForm = ref(false)
 const newCategoryName = ref('')
+const newCategoryOrder = ref(0)  // ✅ ตำแหน่งที่จะแทรก
 const editingQuestionId = ref(null)
 const inlineEditData = ref({ text: '', options: [], categoryId: null, displayNumber: 1 })
 
 const getQuestionsWithSequentialNumbers = (categoryId) => {
-  const questions = allQuestions.value.filter(q => q.categoryId === categoryId)
-  const sortedQuestions = [...questions].sort((a, b) => {
+  const categoryOrderMap = new Map()
+  categories.value.forEach(cat => { categoryOrderMap.set(cat.id, cat.order ?? 0) })
+
+  const allSorted = [...allQuestions.value].sort((a, b) => {
+    const catOrderA = categoryOrderMap.get(a.categoryId) ?? 0
+    const catOrderB = categoryOrderMap.get(b.categoryId) ?? 0
+    if (catOrderA !== catOrderB) return catOrderA - catOrderB
     if (a.order !== undefined && b.order !== undefined) return a.order - b.order
     if (a.order !== undefined) return -1
     if (b.order !== undefined) return 1
     return a.id - b.id
   })
-  return sortedQuestions.map((question) => ({
-    ...question,
-    sequentialNumber: question.order !== undefined ? question.order : question.id
-  }))
+
+  const globalIndexMap = new Map()
+  allSorted.forEach((q, index) => { globalIndexMap.set(q.id, index + 1) })
+
+  return allSorted
+    .filter(q => q.categoryId === categoryId)
+    .map(question => ({ ...question, sequentialNumber: globalIndexMap.get(question.id) }))
 }
 
-const loadData = async () => {
+const loadData = async (silent = false) => {
   if (!props.companyIds?.length) return
-  loading.value = true
+  if (!silent) loading.value = true
   error.value = ''
   try {
     const [categoriesRes, questionsRes] = await Promise.all([
@@ -276,21 +318,36 @@ const showSuccess = (message) => {
   setTimeout(() => { successMessage.value = '' }, 3000)
 }
 
+// ✅ เปิดฟอร์มพร้อม default ท้ายสุด
+const openCategoryForm = () => {
+  newCategoryOrder.value = categories.value.length
+  showCategoryForm.value = true
+}
+
 const addCategory = async () => {
   if (!newCategoryName.value.trim()) { alert('กรุณากรอกชื่อหมวดหมู่'); return }
   submitting.value = true
   try {
-    const response = await axios.post(`${API_BASE_URL}/categories`, { name: newCategoryName.value.trim(), companyIds: props.companyIds })
-    response.data.forEach(cat => { categories.value.push({ ...cat, editing: false, tempName: '' }) })
+    const response = await axios.post(`${API_BASE_URL}/categories`, {
+      name: newCategoryName.value.trim(),
+      companyIds: props.companyIds,
+      insertAtIndex: newCategoryOrder.value,  // ✅ ส่งตำแหน่งไปด้วย
+    })
     newCategoryName.value = ''
     showCategoryForm.value = false
     showSuccess('เพิ่มหมวดหมู่สำเร็จ')
+    await loadData(true)  // ✅ silent reload ซิงค์ order จาก DB
   } catch (err) {
     error.value = err.response?.data?.message || 'ไม่สามารถเพิ่มหมวดหมู่ได้'
   } finally { submitting.value = false }
 }
 
-const cancelCategoryForm = () => { newCategoryName.value = ''; showCategoryForm.value = false }
+const cancelCategoryForm = () => {
+  newCategoryName.value = ''
+  newCategoryOrder.value = 0
+  showCategoryForm.value = false
+}
+
 const startCategoryEdit = (category) => { category.editing = true; category.tempName = category.name }
 
 const saveCategoryName = async (category) => {
@@ -308,6 +365,40 @@ const saveCategoryName = async (category) => {
 }
 
 const cancelCategoryEdit = (category) => { category.editing = false; category.tempName = '' }
+
+const reorderCategory = async (categoryId, direction) => {
+  const currentIndex = categories.value.findIndex(c => c.id === categoryId)
+  const swapIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1
+  if (currentIndex === -1 || swapIndex < 0 || swapIndex >= categories.value.length) return
+
+  const scrollY = window.scrollY
+
+  const temp = categories.value[currentIndex]
+  categories.value[currentIndex] = categories.value[swapIndex]
+  categories.value[swapIndex] = temp
+
+  await nextTick()
+  window.scrollTo({ top: scrollY, behavior: 'instant' })
+
+  submitting.value = true
+  try {
+    await axios.put(`${API_BASE_URL}/categories/${categoryId}/reorder`, {
+      direction,
+      companyIds: props.companyIds,
+    })
+    showSuccess(direction === 'up' ? 'เลื่อนหมวดหมู่ขึ้นสำเร็จ' : 'เลื่อนหมวดหมู่ลงสำเร็จ')
+  } catch (err) {
+    const scrollY2 = window.scrollY
+    const temp2 = categories.value[currentIndex]
+    categories.value[currentIndex] = categories.value[swapIndex]
+    categories.value[swapIndex] = temp2
+    await nextTick()
+    window.scrollTo({ top: scrollY2, behavior: 'instant' })
+    error.value = err.response?.data?.message || 'ไม่สามารถเรียงหมวดหมู่ได้'
+  } finally {
+    submitting.value = false
+  }
+}
 
 const deleteCategory = async (categoryId) => {
   const questionsInCategory = getQuestionsByCategory(categoryId)

@@ -117,6 +117,7 @@ model category {
   companyId Int?
   company   company?   @relation(fields: [companyId], references: [id])
   questions question[]
+  order     Int        @default(0)   // ✅ เพิ่มบรรทัดนี้
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 }
