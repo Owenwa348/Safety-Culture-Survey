@@ -58,10 +58,9 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onUnmounted } from 'vue'
 import { axiosAuth as axios } from '../../../../utils/apiClient'
 
-// ✅ เปลี่ยนจาก companyId (Number) → companyIds (Array)
 const props = defineProps({
   companyIds: { type: Array, required: true }
 })
@@ -73,29 +72,40 @@ const showAddForm = ref(false)
 const editingIndex = ref(-1)
 const editingText = ref('')
 
+let abortController = null
+
 const fetchDepartments = async () => {
   if (!props.companyIds?.length) return
+
+  // ยกเลิก request เก่าที่ยังค้างอยู่
+  if (abortController) abortController.abort()
+  abortController = new AbortController()
+
   try {
     const res = await axios.get(API_URL, {
-      params: { companyIds: props.companyIds.join(',') }  // ✅ "1,2,3"
+      params: { companyIds: props.companyIds.join(',') },
+      signal: abortController.signal
     })
     departments.value = res.data
   } catch (err) {
+    if (axios.isCancel?.(err) || err.code === 'ECONNABORTED' || err.name === 'CanceledError') return
     console.error('fetchDepartments error:', err)
   }
 }
 
-// ✅ โหลดใหม่เมื่อกลุ่มบริษัทเปลี่ยน
 watch(() => props.companyIds, fetchDepartments, { immediate: true, deep: true })
+
+onUnmounted(() => {
+  if (abortController) abortController.abort()
+})
 
 const addDepartment = async () => {
   if (!newDepartment.value.trim()) return alert('กรุณากรอกชื่อสายงาน')
   try {
-    const res = await axios.post(API_URL, {
+    await axios.post(API_URL, {
       name: newDepartment.value.trim(),
-      companyIds: props.companyIds  // ✅ ส่ง array
+      companyIds: props.companyIds
     })
-    // ✅ Refetch เพื่อให้ UI sync กับ database จริง
     await fetchDepartments()
     newDepartment.value = ''
     showAddForm.value = false
@@ -116,11 +126,10 @@ const saveEdit = async () => {
   if (!editingText.value.trim()) return alert('กรุณากรอกชื่อสายงาน')
   const id = departments.value[editingIndex.value].id
   try {
-    const res = await axios.put(`${API_URL}/${id}`, {
+    await axios.put(`${API_URL}/${id}`, {
       name: editingText.value.trim(),
-      companyIds: props.companyIds   // ✅ เพิ่ม
+      companyIds: props.companyIds
     })
-    // ✅ Refetch เพื่อให้ UI sync กับ database จริง (backend อัพเดตหลายบริษัท)
     await fetchDepartments()
     editingIndex.value = -1
     editingText.value = ''
@@ -135,9 +144,8 @@ const deleteDepartment = async (id) => {
   if (!confirm('คุณต้องการลบสายงานนี้หรือไม่?')) return
   try {
     await axios.delete(`${API_URL}/${id}`, {
-      params: { companyIds: props.companyIds.join(',') }  // ✅ เพิ่ม
+      params: { companyIds: props.companyIds.join(',') }
     })
-    // ✅ Refetch เพื่อให้ UI sync กับ database จริง (backend ลบหลายบริษัท)
     await fetchDepartments()
   } catch (err) {
     alert('ไม่สามารถลบสายงานได้')

@@ -58,10 +58,9 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onUnmounted } from 'vue'
 import { axiosAuth as axios } from '../../../../utils/apiClient'
 
-// ✅ เปลี่ยนจาก companyId (Number) → companyIds (Array)
 const props = defineProps({
   companyIds: { type: Array, required: true }
 })
@@ -73,30 +72,41 @@ const newWorkGroup = ref('')
 const editingItem = ref(null)
 const editingText = ref('')
 
+let abortController = null
+
 const fetchWorkGroups = async () => {
   if (!props.companyIds?.length) return
+
+  // ยกเลิก request เก่าที่ยังค้างอยู่
+  if (abortController) abortController.abort()
+  abortController = new AbortController()
+
   try {
     const res = await axios.get(API_URL, {
-      params: { companyIds: props.companyIds.join(',') }  // ✅ "1,2,3"
+      params: { companyIds: props.companyIds.join(',') },
+      signal: abortController.signal
     })
     workGroups.value = res.data
   } catch (err) {
+    if (axios.isCancel?.(err) || err.code === 'ECONNABORTED' || err.name === 'CanceledError') return
     console.error('fetchWorkGroups error:', err)
     alert('เกิดข้อผิดพลาดในการโหลดข้อมูล')
   }
 }
 
-// ✅ โหลดใหม่เมื่อกลุ่มบริษัทเปลี่ยน
 watch(() => props.companyIds, fetchWorkGroups, { immediate: true, deep: true })
+
+onUnmounted(() => {
+  if (abortController) abortController.abort()
+})
 
 const addWorkGroup = async () => {
   if (!newWorkGroup.value.trim()) return
   try {
-    const res = await axios.post(API_URL, {
+    await axios.post(API_URL, {
       name: newWorkGroup.value.trim(),
-      companyIds: props.companyIds  // ✅ ส่ง array
+      companyIds: props.companyIds
     })
-    // ✅ Refetch เพื่อให้ UI sync กับ database จริง
     await fetchWorkGroups()
     newWorkGroup.value = ''
     showAddForm.value = false
@@ -107,14 +117,13 @@ const addWorkGroup = async () => {
 
 const startEdit = (item) => { editingItem.value = item; editingText.value = item.name }
 
-const saveEdit= async () => {
+const saveEdit = async () => {
   if (!editingItem.value || !editingText.value.trim()) return
   try {
-    const res = await axios.put(`${API_URL}/${editingItem.value.id}`, {
+    await axios.put(`${API_URL}/${editingItem.value.id}`, {
       name: editingText.value.trim(),
-      companyIds: props.companyIds   // ✅ เพิ่ม
+      companyIds: props.companyIds
     })
-    // ✅ Refetch เพื่อให้ UI sync กับ database จริง (backend อัพเดตหลายบริษัท)
     await fetchWorkGroups()
     editingItem.value = null
     editingText.value = ''
@@ -126,14 +135,12 @@ const saveEdit= async () => {
 const cancelEdit = () => { editingItem.value = null; editingText.value = '' }
 const cancelAdd = () => { showAddForm.value = false; newWorkGroup.value = '' }
 
-
 const deleteWorkGroup = async (id) => {
   if (!confirm('คุณต้องการลบกลุ่มงานนี้หรือไม่?')) return
   try {
     await axios.delete(`${API_URL}/${id}`, {
-      params: { companyIds: props.companyIds.join(',') }  // ✅ เพิ่ม
+      params: { companyIds: props.companyIds.join(',') }
     })
-    // ✅ Refetch เพื่อให้ UI sync กับ database จริง (backend ลบหลายบริษัท)
     await fetchWorkGroups()
   } catch (err) {
     alert(err.response?.data?.message || 'เกิดข้อผิดพลาดในการลบข้อมูล')

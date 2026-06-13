@@ -58,10 +58,9 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onUnmounted } from 'vue'
 import { axiosAuth as axios } from '../../../../utils/apiClient'
 
-// ✅ รับ companyIds (Array) จาก SettingsView
 const props = defineProps({
   companyIds: { type: Array, required: true }
 })
@@ -73,30 +72,41 @@ const showAddForm = ref(false)
 const editingIndex = ref(-1)
 const editingText = ref('')
 
+let abortController = null
+
 const fetchPositions = async () => {
   if (!props.companyIds?.length) return
+
+  // ยกเลิก request เก่าที่ยังค้างอยู่
+  if (abortController) abortController.abort()
+  abortController = new AbortController()
+
   try {
     const res = await axios.get(API_URL, {
-      params: { companyIds: props.companyIds.join(',') }  // ✅ "1,2,3"
+      params: { companyIds: props.companyIds.join(',') },
+      signal: abortController.signal
     })
     positions.value = res.data
   } catch (err) {
+    if (axios.isCancel?.(err) || err.code === 'ECONNABORTED' || err.name === 'CanceledError') return
     console.error('fetchPositions error:', err)
     alert('ไม่สามารถโหลดข้อมูลตำแหน่งได้')
   }
 }
 
-// ✅ โหลดใหม่เมื่อกลุ่มบริษัทเปลี่ยน
 watch(() => props.companyIds, fetchPositions, { immediate: true, deep: true })
+
+onUnmounted(() => {
+  if (abortController) abortController.abort()
+})
 
 const addPosition = async () => {
   if (!newPosition.value.trim()) return
   try {
-    const res = await axios.post(API_URL, {
+    await axios.post(API_URL, {
       name: newPosition.value,
-      companyIds: props.companyIds  // ✅ ส่ง array
+      companyIds: props.companyIds
     })
-    // ✅ Refetch เพื่อให้ UI sync กับ database จริง
     await fetchPositions()
     newPosition.value = ''
     showAddForm.value = false
@@ -116,11 +126,10 @@ const saveEdit = async () => {
   const pos = positions.value[editingIndex.value]
   if (!editingText.value.trim()) return
   try {
-    const res = await axios.put(`${API_URL}/${pos.id}`, {
+    await axios.put(`${API_URL}/${pos.id}`, {
       name: editingText.value,
-      companyIds: props.companyIds   
+      companyIds: props.companyIds
     })
-    // ✅ Refetch เพื่อให้ UI sync กับ database จริง (backend อัพเดตหลายบริษัท)
     await fetchPositions()
     editingIndex.value = -1
     editingText.value = ''
@@ -128,15 +137,15 @@ const saveEdit = async () => {
     alert(err.response?.data?.message || 'เกิดข้อผิดพลาดในการแก้ไข')
   }
 }
+
 const cancelEdit = () => { editingIndex.value = -1; editingText.value = '' }
 
 const deletePosition = async (id) => {
   if (!confirm('คุณต้องการลบตำแหน่งนี้หรือไม่?')) return
   try {
     await axios.delete(`${API_URL}/${id}`, {
-      params: { companyIds: props.companyIds.join(',') } 
+      params: { companyIds: props.companyIds.join(',') }
     })
-    // ✅ Refetch เพื่อให้ UI sync กับ database จริง (backend ลบหลายบริษัท)
     await fetchPositions()
   } catch (err) {
     alert(err.response?.data?.message || 'เกิดข้อผิดพลาดในการลบ')

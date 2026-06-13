@@ -58,10 +58,9 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onUnmounted } from 'vue'
 import { axiosAuth as axios } from '../../../../utils/apiClient'
 
-// ✅ เปลี่ยนจาก companyId (Number) → companyIds (Array)
 const props = defineProps({
   companyIds: { type: Array, required: true }
 })
@@ -73,30 +72,41 @@ const showAddForm = ref(false)
 const editingIndex = ref(-1)
 const editingText = ref('')
 
+let abortController = null
+
 const fetchExperiences = async () => {
   if (!props.companyIds?.length) return
+
+  // ยกเลิก request เก่าที่ยังค้างอยู่
+  if (abortController) abortController.abort()
+  abortController = new AbortController()
+
   try {
     const res = await axios.get(API_URL, {
-      params: { companyIds: props.companyIds.join(',') }  // ✅ "1,2,3"
+      params: { companyIds: props.companyIds.join(',') },
+      signal: abortController.signal
     })
     experiences.value = res.data
   } catch (err) {
+    if (axios.isCancel?.(err) || err.code === 'ECONNABORTED' || err.name === 'CanceledError') return
     console.error('fetchExperiences error:', err)
     alert('ไม่สามารถโหลดข้อมูลได้')
   }
 }
 
-// ✅ โหลดใหม่เมื่อกลุ่มบริษัทเปลี่ยน
 watch(() => props.companyIds, fetchExperiences, { immediate: true, deep: true })
+
+onUnmounted(() => {
+  if (abortController) abortController.abort()
+})
 
 const addExperience = async () => {
   if (!newExperience.value.trim()) return
   try {
-    const res = await axios.post(API_URL, {
+    await axios.post(API_URL, {
       name: newExperience.value,
-      companyIds: props.companyIds  // ✅ ส่ง array
+      companyIds: props.companyIds
     })
-    // ✅ Refetch เพื่อให้ UI sync กับ database จริง
     await fetchExperiences()
     newExperience.value = ''
     showAddForm.value = false
@@ -114,11 +124,10 @@ const saveEdit = async () => {
   const exp = experiences.value[editingIndex.value]
   if (!editingText.value.trim()) return
   try {
-    const res = await axios.put(`${API_URL}/${exp.id}`, {
+    await axios.put(`${API_URL}/${exp.id}`, {
       name: editingText.value,
-      companyIds: props.companyIds   // ✅ เพิ่ม
+      companyIds: props.companyIds
     })
-    // ✅ Refetch เพื่อให้ UI sync กับ database จริง (backend อัพเดตหลายบริษัท)
     await fetchExperiences()
     editingIndex.value = -1
     editingText.value = ''
@@ -134,9 +143,8 @@ const deleteExperience = async (id) => {
   if (!confirm('คุณต้องการลบช่วงประสบการณ์นี้หรือไม่?')) return
   try {
     await axios.delete(`${API_URL}/${id}`, {
-      params: { companyIds: props.companyIds.join(',') }  // ✅ เพิ่ม
+      params: { companyIds: props.companyIds.join(',') }
     })
-    // ✅ Refetch เพื่อให้ UI sync กับ database จริง (backend ลบหลายบริษัท)
     await fetchExperiences()
   } catch (err) {
     alert(err.response?.data?.message || 'เกิดข้อผิดพลาด')
