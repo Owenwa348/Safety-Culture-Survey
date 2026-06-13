@@ -1,4 +1,4 @@
-// controllers/WorkGroup/workGroupController.js
+// controllers/Workgroup/workGroupController.js
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 
@@ -8,6 +8,34 @@ const parseIds = (value) => {
   return String(value).split(',').map(Number).filter(Boolean)
 }
 
+// ✅ เพิ่มใหม่ — Public สำหรับ Registration page (ไม่ต้อง token)
+const getWorkGroupsPublic = async (req, res) => {
+  try {
+    const ids = parseIds(req.query.companyId || req.query.companyIds)
+
+    if (!ids.length)
+      return res.status(400).json({ message: 'กรุณาระบุ companyId' })
+
+    const workGroups = await prisma.work_group.findMany({
+      where: { companyId: { in: ids } },
+      orderBy: { id: 'asc' },
+    })
+
+    const seen = new Set()
+    const deduped = workGroups.filter(w => {
+      if (seen.has(w.name)) return false
+      seen.add(w.name)
+      return true
+    })
+
+    res.status(200).json(deduped)
+  } catch (error) {
+    console.error('getWorkGroupsPublic error:', error)
+    res.status(500).json({ message: 'Internal server error' })
+  }
+}
+
+// โค้ดเดิมทั้งหมด — ไม่แตะเลย
 const getWorkGroups = async (req, res) => {
   try {
     const ids =
@@ -127,4 +155,10 @@ const deleteWorkGroup = async (req, res) => {
   }
 }
 
-module.exports = { getWorkGroups, addWorkGroup, updateWorkGroup, deleteWorkGroup }
+module.exports = {
+  getWorkGroupsPublic,
+  getWorkGroups,
+  addWorkGroup,
+  updateWorkGroup,
+  deleteWorkGroup,
+}

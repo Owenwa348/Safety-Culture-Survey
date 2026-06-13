@@ -8,7 +8,34 @@ const parseIds = (value) => {
   return String(value).split(',').map(Number).filter(Boolean)
 }
 
-// GET ?companyIds=1,2,3 — deduplicate by name
+// ✅ Public — ใช้ใน Registration page รับ ?companyId= จาก query param
+const getExperiencesPublic = async (req, res) => {
+  try {
+    const ids = parseIds(req.query.companyId || req.query.companyIds)
+
+    if (!ids.length)
+      return res.status(400).json({ message: 'กรุณาระบุ companyId' })
+
+    const experiences = await prisma.experience.findMany({
+      where: { companyId: { in: ids } },
+      orderBy: { id: 'asc' },
+    })
+
+    const seen = new Set()
+    const deduped = experiences.filter(e => {
+      if (seen.has(e.name)) return false
+      seen.add(e.name)
+      return true
+    })
+
+    res.status(200).json(deduped)
+  } catch (error) {
+    console.error('getExperiencesPublic error:', error)
+    res.status(500).json({ message: 'Internal server error' })
+  }
+}
+
+// 🔒 Protected — ใช้ใน Admin dashboard (ต้อง token)
 const getExperiences = async (req, res) => {
   try {
     const ids = parseIds(req.query.companyIds)
@@ -20,7 +47,6 @@ const getExperiences = async (req, res) => {
       orderBy: { id: 'asc' },
     })
 
-    // ✅ deduplicate by name
     const seen = new Set()
     const deduped = experiences.filter(e => {
       if (seen.has(e.name)) return false
@@ -35,7 +61,6 @@ const getExperiences = async (req, res) => {
   }
 }
 
-// POST — สร้างให้ทุกบริษัทในกลุ่ม
 const addExperience = async (req, res) => {
   try {
     const { name, companyIds } = req.body
@@ -66,7 +91,6 @@ const addExperience = async (req, res) => {
   }
 }
 
-// PUT /:id — sync อัปเดตทุก record ที่ชื่อเดิมในกลุ่ม
 const updateExperience = async (req, res) => {
   try {
     const { id } = req.params
@@ -81,12 +105,8 @@ const updateExperience = async (req, res) => {
     const ids = parseIds(companyIds)
 
     if (ids.length > 0) {
-      // ✅ sync — อัปเดตทุก record ที่มีชื่อเดิม ในทุกบริษัทของกลุ่ม
       await prisma.experience.updateMany({
-        where: {
-          name: target.name,
-          companyId: { in: ids },
-        },
+        where: { name: target.name, companyId: { in: ids } },
         data: { name: name.trim() },
       })
     } else {
@@ -104,7 +124,6 @@ const updateExperience = async (req, res) => {
   }
 }
 
-// DELETE /:id — sync ลบทุก record ที่ชื่อเดิมในกลุ่ม
 const deleteExperience = async (req, res) => {
   try {
     const { id } = req.params
@@ -117,12 +136,8 @@ const deleteExperience = async (req, res) => {
     const ids = parseIds(companyIds)
 
     if (ids.length > 0) {
-      // ✅ sync — ลบทุก record ที่มีชื่อเดิม ในทุกบริษัทของกลุ่ม
       await prisma.experience.deleteMany({
-        where: {
-          name: target.name,
-          companyId: { in: ids },
-        },
+        where: { name: target.name, companyId: { in: ids } },
       })
     } else {
       await prisma.experience.delete({ where: { id: parseInt(id) } })
@@ -135,4 +150,10 @@ const deleteExperience = async (req, res) => {
   }
 }
 
-module.exports = { getExperiences, addExperience, updateExperience, deleteExperience }
+module.exports = {
+  getExperiencesPublic,
+  getExperiences,
+  addExperience,
+  updateExperience,
+  deleteExperience,
+}

@@ -8,35 +8,63 @@ const parseIds = (value) => {
   return String(value).split(',').map(Number).filter(Boolean)
 }
 
+// ✅ Public — ใช้ใน Registration page รับ ?companyId= จาก query param
+const getDepartmentsPublic = async (req, res) => {
+  try {
+    const ids = parseIds(req.query.companyId || req.query.companyIds)
+
+    if (!ids.length)
+      return res.status(400).json({ message: 'กรุณาระบุ companyId' })
+
+    const departments = await prisma.department.findMany({
+      where: { companyId: { in: ids } },
+      orderBy: { id: 'asc' },
+    })
+
+    const seen = new Set()
+    const deduped = departments.filter(d => {
+      if (seen.has(d.name)) return false
+      seen.add(d.name)
+      return true
+    })
+
+    res.status(200).json(deduped)
+  } catch (error) {
+    console.error('getDepartmentsPublic error:', error)
+    res.status(500).json({ message: 'Internal server error' })
+  }
+}
+
+// 🔒 Protected — ใช้ใน Admin dashboard (ต้อง token)
 const getDepartments = async (req, res) => {
   try {
     const ids =
       req.user?.matchedCompanyIds?.length ? req.user.matchedCompanyIds.map(Number) :
       req.user?.companyIds?.length        ? req.user.companyIds.map(Number) :
       req.user?.companyId                 ? [Number(req.user.companyId)] :
-      parseIds(req.query.companyIds);
+      parseIds(req.query.companyIds)
 
     if (!ids.length)
-      return res.status(400).json({ message: 'ไม่พบข้อมูลบริษัทจาก token' });
+      return res.status(400).json({ message: 'ไม่พบข้อมูลบริษัทจาก token' })
 
     const departments = await prisma.department.findMany({
       where: { companyId: { in: ids } },
       orderBy: { id: 'asc' },
-    });
+    })
 
-    const seen = new Set();
+    const seen = new Set()
     const deduped = departments.filter(d => {
-      if (seen.has(d.name)) return false;
-      seen.add(d.name);
-      return true;
-    });
+      if (seen.has(d.name)) return false
+      seen.add(d.name)
+      return true
+    })
 
-    res.status(200).json(deduped);
+    res.status(200).json(deduped)
   } catch (error) {
-    console.error('getDepartments error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error('getDepartments error:', error)
+    res.status(500).json({ message: 'Internal server error' })
   }
-};
+}
 
 const addDepartment = async (req, res) => {
   try {
@@ -127,4 +155,10 @@ const deleteDepartment = async (req, res) => {
   }
 }
 
-module.exports = { getDepartments, addDepartment, updateDepartment, deleteDepartment }
+module.exports = {
+  getDepartmentsPublic,
+  getDepartments,
+  addDepartment,
+  updateDepartment,
+  deleteDepartment,
+}

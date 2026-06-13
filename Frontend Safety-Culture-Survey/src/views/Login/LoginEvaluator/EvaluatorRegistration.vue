@@ -11,6 +11,11 @@
         <p class="text-gray-600 mt-2">สร้างบัญชีใหม่เพื่อเข้าใช้งานระบบ</p>
       </div>
 
+      <!-- ✅ แสดง error กรณีโหลดหน้าไม่ได้ -->
+      <div v-if="pageError" class="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+        {{ pageError }}
+      </div>
+
       <form @submit.prevent="submitForm" class="space-y-6">
         <!-- ข้อมูลส่วนตัว -->
         <div class="bg-gray-50 p-6 rounded-xl border">
@@ -328,25 +333,16 @@
       <div v-if="showSuccessModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl max-w-md w-full p-8 shadow-2xl transform transition-all">
           <div class="text-center">
-            <!-- Success Icon -->
             <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-6">
               <svg class="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
               </svg>
             </div>
-            
-            <!-- Success Message -->
             <h3 class="text-2xl font-bold text-gray-900 mb-4">ลงทะเบียนสำเร็จ!</h3>
             <div class="text-gray-600 space-y-3 mb-6">
-              <p class="text-base">
-                บัญชีของคุณได้ถูกสร้างเรียบร้อยแล้ว
-              </p>
-              <p class="text-base">
-                คุณสามารถเข้าสู่ระบบได้ทันที
-              </p>
+              <p class="text-base">บัญชีของคุณได้ถูกสร้างเรียบร้อยแล้ว</p>
+              <p class="text-base">คุณสามารถเข้าสู่ระบบได้ทันที</p>
             </div>
-            
-            <!-- Action Buttons -->
             <div class="space-y-3">
               <button 
                 @click="redirectToLogin"
@@ -363,15 +359,20 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
-import axios from 'axios';
+import { ref, computed, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import axios from 'axios'
 
-const router = useRouter();
-const route = useRoute();
+const router = useRouter()
+const route = useRoute()
+
+// ✅ ใช้ axios instance ธรรมดา (ไม่มี token) เพราะหน้านี้เป็น public
+const api = axios.create({
+  baseURL: import.meta.env.DEV ? 'http://localhost:5000' : ''
+})
 
 const form = ref({
-  title: '', // Added title field
+  title: '',
   fullName: '',
   email: '',
   phone: '',
@@ -379,82 +380,113 @@ const form = ref({
   position: '',
   department: '',
   workGroup: '',
-  section: '', // Added section field
+  section: '',
   workExperience: '',
   password: '',
   confirmPassword: ''
-  // Removed acceptTerms field
-});
+})
 
-const positions = ref([]);
-const departments = ref([]);
-const workGroups = ref([]);
-const experiences = ref([]);
+// ✅ เก็บ companyId จาก query param ไว้ใช้ fetch dropdown
+const companyId = ref(null)
 
-const showPassword = ref(false);
-const showConfirmPassword = ref(false);
-const isLoading = ref(false);
-const emailError = ref('');
-const phoneError = ref('');
-const showSuccessModal = ref(false);
+const positions  = ref([])
+const departments = ref([])
+const workGroups  = ref([])
+const experiences = ref([])
+
+const showPassword        = ref(false)
+const showConfirmPassword = ref(false)
+const isLoading           = ref(false)
+const emailError          = ref('')
+const phoneError          = ref('')
+const pageError           = ref('')   // ✅ error กรณีโหลดหน้าไม่ได้
+const showSuccessModal    = ref(false)
 
 const passwordChecks = ref({
   length: false,
   uppercase: false,
   lowercase: false,
   number: false
-});
+})
 
-// Pre-fill form with data from query parameters
 onMounted(async () => {
-  // Pre-fill email and company from query parameters
-  if (route.query.email) {
-    form.value.email = route.query.email;
-  }
-  if (route.query.company) {
-    form.value.company = route.query.company;
-  }
-  if (route.query.division) {
-    form.value.section = route.query.division;
-  }
-  
-  // Fetch dropdown data
-  await fetchData();
-});
+  // ✅ ดึงค่าจาก query params
+  if (route.query.email)     form.value.email   = route.query.email
+  if (route.query.company)   form.value.company = route.query.company
+  if (route.query.division)  form.value.section = route.query.division
+  if (route.query.companyId) companyId.value    = route.query.companyId
 
-const fetchData = async () => {
+  // ✅ ตรวจ email ก่อน — ถ้า account ถูก activate แล้ว redirect login ทันที
+  if (form.value.email) {
+    const shouldProceed = await checkEmailBeforeLoad()
+    if (!shouldProceed) return
+  }
+
+  await fetchDropdownData()
+})
+
+// ✅ ตรวจ email status ก่อนโหลดฟอร์ม
+const checkEmailBeforeLoad = async () => {
   try {
-    const [posRes, depRes, wgRes, expRes] = await Promise.all([
-      axios.get('/api/positions'),
-      axios.get('/api/departments'),
-      axios.get('/api/workgroups'),
-      axios.get('/api/experiences')
-    ]);
-    positions.value = posRes.data;
-    departments.value = depRes.data;
-    workGroups.value = wgRes.data;
-    experiences.value = expRes.data;
+    await api.post('/api/super-admins/check-email', { email: form.value.email })
+    return true // email valid (PENDING) — โหลดฟอร์มได้ปกติ
   } catch (error) {
-    console.error("Could not fetch data:", error);
+    if (error.response?.status === 409) {
+      // Account activated แล้ว — redirect ไป login
+      alert('อีเมลนี้มีบัญชีในระบบอยู่แล้ว กรุณาเข้าสู่ระบบ')
+      router.push('/')
+      return false
+    }
+    if (error.response?.status === 404) {
+      // Email ไม่อยู่ใน system — ไม่ต้องบล็อก แค่ log ไว้
+      console.warn('Email not found in super-admin list')
+      return true
+    }
+    // error อื่น ๆ — ให้โหลดหน้าต่อได้ปกติ
+    return true
   }
-};
+}
 
-const passwordsMatch = computed(() => {
-  return form.value.password === form.value.confirmPassword && form.value.confirmPassword.length > 0;
-});
+// ✅ Fetch dropdown โดยใช้ public endpoints + ส่ง companyId
+const fetchDropdownData = async () => {
+  try {
+    const params = companyId.value ? { companyId: companyId.value } : {}
+
+    // positions ไม่ได้ lock ด้วย auth ตาม routes ที่เห็น จึงใช้ path เดิมได้
+    // departments, workgroups, experiences ใช้ /public endpoint
+    const [posRes, depRes, wgRes, expRes] = await Promise.all([
+      api.get('/api/positions', { params }),
+      api.get('/api/departments/public', { params }),
+      api.get('/api/workgroups/public', { params }),
+      api.get('/api/experiences/public', { params })
+    ])
+
+    positions.value   = posRes.data
+    departments.value = depRes.data
+    workGroups.value  = wgRes.data
+    experiences.value = expRes.data
+  } catch (error) {
+    console.error('Could not fetch dropdown data:', error)
+    pageError.value = 'ไม่สามารถโหลดข้อมูลได้ กรุณารีเฟรชหน้าอีกครั้ง'
+  }
+}
+
+const passwordsMatch = computed(() =>
+  form.value.password === form.value.confirmPassword && form.value.confirmPassword.length > 0
+)
 
 const passwordStrength = computed(() => {
-  const checkedCount = Object.values(passwordChecks.value).filter(Boolean).length;
-  if (checkedCount <= 1) return { text: 'อ่อนแอ', color: 'text-red-500', bgColor: 'bg-red-400', width: '25%' };
-  if (checkedCount === 2) return { text: 'ปานกลาง', color: 'text-yellow-600', bgColor: 'bg-yellow-500', width: '60%' };
-  if (checkedCount === 3) return { text: 'ดี', color: 'text-blue-600', bgColor: 'bg-blue-500', width: '80%' };
-  return { text: 'แข็งแรง', color: 'text-green-600', bgColor: 'bg-green-500', width: '100%' };
-});
+  const count = Object.values(passwordChecks.value).filter(Boolean).length
+  if (count <= 1) return { text: 'อ่อนแอ',  color: 'text-red-500',    bgColor: 'bg-red-400',    width: '25%' }
+  if (count === 2) return { text: 'ปานกลาง', color: 'text-yellow-600', bgColor: 'bg-yellow-500', width: '60%' }
+  if (count === 3) return { text: 'ดี',       color: 'text-blue-600',   bgColor: 'bg-blue-500',   width: '80%' }
+  return               { text: 'แข็งแรง',  color: 'text-green-600',  bgColor: 'bg-green-500',  width: '100%' }
+})
 
 const isFormValid = computed(() => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   return (
-    form.value.title !== '' && // Added title validation
+    form.value.title !== '' &&
     form.value.fullName.trim() !== '' &&
     emailRegex.test(form.value.email) &&
     form.value.phone.length === 10 &&
@@ -463,121 +495,100 @@ const isFormValid = computed(() => {
     form.value.position !== '' &&
     form.value.department !== '' &&
     form.value.workGroup !== '' &&
-    form.value.section !== '' && // Added section validation
+    form.value.section !== '' &&
     form.value.workExperience !== '' &&
     form.value.password.length >= 6 &&
     passwordsMatch.value &&
     !emailError.value &&
     !phoneError.value
-    // Removed acceptTerms validation
-  );
-});
+  )
+})
 
 const checkPasswordStrength = () => {
-  const password = form.value.password;
+  const p = form.value.password
   passwordChecks.value = {
-    length: password.length >= 6,
-    uppercase: /[A-Z]/.test(password),
-    lowercase: /[a-z]/.test(password),
-    number: /[0-9]/.test(password)
-  };
-};
+    length:    p.length >= 6,
+    uppercase: /[A-Z]/.test(p),
+    lowercase: /[a-z]/.test(p),
+    number:    /[0-9]/.test(p)
+  }
+}
 
 const validatePhone = () => {
-  form.value.phone = form.value.phone.replace(/[^0-9]/g, '');
+  form.value.phone = form.value.phone.replace(/[^0-9]/g, '')
   if (form.value.phone.length > 0) {
     if (!form.value.phone.startsWith('0')) {
-      phoneError.value = 'เบอร์โทรศัพท์ต้องขึ้นต้นด้วย 0';
+      phoneError.value = 'เบอร์โทรศัพท์ต้องขึ้นต้นด้วย 0'
     } else if (form.value.phone.length !== 10) {
-      phoneError.value = 'เบอร์โทรศัพท์ต้องมี 10 หลัก';
+      phoneError.value = 'เบอร์โทรศัพท์ต้องมี 10 หลัก'
     } else {
-      phoneError.value = '';
+      phoneError.value = ''
     }
   } else {
-    phoneError.value = '';
+    phoneError.value = ''
   }
-};
+}
 
 const validateFullName = () => {
-  form.value.fullName = form.value.fullName.replace(/[^ก-๙a-zA-Z\s]/g, '');
-};
-
-const resetForm = () => {
-  form.value = {
-    title: '',
-    fullName: '',
-    email: form.value.email, // Keep email from query params
-    phone: '',
-    company: form.value.company, // Keep company from query params
-    position: '',
-    department: '',
-    workGroup: '',
-    section: form.value.section, // Keep section from query params
-    workExperience: '',
-    password: '',
-    confirmPassword: ''
-    // Removed acceptTerms field
-  };
-  emailError.value = '';
-  phoneError.value = '';
-  passwordChecks.value = { length: false, uppercase: false, lowercase: false, number: false };
-  showSuccessModal.value = false;
-};
+  form.value.fullName = form.value.fullName.replace(/[^ก-๙a-zA-Z\s]/g, '')
+}
 
 const redirectToLogin = () => {
-  router.push('/');
-};
+  router.push('/')
+}
 
 const submitForm = async () => {
   if (!isFormValid.value) {
-    alert('กรุณากรอกข้อมูลให้ครบถ้วนและถูกต้อง');
-    return;
+    alert('กรุณากรอกข้อมูลให้ครบถ้วนและถูกต้อง')
+    return
   }
-  isLoading.value = true;
+
+  isLoading.value = true
+
   try {
-    // Combine title and full name
-    const fullNameWithTitle = `${form.value.title}${form.value.fullName}`;
-    
     const registrationData = {
-      title: form.value.title, // Added title to registration data
-      fullName: form.value.fullName, // Send only the full name without the title
-      email: form.value.email,
-      phone: form.value.phone,
-      company: form.value.company,
-      position: form.value.position,
-      department: form.value.department,
-      workGroup: form.value.workGroup,
+      title:         form.value.title,
+      fullName:      form.value.fullName,
+      email:         form.value.email,
+      phone:         form.value.phone,
+      company:       form.value.company,
+      position:      form.value.position,
+      department:    form.value.department,
+      workGroup:     form.value.workGroup,
       workExperience: form.value.workExperience,
-      password: form.value.password // In a real app, this should be hashed
-    };
-    
-    // Call backend API to register user
-    const response = await axios.post('/api/users/register', registrationData);
-    
+      password:      form.value.password
+    }
+
+    const response = await api.post('/api/users/register', registrationData)
+
     if (response.status === 201) {
-      showSuccessModal.value = true;
-      // Try to refresh the user list in the dashboard
+      showSuccessModal.value = true
       try {
         if (typeof window.refreshUsersList === 'function') {
-          window.refreshUsersList();
+          window.refreshUsersList()
         }
       } catch (e) {
-        console.log('Could not refresh user list:', e);
+        console.log('Could not refresh user list:', e)
       }
     } else {
-      throw new Error('Registration failed');
+      throw new Error('Registration failed')
     }
   } catch (error) {
-    console.error('เกิดข้อผิดพลาดในการลงทะเบียน:', error);
-    if (error.response && error.response.data && error.response.data.message) {
-      alert(`เกิดข้อผิดพลาด: ${error.response.data.message}`);
+    console.error('เกิดข้อผิดพลาดในการลงทะเบียน:', error)
+
+    // ✅ handle error แยกตาม status code
+    if (error.response?.status === 409) {
+      alert('อีเมลนี้มีบัญชีในระบบอยู่แล้ว กรุณาเข้าสู่ระบบ')
+      router.push('/')
+    } else if (error.response?.data?.message) {
+      alert(`เกิดข้อผิดพลาด: ${error.response.data.message}`)
     } else {
-      alert('เกิดข้อผิดพลาดในการลงทะเบียน กรุณาลองใหม่อีกครั้ง');
+      alert('เกิดข้อผิดพลาดในการลงทะเบียน กรุณาลองใหม่อีกครั้ง')
     }
   } finally {
-    isLoading.value = false;
+    isLoading.value = false
   }
-};
+}
 </script>
 
 <style scoped>
