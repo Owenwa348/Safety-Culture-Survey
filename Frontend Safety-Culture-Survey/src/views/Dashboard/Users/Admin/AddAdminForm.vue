@@ -216,14 +216,17 @@ async function submitForm() {
     error.value = `พบอีเมลซ้ำในฟอร์ม: ${duplicateEmails.join(', ')}`;
     return;
   }
+  const getAuthHeader = () => {
+  const token = localStorage.getItem('adminToken');
+  return { headers: { Authorization: `Bearer ${token}` } };
+  };
 
   const promises = adminForms.value.map(admin => {
     return axios.post('/api/admin/add', {
       email: admin.email.trim(),
-      companyName: admin.company.trim() // Map component's 'company' to backend's 'companyName'
-    });
+      companyName: admin.company.trim()
+    }, getAuthHeader()); // ✅ เพิ่ม token
   });
-
   try {
     const results = await Promise.allSettled(promises);
     

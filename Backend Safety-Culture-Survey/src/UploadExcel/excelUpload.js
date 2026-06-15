@@ -38,13 +38,17 @@ router.post('/upload', upload.single('file'), async (req, res) => {
         create: { name: row.company_name }
       });
 
-      // upsert user_excel พร้อม company_id
-      await prisma.user_excel.upsert({
+      // upsert user พร้อม company_id (merged from user_excel)
+      await prisma.user.upsert({
         where: { email_user: row.email_user },
         update: { company_id: company.id },
         create: { 
           email_user: row.email_user, 
-          company_id: company.id 
+          company_id: company.id,
+          registration_status: 'pending',
+          status: 'not_registered',
+          role_user: 'user',
+          survey_status: 'not_started'
         },
       });
     }

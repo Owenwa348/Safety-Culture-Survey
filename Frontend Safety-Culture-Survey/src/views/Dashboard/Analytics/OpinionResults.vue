@@ -36,8 +36,40 @@
 
       <!-- Filter Controls -->
       <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-          <!-- Dropdown -->
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-end gap-4">
+          <!-- Company Dropdown -->
+          <div class="flex-1">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              เลือกบริษัท
+            </label>
+            <div class="relative">
+              <select
+                v-model="selectedCompany"
+                class="w-full px-4 py-3 pl-11 pr-10 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition appearance-none bg-white cursor-pointer hover:border-gray-400 text-gray-700 font-medium"
+              >
+                <option value="">รวมทั้งหมด</option>
+                <option
+                  v-for="company in companies"
+                  :key="company.id"
+                  :value="company.id"
+                >
+                  {{ company.name }}
+                </option>
+              </select>
+              <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+              </div>
+              <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Question Dropdown -->
           <div class="flex-1">
             <label class="block text-sm font-medium text-gray-700 mb-2">
               เลือกคำถามที่ต้องการดู
@@ -69,9 +101,9 @@
               </div>
             </div>
           </div>
-          
+
           <!-- Toggle Button -->
-          <div class="sm:pt-7">
+          <div>
             <button
               @click="toggleAllQuestions"
               :disabled="selectedQuestion !== ''"
@@ -94,14 +126,19 @@
             <div class="flex items-center gap-2">
               <div class="w-2 h-2 rounded-full bg-green-500"></div>
               <span class="text-gray-600">
-                กำลังแสดง: 
+                กำลังแสดง:
                 <span class="font-semibold text-gray-900">
                   {{ selectedQuestion ? `ข้อ ${selectedQuestion}` : `ทั้งหมด ${filteredOpinions.length} ข้อ` }}
                 </span>
               </span>
             </div>
-            <div v-if="selectedQuestion" class="text-gray-500">
-              {{ getCurrentQuestionOpinions() }} ความคิดเห็น
+            <div class="flex items-center gap-3">
+              <span v-if="selectedCompany" class="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700 font-medium">
+                {{ companies.find(c => c.id === selectedCompany)?.name || selectedCompany }}
+              </span>
+              <div v-if="selectedQuestion" class="text-gray-500">
+                {{ getCurrentQuestionOpinions() }} ความคิดเห็น
+              </div>
             </div>
           </div>
         </div>
@@ -135,9 +172,7 @@
                   {{ item.text }}
                 </p>
               </div>
-              <button
-                class="flex-shrink-0 p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-              >
+              <button class="flex-shrink-0 p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
                 <svg
                   :class="{ 'rotate-180': expandedQuestions.includes(item.id) }"
                   class="w-5 h-5 transform transition-transform duration-200"
@@ -145,12 +180,7 @@
                   stroke="currentColor"
                   viewBox="0 0 24 24"
                 >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2.5"
-                    d="M19 9l-7 7-7-7"
-                  />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
             </div>
@@ -161,7 +191,6 @@
             v-show="expandedQuestions.includes(item.id)"
             class="p-6 bg-gray-50"
           >
-            <!-- Opinions List -->
             <div class="space-y-4">
               <div
                 v-for="(opinion, index) in item.opinions"
@@ -201,19 +230,42 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, nextTick } from 'vue';
-import axios from 'axios';
+import { ref, onMounted, computed, nextTick, watch } from 'vue';
+import { axiosAuth as axios } from '../../../utils/apiClient';
 import NavbarDashboard from '../../../components/NavbarDashboard.vue';
 
 const questions = ref([]);
+const companies = ref([]);
 const expandedQuestions = ref([]);
 const selectedQuestion = ref('');
+const selectedCompany = ref('');
 const highlightedQuestion = ref(null);
 const questionRefs = ref({});
 
+// ========================================================
+// Fetch companies for dropdown
+// ========================================================
+const fetchCompanies = async () => {
+  try {
+    const response = await axios.get('/api/analytics/companies');
+    companies.value = response.data;
+  } catch (error) {
+    console.error('Error fetching companies:', error);
+    companies.value = [];
+  }
+};
+
+// ========================================================
+// Fetch questions/opinions — รองรับ companyId filter
+// ========================================================
 const fetchQuestions = async () => {
   try {
-    const response = await axios.get('/api/questions');
+    const params = {};
+    if (selectedCompany.value) {
+      params.companyId = selectedCompany.value;
+    }
+
+    const response = await axios.get('/api/analytics/opinions', { params });
     questions.value = response.data.map(q => ({
       ...q,
       opinions: (q.survey_answers || []).map(sa => ({
@@ -230,10 +282,24 @@ const fetchQuestions = async () => {
 };
 
 onMounted(() => {
+  fetchCompanies();
   fetchQuestions();
-  expandedQuestions.value = []; // เริ่มต้นโดยไม่เปิดข้อใดๆ
+  expandedQuestions.value = [];
 });
 
+// ========================================================
+// Watch selectedCompany → reload opinions + reset states
+// ========================================================
+watch(selectedCompany, () => {
+  selectedQuestion.value = '';
+  expandedQuestions.value = [];
+  highlightedQuestion.value = null;
+  fetchQuestions();
+});
+
+// ========================================================
+// Computed
+// ========================================================
 const totalOpinions = computed(() => {
   return questions.value.reduce((total, item) => total + item.opinions.length, 0);
 });
@@ -249,6 +315,9 @@ const filteredOpinions = computed(() => {
   return questions.value.filter(item => item.id === selectedQuestion.value);
 });
 
+// ========================================================
+// Methods
+// ========================================================
 const toggleQuestion = (questionId) => {
   const index = expandedQuestions.value.indexOf(questionId);
   if (index > -1) {

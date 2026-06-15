@@ -10,41 +10,32 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model user_excel {
-  id             Int      @id @default(autoincrement())
-  email_user     String   @unique
-  company_id     Int?
-  company        company? @relation(fields: [company_id], references: [id])
-  division_user  String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @default(now()) @updatedAt
-}
-
-// Add the User model for registered users
+// Unified User model for both uploaded and registered users
 model user {
-  id                Int           @id @default(autoincrement())
-  title_user        String?       // Added title field
-  name_user         String
-  email_user        String        @unique
-  company_id        Int?
-  company           company?      @relation(fields: [company_id], references: [id])
-  phone_user        String?
-  password_user     String?
-  position_id       Int?
-  position          position?     @relation(fields: [position_id], references: [id])
-  department_id     Int?
-  department        department?   @relation(fields: [department_id], references: [id])
-  experience_id     Int?
-  experience        experience?   @relation(fields: [experience_id], references: [id])
-  work_group_id     Int?
-  work_group        work_group?   @relation(fields: [work_group_id], references: [id])
-  section_user      String?       // This corresponds to division in the frontend
-  role_user         String        @default("user")
-  status            String        @default("registered") // registered, active, inactive
-  survey_status     String        @default("not_started") // not_started, in_progress, done
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-  survey_answers    survey_answer[]
+  id                    Int           @id @default(autoincrement())
+  title_user            String?
+  name_user             String?
+  email_user            String        @unique
+  company_id            Int?
+  company               company?      @relation(fields: [company_id], references: [id])
+  phone_user            String?
+  password_user         String?
+  position_id           Int?
+  position              position?     @relation(fields: [position_id], references: [id])
+  department_id         Int?
+  department            department?   @relation(fields: [department_id], references: [id])
+  experience_id         Int?
+  experience            experience?   @relation(fields: [experience_id], references: [id])
+  work_group_id         Int?
+  work_group            work_group?   @relation(fields: [work_group_id], references: [id])
+  section_user          String?
+  role_user             String        @default("user")
+  status                String        @default("registered")
+  registration_status   String        @default("pending")
+  survey_status         String        @default("not_started")
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  survey_answers        survey_answer[]
 }
 
 model admin_list {
@@ -56,86 +47,100 @@ model admin_list {
   phone       String?
   password    String?
   role        String    @default("Admin")
-  status      String    @default("PENDING") // PENDING = ยังไม่ยืนยันตัวตน, ACTIVE = ยืนยันตัวตนแล้ว
+  status      String    @default("PENDING")
   joinedAt    DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 // ตาราง Company - บริษัท
 model company {
-  id            Int          @id @default(autoincrement())
-  name          String       @unique // ชื่อบริษัท
-  users         user[]
-  user_excels   user_excel[]
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  id          Int          @id @default(autoincrement())
+  name        String       @unique
+  users       user[]
+  departments department[]
+  experiences experience[]
+  positions   position[]
+  work_groups work_group[]
+  categories  category[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 }
 
 // ตาราง Department - สายงาน
 model department {
-  id            Int      @id @default(autoincrement())
-  name          String   // ชื่อสายงาน เช่น CEO, REP, COO, CFO, SSE, PSE, CME
-  users         user[]
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id        Int      @id @default(autoincrement())
+  name      String
+  companyId Int?
+  company   company? @relation(fields: [companyId], references: [id])
+  users     user[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // ตาราง Experience - ประสบการณ์การทำงาน
 model experience {
-  id            Int      @id @default(autoincrement())
-  name          String   // ช่วงประสบการณ์ เช่น 0-3 ปี, 3 ปีขึ้นไป แต่ไม่เกิน 5 ปี , 5 ปีขึ้นไป แต่ไม่เกิน 10 ปี , 10 ปีขึ้นไป แต่ไม่เกิน 15 ปี , มากกว่า 15 ปีขึ้นไป
-  users         user[]
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id        Int      @id @default(autoincrement())
+  name      String
+  companyId Int?
+  company   company? @relation(fields: [companyId], references: [id])
+  users     user[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // ตาราง Position - ตำแหน่งงาน
 model position {
-  id            Int      @id @default(autoincrement())
-  name          String   // ชื่อตำแหน่ง เช่น ผู้บริหารระดับสูง / ผู้จัดการส่วน , ผู้จัดการแผนก / ผู้จัดการ / พนักงานอาวุโส , พนักงาน , ผู้รับเหมาประจำ
-  users         user[]
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id        Int      @id @default(autoincrement())
+  name      String
+  companyId Int?
+  company   company? @relation(fields: [companyId], references: [id])
+  users     user[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // ตาราง WorkGroup - กลุ่มงาน
 model work_group {
-  id            Int      @id @default(autoincrement())
-  name          String   // ชื่อกลุ่มงาน เช่น หน่วยงานเดินเครื่อง (Operation), หน่วยงานบำรุงรักษา (Maintenance) , หน่วยงานวิศวกรรม (Engineering) ,หน่วยงานสนับสนุน (Supporting functions)
-  users         user[]
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id        Int      @id @default(autoincrement())
+  name      String
+  companyId Int?
+  company   company? @relation(fields: [companyId], references: [id])
+  users     user[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model category {
-  id         Int        @id @default(autoincrement())
-  name       String
-  questions  question[]
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
+  id        Int        @id @default(autoincrement())
+  name      String
+  companyId Int?
+  company   company?   @relation(fields: [companyId], references: [id])
+  questions question[]
+  order     Int        @default(0)   // ✅ เพิ่มบรรทัดนี้
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 }
 
 model question {
-  id          Int        @id @default(autoincrement())
-  text        String
-  categoryId  Int
-  category    category   @relation(fields: [categoryId], references: [id])
-  options     option[]
-  order       Int        @default(0)  // Add order field for question sequencing
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id             Int             @id @default(autoincrement())
+  text           String
+  categoryId     Int
+  category       category        @relation(fields: [categoryId], references: [id])
+  options        option[]
+  order          Int             @default(0)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
   survey_answers survey_answer[]
 }
 
 model option {
-  id          Int        @id @default(autoincrement())
-  text        String
-  questionId  Int
-  question    question   @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id         Int      @id @default(autoincrement())
+  text       String
+  questionId Int
+  question   question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 model super_admin_list {
@@ -145,35 +150,33 @@ model super_admin_list {
   pin       String?
   password  String?
   role      String    @default("Super Admin")
-  status    String    @default("PENDING") // PENDING = ยังไม่ยืนยันตัวตน, ACTIVE = ยืนยันตัวตนแล้ว
+  status    String    @default("PENDING")
   lastLogin DateTime?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
 
-// Model for storing survey answers
 model survey_answer {
-  id                 Int      @id @default(autoincrement())
-  userId             Int
-  user               user     @relation(fields: [userId], references: [id])
-  questionId         Int
-  question           question @relation(fields: [questionId], references: [id])
-  currentScore       Int      // 1-5 score for current situation
-  expectedScore      Int      // 1-5 score for expected future situation
-  comment            String?  // Additional comments
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  user          user     @relation(fields: [userId], references: [id])
+  questionId    Int
+  question      question @relation(fields: [questionId], references: [id])
+  currentScore  Int
+  expectedScore Int
+  comment       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  @@unique([userId, questionId]) // Ensure one answer per user per question
+  @@unique([userId, questionId])
 }
 
-// Model for storing inquiries from assessors
 model inquiry {
-  id          Int      @id @default(autoincrement())
-  name        String   // ชื่อ - นามสกุลของผู้ส่งติดต่อสอบถาม
-  email       String   // อีเมลของผู้ส่งติดต่อสอบถาม
-  phone       String   // เบอร์โทรศัพท์ของผู้ส่งติดต่อสอบถาม
-  message     String   @db.LongText // ข้อความที่ส่งมา
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String
+  phone     String
+  message   String   @db.LongText
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

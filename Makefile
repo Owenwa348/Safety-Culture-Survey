@@ -68,6 +68,9 @@ prod-restart:
 db-seed:
 	docker exec -it safety-survey-backend-dev node prisma/seed.js
 
+db-seed-dev:
+	docker exec -it safety-survey-backend-dev node prisma/seed.js
+
 db-migrate:
 	docker exec -it safety-survey-backend-dev npx prisma migrate dev
 
@@ -79,7 +82,25 @@ logs-frontend:
 	docker logs safety-survey-frontend-dev -f
 
 # Cleanup
+down:
+	docker-compose -f docker-compose.dev.yml down
+	docker-compose down
+	@echo "✅ Containers stopped (data preserved)"
+
+down-prod:
+	docker-compose down
+	@echo "✅ Production stopped (data preserved)"
+
+down-dev:
+	docker-compose -f docker-compose.dev.yml down
+	@echo "✅ Dev stopped (data preserved)"
+
 clean:
 	docker-compose down -v
 	docker-compose -f docker-compose.dev.yml down -v
-	@echo "✅ All containers and volumes removed"
+# 	@echo "✅ All containers and volumes removed"
+	@echo "⚠️  Containers and volumes removed (data DELETED)"
+
+hard-clean: clean
+	docker system prune -f
+	@echo "🧹 System cleaned"

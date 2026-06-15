@@ -24,6 +24,7 @@ import Assessment from '../views/Assessor/PageAssessment/Assessment.vue'
 //=============================Dashboard Admin =============================
 import Dashboard from '../views/Dashboard/Dashboard.vue'
 import UserList from '../views/Dashboard/Users/UserList.vue'
+import ExportData from '../views/Dashboard/ExportData.vue'
 import PositionResults from '../views/Dashboard/Analytics/PositionResults.vue'
 import QuestionResults from '../views/Dashboard/Analytics/QuestionResults.vue'
 import OpinionResults from '../views/Dashboard/Analytics/OpinionResults.vue'
@@ -143,6 +144,11 @@ const routes = [
     name: 'UserList',
     component: UserList
   },
+  {
+    path: '/export-data',
+    name: 'ExportData',
+    component: ExportData
+  },
   //========================== Dashboard Superadmin =============================
   {
     path: '/settings',
@@ -185,7 +191,7 @@ const router = createRouter({
 // Route Guard: Check authentication and authorization
 router.beforeEach((to, from, next) => {
   // Routes that require authentication
-  const protectedRoutes = ['/dashboard', '/settings', '/admin', '/superadmin', '/excelupload', '/user-list', 
+  const protectedRoutes = ['/dashboard', '/settings', '/admin', '/superadmin', '/excelupload', '/user-list', '/export-data', 
                           '/question-results', '/opinion-results', '/workgroup-evaluation-results', '/puestion-results']
   
   // Routes that only SuperAdmin can access

@@ -193,8 +193,28 @@ import {
   Legend,
 } from 'chart.js';
 import { Bar } from 'vue-chartjs';
+import { apiFetch } from '../../../utils/apiClient';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+
+// =======================================
+// Helper: ดึง companyIds จาก JWT token
+// =======================================
+const getCompanyIdsFromToken = () => {
+  try {
+    const token = localStorage.getItem('adminToken');
+    if (!token) return [];
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    // matchedCompanyIds มาจาก authMiddleware — อาจเป็น null (SuperAdmin) หรือ array
+    // แต่ใน token ที่ encode มาจะเป็น companyId หรือ companyIds ที่ตอน login ส่งมา
+    // ใช้ companyId เดี่ยว หรือ array ตาม structure ของ token
+    if (payload.companyIds) return Array.isArray(payload.companyIds) ? payload.companyIds : [payload.companyIds];
+    if (payload.companyId) return [payload.companyId];
+    return [];
+  } catch {
+    return [];
+  }
+};
 
 // Reactive state
 const selectedVersion = ref("combined");
@@ -235,71 +255,53 @@ const colors = {
   'all_future': '#10b981'
 };
 
+// ✅ ใส่ /api กลับ — API_BASE_URL = "http://localhost:5000" (ไม่มี /api)
 const fetchAssessmentYears = async () => {
   try {
-    const response = await fetch('/api/analytics/assessment-years');
-    if (!response.ok) {
-      throw new Error('ไม่สามารถดึงข้อมูลปีได้');
-    }
+    const response = await apiFetch('/api/analytics/assessment-years');
+    if (!response.ok) throw new Error('ไม่สามารถดึงข้อมูลปีได้');
     const years = await response.json();
-    availableYears.value = years.sort((a, b) => b - a); // Sort descending
+    availableYears.value = years.sort((a, b) => b - a);
     if (!availableYears.value.includes(selectedYear.value)) {
       selectedYear.value = availableYears.value[0] || new Date().getFullYear();
     }
   } catch (err) {
     console.error(err.message);
-    if (availableYears.value.length === 0) {
-      availableYears.value = [new Date().getFullYear()];
-    }
+    if (availableYears.value.length === 0) availableYears.value = [new Date().getFullYear()];
   }
 };
 
+// ✅ ใส่ /api กลับ
 const fetchCompanies = async () => {
   try {
-    const response = await fetch('/api/companies');
-    if (!response.ok) {
-      throw new Error('ไม่สามารถดึงข้อมูลบริษัทได้');
-    }
-    const companyNames = await response.json();
-    
-    // เรียงชื่อบริษัทตามตัวอักษรเพื่อให้ลำดับ company_1, company_2, company_3... สอดคล้องกัน
-    // company_1 = บริษัทแรกตามลำดับตัวอักษร, company_2 = บริษัทที่สอง, ฯลฯ
-    companyNames.sort();
-    
-    const companyOptions = [];
-    const newAreaNameMap = { 'combined': 'บริษัททั้งหมด' };
-
-    companyNames.forEach((name, index) => {
-      const versionId = `company_${index + 1}`; // company_1, company_2, company_3... เป็น ID อ้างอิงบริษัทจากฐานข้อมูล
-      companyOptions.push({ id: versionId, name: name });
-      newAreaNameMap[versionId] = name;
-    });
-
-    companies.value = companyOptions;
-    areaNameMap.value = newAreaNameMap;
-
+    const response = await apiFetch('/api/analytics/companies');
+    if (!response.ok) throw new Error('ไม่สามารถดึงข้อมูลบริษัทได้');
+    const data = await response.json();
+    const companyNames = data.map(c => c.name).sort();
+    companies.value = companyNames.map((name, i) => ({ id: `company_${i + 1}`, name }));
+    areaNameMap.value = { 'combined': 'บริษัททั้งหมด', ...Object.fromEntries(companyNames.map((name, i) => [`company_${i + 1}`, name])) };
   } catch (err) {
     console.error(err.message);
-    companies.value = [];
-    areaNameMap.value = { 'combined': 'บริษัททั้งหมด' };
   }
 };
 
+// ✅ ใส่ /api กลับ + ส่ง companyIds ที่ได้จาก analytics/companies (ไม่ต้องการ companyIds param)
+// SalesBarChartDB ใช้ analytics endpoint แทน /api/categories โดยตรง
+// ดึง categories จาก stacked-chart-data ที่ไม่ต้องการ companyIds
 const fetchCategories = async () => {
   try {
-    const response = await fetch('/api/categories');
-    if (!response.ok) {
-      throw new Error('ไม่สามารถดึงข้อมูลหมวดหมู่ได้');
-    }
-    categories.value = await response.json();
+    // ใช้ analytics/stacked-chart-data เพื่อดึง categories ที่ไม่ต้องการ companyIds
+    const response = await apiFetch(`/api/analytics/stacked-chart-data?year=${selectedYear.value}`);
+    if (!response.ok) throw new Error('ไม่สามารถดึงข้อมูลหมวดหมู่ได้');
+    const data = await response.json();
+    // stacked-chart-data คืน { categories: [{id, name, questionCount}], ... }
+    categories.value = data.categories || [];
   } catch (err) {
     console.error(err.message);
-    categories.value = [];
   }
 };
 
-
-// ฟังก์ชันดึงข้อมูลจาก Backend
+// ✅ ใส่ /api กลับ
 const fetchData = async () => {
   error.value = null;
   loading.value = true;
@@ -307,24 +309,19 @@ const fetchData = async () => {
   futureData.value = {};
   try {
     const yearQuery = `?year=${selectedYear.value}`;
-    // เรียก API ทั้ง 2 endpoints พร้อมกัน
     const [currentResponse, futureResponse] = await Promise.all([
-      fetch(`/api/analytics/evaluation/current${yearQuery}`),
-      fetch(`/api/analytics/evaluation/future${yearQuery}`)
+      apiFetch(`/api/analytics/evaluation/current${yearQuery}`),
+      apiFetch(`/api/analytics/evaluation/future${yearQuery}`)
     ]);
-
-    if (!currentResponse.ok || !futureResponse.ok) {
-      throw new Error('ไม่สามารถดึงข้อมูลจากเซิร์ฟเวอร์ได้');
-    }
-
-    const currentResult = await currentResponse.json();
-    const futureResult = await futureResponse.json();
-
-    if (Object.keys(currentResult).length > 0 && Object.keys(futureResult).length > 0) {
+    if (!currentResponse.ok || !futureResponse.ok) throw new Error('ไม่สามารถดึงข้อมูลจากเซิร์ฟเวอร์ได้');
+    const [currentResult, futureResult] = await Promise.all([
+      currentResponse.json(),
+      futureResponse.json()
+    ]);
+    if (Object.keys(currentResult).length > 0) {
       currentData.value = currentResult;
       futureData.value = futureResult;
     }
-
   } catch (err) {
     console.error('Fetch error:', err);
     error.value = err.message;
@@ -333,31 +330,6 @@ const fetchData = async () => {
   }
 };
 
-// ฟังก์ชันคำนวณข้อมูลตามช่วงเวลา (ไม่ได้ใช้แล้ว - เก็บไว้เผื่อขยายในอนาคต)
-// company_1, company_2 คือ ID ของบริษัทที่ดึงจากฐานข้อมูล ไม่ใช่ข้อมูลปลอม
-const getDataForTimePeriod = (timePeriod) => {
-  if (!currentData.value || !futureData.value) return {};
-  
-  if (timePeriod === 'current') {
-    return currentData.value;
-  } else if (timePeriod === 'future') {
-    return futureData.value;
-  } else {
-    const combinedData = {};
-    for (const group in currentData.value) {
-      combinedData[group] = {
-        company_1: currentData.value[group].company_1.map((val, idx) => (val + futureData.value[group].company_1[idx]) / 2),
-        company_2: currentData.value[group].company_2.map((val, idx) => (val + futureData.value[group].company_2[idx]) / 2)
-      };
-    }
-    return combinedData;
-  }
-};
-
-// Computed สำหรับข้อมูลกราฟ
-// โครงสร้างข้อมูลจาก API: { positionName: { company_1: [scores], company_2: [scores], ... } }
-// positionName = ชื่อตำแหน่ง (เช่น "ผู้บริหารระดับสูง / ผู้จัดการส่วน", "พนักงาน")
-// company_1, company_2, company_3... = ID บริษัทที่ 1, 2, 3... ที่ดึงจากฐานข้อมูล (ไม่ใช่ข้อมูลปลอม)
 const chartData = computed(() => {
   if (!currentData.value || !futureData.value || Object.keys(currentData.value).length === 0) {
     return { labels: chartLabels.value, datasets: [] };
@@ -367,16 +339,13 @@ const chartData = computed(() => {
   const timePeriod = selectedTimePeriod.value;
   const version = selectedVersion.value;
 
-  // Show breakdown by position for 'current' or 'future' time periods
   if (timePeriod === 'current' || timePeriod === 'future') {
     const rawData = (timePeriod === 'current') ? currentData.value : futureData.value;
     
-    // วนลูปแต่ละตำแหน่ง (group = positionName)
     for (const group in rawData) {
       let dataPoints = [];
       
       if (version === 'combined') {
-        // รวมทุกบริษัท: คำนวณค่าเฉลี่ยของ company_1, company_2, company_3...
         const company1Data = rawData[group].company_1 || [];
         const company2Data = rawData[group].company_2 || [];
         const maxLength = Math.max(company1Data.length, company2Data.length, chartLabels.value.length);
@@ -390,7 +359,6 @@ const chartData = computed(() => {
           }
         }
       } else {
-        // บริษัทเฉพาะ (e.g., 'company_1', 'company_2') ถูกเลือก
         dataPoints = rawData[group][version] || [];
       }
       
@@ -402,9 +370,8 @@ const chartData = computed(() => {
         });
       }
     }
-  } else { // 'all' - สำหรับเปรียบเทียบ ปัจจุบัน vs อนาคต (แสดงค่าเฉลี่ยรวมทุกตำแหน่ง)
+  } else {
     if (version === "combined") {
-      // รวมทุกบริษัท: คำนวณค่าเฉลี่ยจาก company_1, company_2, company_3... ของทุกตำแหน่ง
       const currentCombined = currentData.value;
       const futureCombined = futureData.value;
       const totalGroups = Object.keys(currentCombined).length;
@@ -412,7 +379,6 @@ const chartData = computed(() => {
       const currentDataPoints = chartLabels.value.map((_, i) => {
         let sum = 0;
         for (const group in currentCombined) {
-          // company_1, company_2 = บริษัทที่ 1, 2 (มาจากฐานข้อมูล)
           const company1 = currentCombined[group].company_1?.[i] || 0;
           const company2 = currentCombined[group].company_2?.[i] || 0;
           const avg = (company1 > 0 && company2 > 0) ? (company1 + company2) / 2 : (company1 || company2);
@@ -444,7 +410,7 @@ const chartData = computed(() => {
         data: futureDataPoints,
       });
 
-    } else { // บริษัทเฉพาะ (version = 'company_1', 'company_2', ...): แสดงค่าเฉลี่ยทุกตำแหน่งในบริษัทนั้น
+    } else {
       const currentRawData = currentData.value;
       const futureRawData = futureData.value;
       const totalGroups = Object.keys(currentRawData).length;
@@ -511,17 +477,11 @@ const getTableDescription = computed(() => {
   }
 });
 
-// Chart options as computed property
 const chartOptions = computed(() => ({
   responsive: true,
   maintainAspectRatio: false,
   layout: {
-    padding: {
-      left: 5,
-      right: 5,
-      top: 5,
-      bottom: 50
-    }
+    padding: { left: 5, right: 5, top: 5, bottom: 50 }
   },
   plugins: {
     legend: { 
@@ -568,10 +528,7 @@ const chartOptions = computed(() => ({
         font: { size: 12 },
         color: '#6b7280'
       },
-      grid: { 
-        color: 'rgba(0, 0, 0, 0.06)',
-        drawBorder: false
-      }
+      grid: { color: 'rgba(0, 0, 0, 0.06)', drawBorder: false }
     },
     x: {
       ticks: {
@@ -583,44 +540,30 @@ const chartOptions = computed(() => ({
         padding: 4,
         callback: function(value) {
           const label = this.getLabelForValue(value);
-          if (label.length > 15) {
-            return label.substring(0, 15) + '...';
-          }
+          if (label.length > 15) return label.substring(0, 15) + '...';
           return label;
         }
       },
-      grid: { 
-        display: false,
-        drawBorder: true
-      }
+      grid: { display: false, drawBorder: true }
     }
   },
   elements: {
-    bar: {
-      borderSkipped: false,
-      borderRadius: 4
-    }
+    bar: { borderSkipped: false, borderRadius: 4 }
   }
 }));
 
-// Watch for changes
 watch(selectedYear, (newYear, oldYear) => {
-  if (newYear !== oldYear) {
-    fetchData();
-  }
+  if (newYear !== oldYear) fetchData();
 });
 
-// Force re-render when filters change
 watch([selectedVersion, selectedTimePeriod], () => {
   chartRenderKey.value++;
 }, { deep: true });
 
-// Force re-render when data changes
 watch(chartData, () => {
   chartRenderKey.value++;
 }, { deep: true });
 
-// เรียกใช้งานตอนโหลดครั้งแรก
 onMounted(async () => {
   loading.value = true;
   await fetchAssessmentYears();
@@ -638,39 +581,15 @@ select {
   cursor: pointer;
   transition: all 0.2s ease;
 }
+select:hover { border-color: #60a5fa; }
+select:focus { outline: none; }
 
-select:hover {
-  border-color: #60a5fa;
-}
+.overflow-x-auto { -webkit-overflow-scrolling: touch; }
+.overflow-x-auto::-webkit-scrollbar { height: 8px; }
+.overflow-x-auto::-webkit-scrollbar-track { background: #f3f4f6; border-radius: 4px; }
+.overflow-x-auto::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+.overflow-x-auto::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-select:focus {
-  outline: none;
-}
-
-/* Custom scrollbar styling (not available in Tailwind without plugin) */
-.overflow-x-auto {
-  -webkit-overflow-scrolling: touch;
-}
-
-.overflow-x-auto::-webkit-scrollbar {
-  height: 8px;
-}
-
-.overflow-x-auto::-webkit-scrollbar-track {
-  background: #f3f4f6;
-  border-radius: 4px;
-}
-
-.overflow-x-auto::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
-}
-
-.overflow-x-auto::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
-
-/* Line clamp utilities (with standard property for compatibility) */
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -678,7 +597,6 @@ select:focus {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-
 .line-clamp-3 {
   display: -webkit-box;
   -webkit-line-clamp: 3;

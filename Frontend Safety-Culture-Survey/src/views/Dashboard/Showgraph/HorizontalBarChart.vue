@@ -92,10 +92,18 @@
                 @change="onQuestionChange"
                 class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white cursor-pointer appearance-none bg-[url('data:image/svg+xml,%3csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20fill=%27none%27%20viewBox=%270%200%2020%2020%27%3e%3cpath%20stroke=%27%236b7280%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%20stroke-width=%271.5%27%20d=%27M6%208l4%204%204-4%27/%3e%3c/svg%3e')] bg-[length:1.25em_1.25em] bg-[right_0.5rem_center] bg-no-repeat pr-10"
               >
-                <option v-for="question in availableQuestions" :key="question.id" :value="question.id">
+                <option 
+                  v-for="question in availableQuestions" 
+                  :key="question.id" 
+                  :value="question.id"
+                >
                   {{ question.number }} {{ question.text }}
                 </option>
               </select>
+              <!-- แสดง placeholder ถ้าไม่มีคำถามในหมวดหมู่นี้ -->
+              <p v-if="availableQuestions.length === 0" class="text-xs text-gray-400 mt-1">
+                ไม่มีคำถามในหมวดหมู่นี้
+              </p>
             </div>
           </div>
         </div>
@@ -192,17 +200,18 @@
           </div>
         </div>
       </div>
+
+      <!-- Empty state เมื่อยังไม่มีคำถามให้เลือก -->
+      <div v-if="!loading && !selectedQuestion" class="bg-white rounded-lg shadow-sm border border-gray-200 p-10 text-center">
+        <p class="text-gray-500">กรุณาเลือกคำถามเพื่อดูข้อมูล</p>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-
-// =======================================
-// API Configuration
-// =======================================
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import { apiFetch } from '../../../utils/apiClient';
 
 // =======================================
 // State Management
@@ -225,114 +234,75 @@ const selectedView = ref('both');
 // =======================================
 // API Functions
 // =======================================
-// Fetch available assessment years
+
 const fetchYears = async () => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/analytics/assessment-years`);
-    if (!response.ok) throw new Error('Failed to fetch years');
-    const data = await response.json();
-    availableYears.value = data;
-    if (data.length > 0) {
-      selectedYear.value = data[0]; // Default to the most recent year
-    }
-  } catch (err) {
-    console.error('Error fetching years:', err);
-    throw err;
-  }
+  const response = await apiFetch('/api/analytics/assessment-years');
+  if (!response.ok) throw new Error('ไม่สามารถดึงข้อมูลปีได้');
+  const data = await response.json();
+  availableYears.value = data;
+  if (data.length > 0) selectedYear.value = data[0];
 };
 
-// Fetch companies list
 const fetchCompanies = async () => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/analytics/companies`);
-    if (!response.ok) throw new Error('Failed to fetch companies');
-    const data = await response.json();
-    companies.value = data;
-  } catch (err) {
-    console.error('Error fetching companies:', err);
-    throw err;
-  }
+  const response = await apiFetch('/api/analytics/companies');
+  if (!response.ok) throw new Error('ไม่สามารถดึงข้อมูลบริษัทได้');
+  companies.value = await response.json();
 };
 
-// Fetch categories list
-const fetchCategories = async () => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/categories`);
-    if (!response.ok) throw new Error('Failed to fetch categories');
-    const data = await response.json();
-    // Sort by id
-    categories.value = data.sort((a, b) => a.id - b.id);
-  } catch (err) {
-    console.error('Error fetching categories:', err);
-    throw err;
-  }
+// ✅ ดึง categories จาก stacked-chart-data และ questions จาก analytics/questions
+// ทั้งคู่ใช้ auth token อย่างเดียว ไม่ต้องส่ง companyIds จาก frontend
+const fetchCategoriesAndQuestions = async () => {
+  // ดึง categories
+  const catRes = await apiFetch(`/api/analytics/stacked-chart-data?year=${selectedYear.value}`);
+  if (!catRes.ok) throw new Error('ไม่สามารถดึงข้อมูลหมวดหมู่ได้');
+  const catData = await catRes.json();
+  categories.value = catData.categories || [];
+
+  // ✅ ดึง questions ผ่าน endpoint ใหม่ที่ใช้ scope จาก token โดยตรง
+  const qRes = await apiFetch('/api/analytics/questions');
+  if (!qRes.ok) throw new Error('ไม่สามารถดึงข้อมูลคำถามได้');
+  const qData = await qRes.json();
+
+  // เพิ่ม number สำหรับแสดงผล (Q1, Q2, ...)
+  questions.value = qData.map((q, index) => ({
+    ...q,
+    number: `Q${index + 1}`,
+  }));
 };
 
-// Fetch questions list
-const fetchQuestions = async () => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/questions`);
-    if (!response.ok) throw new Error('Failed to fetch questions');
-    const data = await response.json();
-    // Add number field and sort
-    const questionsWithNumbers = data.map((q, index) => ({
-      ...q,
-      number: `Q${index + 1}`
-    }));
-    questions.value = questionsWithNumbers;
-  } catch (err) {
-    console.error('Error fetching questions:', err);
-    throw err;
-  }
-};
-
-// Fetch survey data for specific question and company
 const fetchSurveyData = async (questionId, companyId, year) => {
   if (!questionId || !year) {
     surveyData.value = null;
     return;
   }
-  try {
-    const params = new URLSearchParams({
-      questionId: questionId,
-      companyId: companyId || 'combined',
-      year: year
-    });
-    
-    const response = await fetch(`${API_BASE_URL}/analytics/survey-data?${params}`);
-    if (!response.ok) {
-        surveyData.value = null; // Clear data on error
-        const errorData = await response.json().catch(() => null);
-        if (response.status === 404) {
-            throw new Error('ไม่พบข้อมูลสำหรับคำถามและบริษัทที่เลือกในปีนี้');
-        }
-        throw new Error(errorData?.message || 'Failed to fetch survey data');
-    }
-    const data = await response.json();
-    surveyData.value = data;
-  } catch (err) {
-    console.error('Error fetching survey data:', err);
-    surveyData.value = null; // Clear data on error
-    throw err;
+  const params = new URLSearchParams({
+    questionId,
+    companyId: companyId || 'combined',
+    year,
+  });
+  const response = await apiFetch(`/api/analytics/survey-data?${params}`);
+  if (!response.ok) {
+    surveyData.value = null;
+    throw new Error('ไม่สามารถดึงข้อมูลกราฟได้');
   }
+  surveyData.value = await response.json();
 };
 
-// Fetch all data
 const fetchData = async () => {
   loading.value = true;
   error.value = null;
-  
+
   try {
-    await Promise.all([
-      fetchYears(),
-      fetchCompanies(),
-      fetchCategories(),
-      fetchQuestions()
-    ]);
-    
-    // Set initial question after loading questions
-    if (questions.value.length > 0 && categories.value.length > 0) {
-      const firstQuestion = questions.value.find(q => q.categoryId === categories.value[0]?.id);
+    // โหลด years และ companies พร้อมกัน
+    await Promise.all([fetchYears(), fetchCompanies()]);
+
+    // โหลด categories และ questions
+    await fetchCategoriesAndQuestions();
+
+    // เลือกคำถามแรกของหมวดหมู่แรกโดยอัตโนมัติ
+    if (categories.value.length > 0 && questions.value.length > 0) {
+      const firstCategoryId = categories.value[0]?.id;
+      const firstQuestion = questions.value.find(q => q.categoryId === firstCategoryId);
       if (firstQuestion) {
         selectedQuestion.value = firstQuestion.id;
         await fetchSurveyData(firstQuestion.id, selectedCompany.value, selectedYear.value);
@@ -350,9 +320,9 @@ const fetchData = async () => {
 // =======================================
 
 const availableQuestions = computed(() => {
-  if (!categories.value[selectedCategory.value]) return [];
-  const categoryId = categories.value[selectedCategory.value].id;
-  return questions.value.filter(q => q.categoryId === categoryId);
+  const category = categories.value[selectedCategory.value];
+  if (!category) return [];
+  return questions.value.filter(q => q.categoryId === category.id);
 });
 
 const selectedQuestionText = computed(() => {
@@ -367,11 +337,10 @@ const getCompanyName = computed(() => {
 });
 
 const chartData = computed(() => {
-  if (!surveyData.value) return { current: [0,0,0,0,0], future: [0,0,0,0,0]};
-  
+  if (!surveyData.value) return { current: [0, 0, 0, 0, 0], future: [0, 0, 0, 0, 0] };
   return {
     current: surveyData.value.current || [0, 0, 0, 0, 0],
-    future: surveyData.value.future || [0, 0, 0, 0, 0]
+    future: surveyData.value.future || [0, 0, 0, 0, 0],
   };
 });
 
@@ -379,7 +348,7 @@ const maxValue = computed(() => {
   if (!chartData.value) return 40;
   const allValues = [...chartData.value.current, ...chartData.value.future];
   const max = Math.max(...allValues);
-  return max > 0 ? Math.ceil(max / 5) * 5 : 40; // Round up to nearest 5, default 40
+  return max > 0 ? Math.ceil(max / 5) * 5 : 40;
 });
 
 // =======================================
@@ -388,30 +357,29 @@ const maxValue = computed(() => {
 
 const getBarWidth = (value) => {
   if (value === 0) return '0%';
-  const maxWidth = 100;
-  const width = (value / maxValue.value) * maxWidth;
-  return `${Math.min(width, maxWidth)}%`;
+  const width = (value / maxValue.value) * 100;
+  return `${Math.min(width, 100)}%`;
 };
 
 const handleDataFetch = async () => {
-    if (selectedQuestion.value) {
-        loading.value = true;
-        error.value = null;
-        try {
-            await fetchSurveyData(selectedQuestion.value, selectedCompany.value, selectedYear.value);
-        } catch (err) {
-            error.value = err.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูล';
-        } finally {
-            loading.value = false;
-        }
-    }
-}
+  if (!selectedQuestion.value) return;
+  loading.value = true;
+  error.value = null;
+  try {
+    await fetchSurveyData(selectedQuestion.value, selectedCompany.value, selectedYear.value);
+  } catch (err) {
+    error.value = err.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูล';
+  } finally {
+    loading.value = false;
+  }
+};
 
 const onYearChange = async () => {
-    await handleDataFetch();
-}
+  await handleDataFetch();
+};
 
 const onCategoryChange = async () => {
+  // เลือกคำถามแรกของหมวดหมู่ที่เปลี่ยนไป
   const firstQuestion = availableQuestions.value[0];
   if (firstQuestion) {
     selectedQuestion.value = firstQuestion.id;

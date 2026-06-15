@@ -1,12 +1,60 @@
+// controllers/Experience/experienceController.js
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 
-const getExperiences = async (req, res) => {
+const parseIds = (value) => {
+  if (!value) return []
+  if (Array.isArray(value)) return value.map(Number)
+  return String(value).split(',').map(Number).filter(Boolean)
+}
+
+// ✅ Public — ใช้ใน Registration page รับ ?companyId= จาก query param
+const getExperiencesPublic = async (req, res) => {
   try {
+    const ids = parseIds(req.query.companyId || req.query.companyIds)
+
+    if (!ids.length)
+      return res.status(400).json({ message: 'กรุณาระบุ companyId' })
+
     const experiences = await prisma.experience.findMany({
+      where: { companyId: { in: ids } },
       orderBy: { id: 'asc' },
     })
-    res.status(200).json(experiences)
+
+    const seen = new Set()
+    const deduped = experiences.filter(e => {
+      if (seen.has(e.name)) return false
+      seen.add(e.name)
+      return true
+    })
+
+    res.status(200).json(deduped)
+  } catch (error) {
+    console.error('getExperiencesPublic error:', error)
+    res.status(500).json({ message: 'Internal server error' })
+  }
+}
+
+// 🔒 Protected — ใช้ใน Admin dashboard (ต้อง token)
+const getExperiences = async (req, res) => {
+  try {
+    const ids = parseIds(req.query.companyIds)
+    if (!ids.length)
+      return res.status(400).json({ message: 'กรุณาระบุ companyIds' })
+
+    const experiences = await prisma.experience.findMany({
+      where: { companyId: { in: ids } },
+      orderBy: { id: 'asc' },
+    })
+
+    const seen = new Set()
+    const deduped = experiences.filter(e => {
+      if (seen.has(e.name)) return false
+      seen.add(e.name)
+      return true
+    })
+
+    res.status(200).json(deduped)
   } catch (error) {
     console.error('getExperiences error:', error)
     res.status(500).json({ message: 'Internal server error' })
@@ -15,17 +63,27 @@ const getExperiences = async (req, res) => {
 
 const addExperience = async (req, res) => {
   try {
-    const { name } = req.body
+    const { name, companyIds } = req.body
     if (!name || !name.trim())
       return res.status(400).json({ message: 'ชื่อเป็นข้อมูลบังคับ' })
 
-    const existing = await prisma.experience.findFirst({ where: { name } })
-    if (existing)
-      return res.status(409).json({ message: 'มีรายการนี้แล้ว' })
+    const ids = parseIds(companyIds)
+    if (!ids.length)
+      return res.status(400).json({ message: 'กรุณาระบุ companyIds' })
 
-    const created = await prisma.experience.create({
-      data: { name: name.trim() },
-    })
+    const created = []
+    for (const cId of ids) {
+      const existing = await prisma.experience.findFirst({
+        where: { name: name.trim(), companyId: cId },
+      })
+      if (!existing) {
+        const exp = await prisma.experience.create({
+          data: { name: name.trim(), companyId: cId },
+        })
+        created.push(exp)
+      }
+    }
+
     res.status(201).json(created)
   } catch (error) {
     console.error('addExperience error:', error)
@@ -36,55 +94,55 @@ const addExperience = async (req, res) => {
 const updateExperience = async (req, res) => {
   try {
     const { id } = req.params
-    const { name } = req.body
+    const { name, companyIds } = req.body
     if (!name || !name.trim())
       return res.status(400).json({ message: 'ชื่อเป็นข้อมูลบังคับ' })
 
-    const experienceId = parseInt(id);
+    const target = await prisma.experience.findUnique({ where: { id: parseInt(id) } })
+    if (!target)
+      return res.status(404).json({ message: 'ไม่พบประสบการณ์ที่ต้องการแก้ไข' })
 
-    // Find the experience to get the old name
-    const existingExperience = await prisma.experience.findUnique({
-      where: { id: experienceId },
-    });
+    const ids = parseIds(companyIds)
 
-    if (!existingExperience) {
-      return res.status(404).json({ message: "ไม่พบประสบการณ์ที่ต้องการแก้ไข" });
+    if (ids.length > 0) {
+      await prisma.experience.updateMany({
+        where: { name: target.name, companyId: { in: ids } },
+        data: { name: name.trim() },
+      })
+    } else {
+      await prisma.experience.update({
+        where: { id: parseInt(id) },
+        data: { name: name.trim() },
+      })
     }
 
-    const oldName = existingExperience.name;
-    const newName = name.trim();
-
-    // If the name is not changing, no need to update users
-    if (oldName === newName) {
-      return res.status(200).json(existingExperience);
-    }
-
-    // Use a transaction to update both experience and related users
-    const [updatedExperience] = await prisma.$transaction([
-      prisma.experience.update({
-        where: { id: experienceId },
-        data: { name: newName },
-      }),
-      prisma.user.updateMany({
-        where: { years_of_service: oldName },
-        data: { years_of_service: newName },
-      }),
-    ]);
-
-    res.status(200).json(updatedExperience)
+    const updated = await prisma.experience.findUnique({ where: { id: parseInt(id) } })
+    res.status(200).json(updated)
   } catch (error) {
     console.error('updateExperience error:', error)
     res.status(500).json({ message: 'Internal server error' })
   }
 }
 
-//  แก้ให้ลบจริง
 const deleteExperience = async (req, res) => {
   try {
     const { id } = req.params
-    await prisma.experience.delete({
-      where: { id: parseInt(id) },
-    })
+    const companyIds = req.query.companyIds
+
+    const target = await prisma.experience.findUnique({ where: { id: parseInt(id) } })
+    if (!target)
+      return res.status(404).json({ message: 'ไม่พบประสบการณ์' })
+
+    const ids = parseIds(companyIds)
+
+    if (ids.length > 0) {
+      await prisma.experience.deleteMany({
+        where: { name: target.name, companyId: { in: ids } },
+      })
+    } else {
+      await prisma.experience.delete({ where: { id: parseInt(id) } })
+    }
+
     res.status(200).json({ message: 'ลบสำเร็จ' })
   } catch (error) {
     console.error('deleteExperience error:', error)
@@ -93,6 +151,7 @@ const deleteExperience = async (req, res) => {
 }
 
 module.exports = {
+  getExperiencesPublic,
   getExperiences,
   addExperience,
   updateExperience,

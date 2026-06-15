@@ -36,30 +36,26 @@ const saveSurveyAnswer = async (req, res) => {
   try {
     const { userId, questionId, currentScore, expectedScore, comment } = req.body;
 
-    // Validate inputs
     if (!userId || !questionId || currentScore === undefined || expectedScore === undefined) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Validate score ranges (1-5)
     if (currentScore < 1 || currentScore > 5 || expectedScore < 1 || expectedScore > 5) {
       return res.status(400).json({ error: 'Scores must be between 1 and 5' });
     }
 
-    // Check if user exists
     const user = await prisma.user.findUnique({ where: { id: parseInt(userId) } });
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Check if question exists
     const question = await prisma.question.findUnique({ where: { id: parseInt(questionId) } });
     if (!question) {
       return res.status(404).json({ error: 'Question not found' });
     }
 
-    // Save or update the survey answer
-    const surveyAnswer = await prisma.surveyAnswer.upsert({
+    // ✅ แก้จาก prisma.surveyAnswer → prisma.survey_answer
+    const surveyAnswer = await prisma.survey_answer.upsert({
       where: {
         userId_questionId: {
           userId: parseInt(userId),
@@ -81,10 +77,10 @@ const saveSurveyAnswer = async (req, res) => {
       }
     });
 
-    // Update user's survey status
-    // Check if user has answered all questions
     const totalQuestions = await prisma.question.count();
-    const answeredQuestions = await prisma.surveyAnswer.count({
+
+    // ✅ แก้จาก prisma.surveyAnswer → prisma.survey_answer
+    const answeredQuestions = await prisma.survey_answer.count({
       where: { userId: parseInt(userId) }
     });
 
@@ -97,13 +93,12 @@ const saveSurveyAnswer = async (req, res) => {
       surveyStatus = 'not_started';
     }
 
-    // Update user's survey status
     await prisma.user.update({
       where: { id: parseInt(userId) },
-      data: { surveyStatus }
+      data: { survey_status: surveyStatus }
     });
 
-    res.status(200).json({ 
+    res.status(200).json({
       message: 'Survey answer saved successfully',
       surveyAnswer,
       surveyStatus
@@ -123,14 +118,13 @@ const getUserSurveyAnswers = async (req, res) => {
       return res.status(400).json({ error: 'User ID is required' });
     }
 
-    // Check if user exists
     const user = await prisma.user.findUnique({ where: { id: parseInt(userId) } });
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Get all survey answers for the user
-    const surveyAnswers = await prisma.surveyAnswer.findMany({
+    // ✅ แก้จาก prisma.surveyAnswer → prisma.survey_answer
+    const surveyAnswers = await prisma.survey_answer.findMany({
       where: { userId: parseInt(userId) },
       include: {
         question: {
@@ -146,17 +140,15 @@ const getUserSurveyAnswers = async (req, res) => {
             }
           }
         }
-      },
-      orderBy: {
-        question: {
-          order: 'asc'
-        }
       }
     });
 
+    // Sort by question.order ใน JS แทน orderBy nested relation
+    surveyAnswers.sort((a, b) => (a.question?.order ?? 0) - (b.question?.order ?? 0));
+
     res.status(200).json(surveyAnswers);
   } catch (error) {
-    console.error('Error fetching user survey answers:', error);
+    console.error('❌ Full error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -170,28 +162,26 @@ const getUserSurveyProgress = async (req, res) => {
       return res.status(400).json({ error: 'User ID is required' });
     }
 
-    // Check if user exists
-    const user = await prisma.user.findUnique({ 
+    const user = await prisma.user.findUnique({
       where: { id: parseInt(userId) },
       select: {
-        surveyStatus: true
+        survey_status: true
       }
     });
-    
+
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Get total questions count
     const totalQuestions = await prisma.question.count();
 
-    // Get answered questions count for this user
-    const answeredQuestions = await prisma.surveyAnswer.count({
+    // ✅ แก้จาก prisma.surveyAnswer → prisma.survey_answer
+    const answeredQuestions = await prisma.survey_answer.count({
       where: { userId: parseInt(userId) }
     });
 
     res.status(200).json({
-      surveyStatus: user.surveyStatus,
+      surveyStatus: user.survey_status,
       totalQuestions,
       answeredQuestions,
       progressPercentage: totalQuestions > 0 ? Math.round((answeredQuestions / totalQuestions) * 100) : 0
