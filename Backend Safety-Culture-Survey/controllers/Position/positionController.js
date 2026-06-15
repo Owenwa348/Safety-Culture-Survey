@@ -8,37 +8,64 @@ const parseIds = (value) => {
   return String(value).split(',').map(Number).filter(Boolean)
 }
 
-// GET — ดึง companyIds จาก JWT token ก่อน ถ้าไม่มีค่อย fallback จาก query string
+// ✅ Public — ใช้ใน Registration page (ไม่ต้อง token)
+//    รับ ?companyId= หรือ ?companyIds= จาก query param
+const getPositionsPublic = async (req, res) => {
+  try {
+    const ids = parseIds(req.query.companyId || req.query.companyIds)
+
+    if (!ids.length)
+      return res.status(400).json({ message: 'กรุณาระบุ companyId' })
+
+    const positions = await prisma.position.findMany({
+      where: { companyId: { in: ids } },
+      orderBy: { id: 'asc' },
+    })
+
+    const seen   = new Set()
+    const deduped = positions.filter(p => {
+      if (seen.has(p.name)) return false
+      seen.add(p.name)
+      return true
+    })
+
+    res.status(200).json(deduped)
+  } catch (error) {
+    console.error('getPositionsPublic error:', error)
+    res.status(500).json({ message: 'Internal server error' })
+  }
+}
+
+// 🔒 Protected — ใช้ใน Admin dashboard (ต้อง token)
 const getPositions = async (req, res) => {
   try {
     const ids =
       req.user?.matchedCompanyIds?.length ? req.user.matchedCompanyIds.map(Number) :
       req.user?.companyId                 ? [Number(req.user.companyId)] :
-      parseIds(req.query.companyIds);
+      parseIds(req.query.companyIds)
 
     if (!ids.length)
-      return res.status(400).json({ message: 'ไม่พบข้อมูลบริษัทจาก token' });
+      return res.status(400).json({ message: 'ไม่พบข้อมูลบริษัทจาก token' })
 
     const positions = await prisma.position.findMany({
       where: { companyId: { in: ids } },
       orderBy: { id: 'asc' },
-    });
+    })
 
-    const seen = new Set();
+    const seen    = new Set()
     const deduped = positions.filter(p => {
-      if (seen.has(p.name)) return false;
-      seen.add(p.name);
-      return true;
-    });
+      if (seen.has(p.name)) return false
+      seen.add(p.name)
+      return true
+    })
 
-    res.status(200).json(deduped);
+    res.status(200).json(deduped)
   } catch (error) {
-    console.error('getPositions error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error('getPositions error:', error)
+    res.status(500).json({ message: 'Internal server error' })
   }
-};
+}
 
-// POST — สร้างให้ทุกบริษัทในกลุ่ม
 const addPosition = async (req, res) => {
   try {
     const { name, companyIds } = req.body
@@ -69,10 +96,9 @@ const addPosition = async (req, res) => {
   }
 }
 
-// PUT /:id — แก้ไขทุก record ที่ชื่อเดิมในกลุ่มบริษัทเดียวกัน (sync)
 const updatePosition = async (req, res) => {
   try {
-    const { id } = req.params
+    const { id }             = req.params
     const { name, companyIds } = req.body
     if (!name || !name.trim())
       return res.status(400).json({ message: 'ชื่อเป็นข้อมูลบังคับ' })
@@ -85,16 +111,13 @@ const updatePosition = async (req, res) => {
 
     if (ids.length > 0) {
       await prisma.position.updateMany({
-        where: {
-          name: target.name,
-          companyId: { in: ids },
-        },
-        data: { name: name.trim() },
+        where: { name: target.name, companyId: { in: ids } },
+        data:  { name: name.trim() },
       })
     } else {
       await prisma.position.update({
         where: { id: parseInt(id) },
-        data: { name: name.trim() },
+        data:  { name: name.trim() },
       })
     }
 
@@ -106,10 +129,9 @@ const updatePosition = async (req, res) => {
   }
 }
 
-// DELETE /:id — ลบทุก record ที่ชื่อเดิมในกลุ่มบริษัทเดียวกัน (sync)
 const deletePosition = async (req, res) => {
   try {
-    const { id } = req.params
+    const { id }     = req.params
     const companyIds = req.query.companyIds
 
     const target = await prisma.position.findUnique({ where: { id: parseInt(id) } })
@@ -120,10 +142,7 @@ const deletePosition = async (req, res) => {
 
     if (ids.length > 0) {
       await prisma.position.deleteMany({
-        where: {
-          name: target.name,
-          companyId: { in: ids },
-        },
+        where: { name: target.name, companyId: { in: ids } },
       })
     } else {
       await prisma.position.delete({ where: { id: parseInt(id) } })
@@ -136,4 +155,10 @@ const deletePosition = async (req, res) => {
   }
 }
 
-module.exports = { getPositions, addPosition, updatePosition, deletePosition }
+module.exports = {
+  getPositionsPublic,  // ✅ export ใหม่
+  getPositions,
+  addPosition,
+  updatePosition,
+  deletePosition,
+}

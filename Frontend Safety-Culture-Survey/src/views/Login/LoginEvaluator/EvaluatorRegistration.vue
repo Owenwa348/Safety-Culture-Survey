@@ -11,9 +11,18 @@
         <p class="text-gray-600 mt-2">สร้างบัญชีใหม่เพื่อเข้าใช้งานระบบ</p>
       </div>
 
-      <!-- ✅ แสดง error กรณีโหลดหน้าไม่ได้ -->
+      <!-- แสดง error กรณีโหลดหน้าไม่ได้ -->
       <div v-if="pageError" class="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
         {{ pageError }}
+      </div>
+
+      <!-- Loading indicator ขณะโหลด dropdown -->
+      <div v-if="isLoadingDropdowns" class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl text-blue-700 text-sm flex items-center">
+        <svg class="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        กำลังโหลดข้อมูล...
       </div>
 
       <form @submit.prevent="submitForm" class="space-y-6">
@@ -359,14 +368,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 
 const router = useRouter()
-const route = useRoute()
+const route  = useRoute()
 
-// ✅ ใช้ axios instance ธรรมดา (ไม่มี token) เพราะหน้านี้เป็น public
+// ใช้ axios instance ธรรมดา (ไม่มี token) เพราะหน้านี้เป็น public
 const api = axios.create({
   baseURL: import.meta.env.DEV ? 'http://localhost:5000' : ''
 })
@@ -386,10 +395,9 @@ const form = ref({
   confirmPassword: ''
 })
 
-// ✅ เก็บ companyId จาก query param ไว้ใช้ fetch dropdown
 const companyId = ref(null)
 
-const positions  = ref([])
+const positions   = ref([])
 const departments = ref([])
 const workGroups  = ref([])
 const experiences = ref([])
@@ -397,9 +405,10 @@ const experiences = ref([])
 const showPassword        = ref(false)
 const showConfirmPassword = ref(false)
 const isLoading           = ref(false)
+const isLoadingDropdowns  = ref(false)
 const emailError          = ref('')
 const phoneError          = ref('')
-const pageError           = ref('')   // ✅ error กรณีโหลดหน้าไม่ได้
+const pageError           = ref('')
 const showSuccessModal    = ref(false)
 
 const passwordChecks = ref({
@@ -409,56 +418,67 @@ const passwordChecks = ref({
   number: false
 })
 
+// ─── onMounted ────────────────────────────────────────────────────────────────
 onMounted(async () => {
-  // ✅ ดึงค่าจาก query params
+  // รอ 1 tick ให้ Vue Router inject route.query ก่อนอ่านค่า
+  await nextTick()
+
+  // ดึงค่าจาก query params
   if (route.query.email)     form.value.email   = route.query.email
   if (route.query.company)   form.value.company = route.query.company
   if (route.query.division)  form.value.section = route.query.division
   if (route.query.companyId) companyId.value    = route.query.companyId
 
-  // ✅ ตรวจ email ก่อน — ถ้า account ถูก activate แล้ว redirect login ทันที
-  if (form.value.email) {
-    const shouldProceed = await checkEmailBeforeLoad()
-    if (!shouldProceed) return
+  if (!form.value.email) {
+    pageError.value = 'ลิงก์ลงทะเบียนไม่ถูกต้อง กรุณาใช้ลิงก์ที่ได้รับจากอีเมล'
+    return
   }
+
+  // ✅ ถ้าไม่มี companyId ใน URL ให้ lookup จากชื่อบริษัทแทน
+  //    รองรับลิงก์เชิญแบบเก่าที่ไม่มี companyId
+  if (!companyId.value && form.value.company) {
+    await resolveCompanyId()
+  }
+
+  if (!companyId.value) {
+    pageError.value = 'ไม่พบข้อมูลบริษัท กรุณาติดต่อผู้ดูแลระบบ'
+    return
+  }
+
+  // ✅ ไม่เรียก checkEmailBeforeLoad() อีกต่อไป
+  //    เพราะ endpoint นั้นตรวจแค่ super_admin_list
+  //    พนักงานทั่วไปจะ 404 ทุกครั้ง
 
   await fetchDropdownData()
 })
 
-// ✅ ตรวจ email status ก่อนโหลดฟอร์ม
-const checkEmailBeforeLoad = async () => {
+// ✅ ใหม่ — lookup companyId จากชื่อบริษัท
+//    เรียก GET /api/companies/public/by-name?name=Verte+Security
+const resolveCompanyId = async () => {
   try {
-    await api.post('/api/super-admins/check-email', { email: form.value.email })
-    return true // email valid (PENDING) — โหลดฟอร์มได้ปกติ
+    const res = await api.get('/api/companies/public/by-name', {
+      params: { name: form.value.company }
+    })
+    if (res.data?.id) {
+      companyId.value = res.data.id
+    }
   } catch (error) {
-    if (error.response?.status === 409) {
-      // Account activated แล้ว — redirect ไป login
-      alert('อีเมลนี้มีบัญชีในระบบอยู่แล้ว กรุณาเข้าสู่ระบบ')
-      router.push('/')
-      return false
-    }
-    if (error.response?.status === 404) {
-      // Email ไม่อยู่ใน system — ไม่ต้องบล็อก แค่ log ไว้
-      console.warn('Email not found in super-admin list')
-      return true
-    }
-    // error อื่น ๆ — ให้โหลดหน้าต่อได้ปกติ
-    return true
+    console.error('Could not resolve companyId from company name:', error)
+    // ไม่ set pageError ตรงนี้ — ปล่อยให้ guard ด้านล่างจัดการ
   }
 }
 
-// ✅ Fetch dropdown โดยใช้ public endpoints + ส่ง companyId
+// ─── Fetch dropdown โดยใช้ public endpoints + ส่ง companyId ─────────────────
 const fetchDropdownData = async () => {
+  isLoadingDropdowns.value = true
   try {
-    const params = companyId.value ? { companyId: companyId.value } : {}
+    const params = { companyId: companyId.value }
 
-    // positions ไม่ได้ lock ด้วย auth ตาม routes ที่เห็น จึงใช้ path เดิมได้
-    // departments, workgroups, experiences ใช้ /public endpoint
     const [posRes, depRes, wgRes, expRes] = await Promise.all([
-      api.get('/api/positions', { params }),
+      api.get('/api/positions/public',   { params }),
       api.get('/api/departments/public', { params }),
-      api.get('/api/workgroups/public', { params }),
-      api.get('/api/experiences/public', { params })
+      api.get('/api/workgroups/public',  { params }),
+      api.get('/api/experiences/public', { params }),
     ])
 
     positions.value   = posRes.data
@@ -468,9 +488,12 @@ const fetchDropdownData = async () => {
   } catch (error) {
     console.error('Could not fetch dropdown data:', error)
     pageError.value = 'ไม่สามารถโหลดข้อมูลได้ กรุณารีเฟรชหน้าอีกครั้ง'
+  } finally {
+    isLoadingDropdowns.value = false
   }
 }
 
+// ─── Computed ─────────────────────────────────────────────────────────────────
 const passwordsMatch = computed(() =>
   form.value.password === form.value.confirmPassword && form.value.confirmPassword.length > 0
 )
@@ -504,6 +527,7 @@ const isFormValid = computed(() => {
   )
 })
 
+// ─── Methods ──────────────────────────────────────────────────────────────────
 const checkPasswordStrength = () => {
   const p = form.value.password
   passwordChecks.value = {
@@ -547,16 +571,16 @@ const submitForm = async () => {
 
   try {
     const registrationData = {
-      title:         form.value.title,
-      fullName:      form.value.fullName,
-      email:         form.value.email,
-      phone:         form.value.phone,
-      company:       form.value.company,
-      position:      form.value.position,
-      department:    form.value.department,
-      workGroup:     form.value.workGroup,
+      title:          form.value.title,
+      fullName:       form.value.fullName,
+      email:          form.value.email,
+      phone:          form.value.phone,
+      company:        form.value.company,
+      position:       form.value.position,
+      department:     form.value.department,
+      workGroup:      form.value.workGroup,
       workExperience: form.value.workExperience,
-      password:      form.value.password
+      password:       form.value.password
     }
 
     const response = await api.post('/api/users/register', registrationData)
@@ -576,7 +600,6 @@ const submitForm = async () => {
   } catch (error) {
     console.error('เกิดข้อผิดพลาดในการลงทะเบียน:', error)
 
-    // ✅ handle error แยกตาม status code
     if (error.response?.status === 409) {
       alert('อีเมลนี้มีบัญชีในระบบอยู่แล้ว กรุณาเข้าสู่ระบบ')
       router.push('/')

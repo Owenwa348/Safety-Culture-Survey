@@ -2,10 +2,9 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-// ✅ import เฉพาะ getCompanyGroups จาก companyService.js
 const { getCompanyGroups } = require('../../services/companyService');
 
-// Get all companies 
+// Get all companies
 const getAllCompanies = async (req, res) => {
   try {
     const companies = await prisma.company.findMany({
@@ -80,9 +79,7 @@ const deleteCompany = async (req, res) => {
   }
 };
 
-// ใหม่ — GET /api/companies/groups
-// SuperAdmin (matchedCompanyIds = null) → เห็นทุกกลุ่ม
-// Admin (matchedCompanyIds = [1,2,3])   → เห็นเฉพาะกลุ่มที่ตัวเองมีสิทธิ์
+// GET /api/companies/groups (Protected)
 const getGroups = async (req, res) => {
   try {
     const scope = req.user?.matchedCompanyIds ?? null;
@@ -94,10 +91,39 @@ const getGroups = async (req, res) => {
   }
 };
 
+// ✅ ใหม่ — GET /api/companies/public/by-name?name=Verte+Security (Public)
+// ใช้ใน EvaluatorRegistration เพื่อ resolve companyId จากชื่อบริษัท
+// กรณีที่ลิงก์เชิญไม่มี companyId ส่งมา
+const getCompanyByName = async (req, res) => {
+  try {
+    const { name } = req.query;
+    if (!name) {
+      return res.status(400).json({ message: 'Company name is required' });
+    }
+
+    const company = await prisma.company.findFirst({
+      where: {
+        name: name.trim(),  // MySQL collation เป็น case-insensitive อยู่แล้ว
+      },
+      select: { id: true, name: true },
+    });
+
+    if (!company) {
+      return res.status(404).json({ message: 'Company not found' });
+    }
+
+    res.status(200).json(company);
+  } catch (error) {
+    console.error('getCompanyByName error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 module.exports = {
   getAllCompanies,
   createCompany,
   updateCompany,
   deleteCompany,
-  getGroups, 
+  getGroups,
+  getCompanyByName, // ✅ export ใหม่
 };
