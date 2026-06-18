@@ -442,7 +442,7 @@ async function loadDraft() {
   const localDraft = localStorage.getItem(draftKey);
 
   try {
-    const response = await axios.get(`/api/assessment/answers/${userId.value}`);
+    const response = await axios.get(`/api/assessment?userId=${userId.value}`);
 
     if (response.data && response.data.length > 0) {
       console.log('📥 Loading saved answers from server...');
@@ -505,6 +505,7 @@ function showNotification(message) {
 onMounted(async () => {
   try {
     const userData = JSON.parse(localStorage.getItem('user') || '{}');
+    console.log('userData from localStorage:', userData);
     if (userData && userData.id) {
       userId.value = userData.id;
     } else {
@@ -513,7 +514,8 @@ onMounted(async () => {
       return;
     }
 
-    const response = await axios.get('/api/assessment');
+    // ✅ ย้าย fetch มาหลังจาก set userId แล้ว และส่ง userId ไปด้วย
+    const response = await axios.get(`/api/assessment?userId=${userId.value}`);
     categories.value = response.data;
 
     answers.value = questions.value.map(() => ({

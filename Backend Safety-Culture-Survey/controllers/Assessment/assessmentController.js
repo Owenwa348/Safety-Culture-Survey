@@ -1,29 +1,46 @@
 // controllers/Assessment/assessmentController.js
-const { PrismaClient } = require('@prisma/client')
-const prisma = new PrismaClient()
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
-// Get assessment data (categories, questions, options)
+// Get assessment data — กรองตาม company ของ user
+// assessmentController.js — getAssessmentData
 const getAssessmentData = async (req, res) => {
   try {
-    const categories = await prisma.category.findMany({
+    const { userId } = req.query;
+    if (!userId) return res.status(400).json({ error: 'userId is required' });
+
+    const user = await prisma.user.findUnique({
+      where: { id: parseInt(userId) },
+      select: { company_id: true }
+    });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    let categories = await prisma.category.findMany({
+      where: { companyId: user.company_id },
       include: {
         questions: {
-          orderBy: {
-            order: 'asc',
-          },
-          include: {
-            options: {
-              orderBy: {
-                id: 'asc',
-              },
-            },
-          },
-        },
+          orderBy: { order: 'asc' },
+          include: { options: { orderBy: { id: 'asc' } } }
+        }
       },
-      orderBy: {
-        id: 'asc',
-      }
+      orderBy: { order: 'asc' }
     });
+
+    // ✅ fallback: ถ้าบริษัทตัวเองไม่มี category ให้ใช้ของบริษัทแรก
+    if (categories.length === 0) {
+      const primaryCompany = await prisma.company.findFirst({ orderBy: { id: 'asc' } });
+      categories = await prisma.category.findMany({
+        where: { companyId: primaryCompany.id },
+        include: {
+          questions: {
+            orderBy: { order: 'asc' },
+            include: { options: { orderBy: { id: 'asc' } } }
+          }
+        },
+        orderBy: { order: 'asc' }
+      });
+    }
+
     res.json(categories);
   } catch (error) {
     console.error('Error fetching assessment data:', error);
@@ -54,7 +71,6 @@ const saveSurveyAnswer = async (req, res) => {
       return res.status(404).json({ error: 'Question not found' });
     }
 
-    // ✅ แก้จาก prisma.surveyAnswer → prisma.survey_answer
     const surveyAnswer = await prisma.survey_answer.upsert({
       where: {
         userId_questionId: {
@@ -77,20 +93,21 @@ const saveSurveyAnswer = async (req, res) => {
       }
     });
 
-    const totalQuestions = await prisma.question.count();
+    const totalQuestions = await prisma.question.count({
+      where: {
+        category: { companyId: user.company_id }
+      }
+    });
 
-    // ✅ แก้จาก prisma.surveyAnswer → prisma.survey_answer
     const answeredQuestions = await prisma.survey_answer.count({
       where: { userId: parseInt(userId) }
     });
 
-    let surveyStatus = 'in_progress';
+    let surveyStatus = 'not_started';
     if (answeredQuestions >= totalQuestions) {
       surveyStatus = 'done';
     } else if (answeredQuestions > 0) {
       surveyStatus = 'in_progress';
-    } else {
-      surveyStatus = 'not_started';
     }
 
     await prisma.user.update({
@@ -123,7 +140,6 @@ const getUserSurveyAnswers = async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // ✅ แก้จาก prisma.surveyAnswer → prisma.survey_answer
     const surveyAnswers = await prisma.survey_answer.findMany({
       where: { userId: parseInt(userId) },
       include: {
@@ -143,7 +159,6 @@ const getUserSurveyAnswers = async (req, res) => {
       }
     });
 
-    // Sort by question.order ใน JS แทน orderBy nested relation
     surveyAnswers.sort((a, b) => (a.question?.order ?? 0) - (b.question?.order ?? 0));
 
     res.status(200).json(surveyAnswers);
@@ -164,18 +179,19 @@ const getUserSurveyProgress = async (req, res) => {
 
     const user = await prisma.user.findUnique({
       where: { id: parseInt(userId) },
-      select: {
-        survey_status: true
-      }
+      select: { survey_status: true, company_id: true }
     });
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const totalQuestions = await prisma.question.count();
+    const totalQuestions = await prisma.question.count({
+      where: {
+        category: { companyId: user.company_id }
+      }
+    });
 
-    // ✅ แก้จาก prisma.surveyAnswer → prisma.survey_answer
     const answeredQuestions = await prisma.survey_answer.count({
       where: { userId: parseInt(userId) }
     });
@@ -184,7 +200,9 @@ const getUserSurveyProgress = async (req, res) => {
       surveyStatus: user.survey_status,
       totalQuestions,
       answeredQuestions,
-      progressPercentage: totalQuestions > 0 ? Math.round((answeredQuestions / totalQuestions) * 100) : 0
+      progressPercentage: totalQuestions > 0
+        ? Math.round((answeredQuestions / totalQuestions) * 100)
+        : 0
     });
   } catch (error) {
     console.error('Error fetching user survey progress:', error);
