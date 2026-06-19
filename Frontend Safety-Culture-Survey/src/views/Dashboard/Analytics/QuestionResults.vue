@@ -15,10 +15,17 @@ const selectedTimeframe = ref("compare");
 const selectedYear = ref(null);
 const currentPage = ref(1);
 const questionsPerPage = ref(20);
-const fullLabels = ref([]);
+
+// ✅ เก็บทั้ง id และ label คู่กัน เพื่อจับคู่กับข้อมูลกราฟแบบแม่นยำ
+// แทนที่จะพึ่ง index ของ array ล้วนๆ ซึ่งเป็นสาเหตุที่ทำให้ label เลื่อน
+// เมื่อลำดับคำถามจาก /api/analytics/questions กับ /api/analytics/question-results ไม่ตรงกัน
+const fullQuestionMeta = ref([]); // [{ id, label }]
 const allQuestions = ref([]);
 const chartAPIData = ref(null);
 const isLoading = ref(true);
+
+// labels แบบ string ล้วน (ไว้ใช้ที่อื่นที่ต้องการแค่ label เช่นนับจำนวนทั้งหมด)
+const fullLabels = computed(() => fullQuestionMeta.value.map(q => q.label));
 
 // ========================================
 // ข้อมูลตัวเลือกสำหรับ Dropdown
@@ -64,6 +71,8 @@ const fetchQuestions = async () => {
 
 /**
  * อัพเดท labels ตาม category ที่เลือก
+ * ✅ เรียงตาม id เสมอ และเก็บ id กำกับไว้กับทุก label
+ *    เพื่อให้จับคู่กับ chartAPIData ด้วย id ได้ ไม่พึ่ง index เพียงอย่างเดียว
  */
 const updateLabels = () => {
   let filteredQuestions = allQuestions.value;
@@ -74,12 +83,18 @@ const updateLabels = () => {
     );
   }
 
+  // เรียงตาม id เสมอ กันกรณี backend ส่งลำดับไม่นิ่ง/ไม่ตรงกันระหว่าง endpoint
+  filteredQuestions = [...filteredQuestions].sort((a, b) => a.id - b.id);
+
   const maxLength = 25;
-  fullLabels.value = filteredQuestions.map((q, index) => {
+  fullQuestionMeta.value = filteredQuestions.map((q, index) => {
     const truncated = q.text.length > maxLength
       ? q.text.substring(0, maxLength) + '...'
       : q.text;
-    return `Q${index + 1}: ${truncated}`;
+    return {
+      id: q.id,
+      label: `Q${index + 1}: ${truncated}`
+    };
   });
 };
 
@@ -165,7 +180,36 @@ const fetchChartData = async () => {
     };
 
     const { data } = await axios.get('/api/analytics/question-results', { params });
-    chartAPIData.value = data;
+
+    // ⚠️ WORKAROUND ฝั่ง frontend สำหรับบั๊กที่ backend ส่ง array เกินมา 1 รายการ
+    // (เช่น current.length === 81 ทั้งที่มีคำถามจริง 80 ข้อ)
+    // โดยรายการแรก (index 0) เป็นค่า all-zero placeholder ที่เกิดจาก backend
+    // สร้าง array แบบ 1-indexed (ใช้ questionId เป็น index ตรงๆ โดยไม่ลบ 1)
+    // ทำให้ index 0 ไม่เคยถูกเขียนค่าจริง และข้อมูลของทุกคำถามเลื่อนไปข้างหน้า 1 ตำแหน่ง
+    //
+    // ทางแก้ที่ถูกต้องคือแก้ที่ backend ให้ใช้ index แบบ 0-indexed
+    // (เช่น results[questionId - 1] = scores แทน results[questionId] = scores)
+    // โค้ดด้านล่างนี้เป็นแค่ safety-net ฝั่ง frontend ระหว่างรอแก้ backend
+const stripLeadingPlaceholder = (arr) => {
+  if (!Array.isArray(arr) || arr.length === 0) return arr;
+
+  const isAllZero = (scores) =>
+    scores && [1, 2, 3, 4, 5].every(level => !scores[level]);
+
+  // Backend มี 1-indexed bug → index 0 จะเป็น all-zero เสมอ
+  // ตัดออกเฉพาะกรณีที่จำนวนเกินมาพอดี 1 และตัวแรกเป็น all-zero
+  if (arr.length === allQuestions.value.length + 1 && isAllZero(arr[0])) {
+    return arr.slice(1); // ✅ ตัด placeholder ออก ไม่ต้อง warn แล้ว
+  }
+
+  return arr;
+};
+
+    chartAPIData.value = {
+      ...data,
+      current: stripLeadingPlaceholder(data.current),
+      future: stripLeadingPlaceholder(data.future),
+    };
   } catch (error) {
     console.error('เกิดข้อผิดพลาดในการดึงข้อมูลกราฟ:', error);
     chartAPIData.value = null;
@@ -221,18 +265,19 @@ const getCategoryLabel = () => {
 };
 
 const totalPages = computed(() => {
-  return Math.ceil(fullLabels.value.length / questionsPerPage.value);
+  return Math.ceil(fullQuestionMeta.value.length / questionsPerPage.value);
 });
 
 const currentQuestionRange = computed(() => {
   const start = (currentPage.value - 1) * questionsPerPage.value;
-  const end = Math.min(start + questionsPerPage.value, fullLabels.value.length);
+  const end = Math.min(start + questionsPerPage.value, fullQuestionMeta.value.length);
   return { start, end };
 });
 
-const paginatedLabels = computed(() => {
+// meta (id + label) เฉพาะหน้าปัจจุบัน — ใช้จับคู่กับข้อมูลกราฟ
+const pagedQuestionMeta = computed(() => {
   const { start, end } = currentQuestionRange.value;
-  return fullLabels.value.slice(start, end);
+  return fullQuestionMeta.value.slice(start, end);
 });
 
 const paginationButtons = computed(() => {
@@ -263,26 +308,59 @@ const goToPage = (page) => {
   }
 };
 
+/**
+ * ✅ จับคู่ scoreCounts กับคำถามด้วย questionId แทนการพึ่ง index ตรงๆ
+ * รองรับ 2 รูปแบบที่ backend อาจส่งมา:
+ *   1) array เรียงตามลำดับเดียวกับ allQuestions (เรียงตาม id)
+ *   2) object/map ที่ผูกกับ questionId เช่น { "12": {1:8,2:5,...}, "15": {...} }
+ *
+ * ถ้าจำนวนข้อมูลไม่ตรงกับจำนวนคำถามทั้งหมด จะ warn ใน console
+ * เพื่อให้รู้ทันทีว่าควรตรวจสอบฝั่ง backend (แนะนำให้ backend ส่ง questionId
+ * กำกับมาด้วยเสมอ จะตัดปัญหานี้ได้ถาวร)
+ */
+const alignScoresToMeta = (rawScores, metaList) => {
+  const emptyScore = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  if (!rawScores) return metaList.map(() => emptyScore);
+
+  // กรณี backend ส่งเป็น object/map ผูกกับ questionId
+  if (!Array.isArray(rawScores)) {
+    return metaList.map(q => rawScores[q.id] ?? emptyScore);
+  }
+
+  // กรณี backend ส่งเป็น array — ต้องเรียงตามลำดับเดียวกับ allQuestions (เรียงตาม id)
+  if (rawScores.length !== allQuestions.value.length) {
+    console.warn(
+      `[QuestionResults] จำนวนข้อมูลกราฟ (${rawScores.length}) ไม่ตรงกับจำนวนคำถามทั้งหมด (${allQuestions.value.length}) ` +
+      `— label อาจเลื่อนไม่ตรงกับข้อมูล กรุณาตรวจสอบว่า backend ส่ง questionId กำกับมาด้วยหรือไม่`
+    );
+  }
+
+  const sortedQuestions = [...allQuestions.value].sort((a, b) => a.id - b.id);
+  const idToScore = new Map(sortedQuestions.map((q, i) => [q.id, rawScores[i]]));
+  return metaList.map(q => idToScore.get(q.id) ?? emptyScore);
+};
+
 const chartData = computed(() => {
-  if (!chartAPIData.value || isLoading.value || fullLabels.value.length === 0) {
+  if (!chartAPIData.value || isLoading.value || fullQuestionMeta.value.length === 0) {
     return null;
   }
 
   const positionLabel = getPositionLabel();
   const companyLabel = getCompanyLabel();
-  const { start, end } = currentQuestionRange.value;
+  const meta = pagedQuestionMeta.value;
+  const labels = meta.map(q => q.label);
 
   if (isCompareMode.value) {
     return {
-      labels: paginatedLabels.value,
+      labels,
       datasets: [
         {
           label: `${positionLabel} - ${companyLabel} (ปัจจุบัน)`,
-          scoreCounts: chartAPIData.value.current.slice(start, end)
+          scoreCounts: alignScoresToMeta(chartAPIData.value.current, meta)
         },
         {
           label: `${positionLabel} - ${companyLabel} (อนาคต)`,
-          scoreCounts: chartAPIData.value.future.slice(start, end)
+          scoreCounts: alignScoresToMeta(chartAPIData.value.future, meta)
         }
       ]
     };
@@ -290,10 +368,10 @@ const chartData = computed(() => {
     const dataKey = selectedTimeframe.value;
     const timeLabel = dataKey === 'current' ? 'ปัจจุบัน' : 'คาดในอนาคต';
     return {
-      labels: paginatedLabels.value,
+      labels,
       datasets: [{
         label: `${positionLabel} - ${companyLabel} (${timeLabel})`,
-        scoreCounts: chartAPIData.value[dataKey].slice(start, end)
+        scoreCounts: alignScoresToMeta(chartAPIData.value[dataKey], meta)
       }]
     };
   }
@@ -463,7 +541,7 @@ const chartData = computed(() => {
             <div class="text-sm text-gray-700">
               แสดงคำถามที่ <span class="font-semibold">{{ currentQuestionRange.start + 1 }}</span> ถึง
               <span class="font-semibold">{{ currentQuestionRange.end }}</span> จากทั้งหมด
-              <span class="font-semibold">{{ fullLabels.length }}</span> คำถาม
+              <span class="font-semibold">{{ fullQuestionMeta.length }}</span> คำถาม
             </div>
 
             <div class="flex items-center gap-4">
