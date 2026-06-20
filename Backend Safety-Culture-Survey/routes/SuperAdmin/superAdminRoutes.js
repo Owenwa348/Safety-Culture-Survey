@@ -12,9 +12,15 @@ const {
   updateSuperAdminStatus,
   verifyForPasswordReset,
   resetPassword,
+} = require('../../controllers/SuperAdmin/superAdminController');
+
+// ✅ ฟังก์ชันจัดการ assessment ย้ายไปอยู่ที่ assessmentController แล้ว
+// (เป็น business logic ของ survey_answer / survey_status เหมือนฟังก์ชันอื่นในไฟล์นั้น)
+// แต่ยัง mount route ไว้ที่เดิมภายใต้ /super-admins เพื่อไม่ให้ frontend ต้องแก้ URL
+const {
   clearAssessmentDataByCompany,
   getAssessmentStatsByCompany,
-} = require('../../controllers/SuperAdmin/superAdminController');
+} = require('../../controllers/Assessment/assessmentController');
 
 // Route to get all super admins and add a new one
 router.route('/')
