@@ -6,6 +6,7 @@ import EditDepartment from './Editlogin/EditDepartment.vue'
 import EditWorkGroup from './Editlogin/EditWorkGroup.vue'
 import EditExperience from './Editlogin/EditExperience.vue'
 import EditQuestions from './EditQuestions/EditQuestions.vue'
+import ClearAssessmentData from './Editlogin/ClearAssessmentData.vue'
 import { ref, onMounted, computed } from 'vue'
 import { axiosAuth as axios } from '../../../utils/apiClient'
 
@@ -22,6 +23,7 @@ const tabs = [
   { id: 'workgroup',  name: 'กลุ่มงาน',    icon: '👥' },
   { id: 'experience', name: 'อายุงาน',     icon: '📅' },
   { id: 'questions',  name: 'คำถาม',       icon: '❓' },
+  { id: 'clear-assessment', name: 'ล้างข้อมูลประเมิน', icon: '🗑️' },
 ]
 
 const fetchCompanyGroups = async () => {
@@ -246,6 +248,9 @@ onMounted(fetchCompanyGroups)
           </div>
           <div v-show="activeTab === 'questions'" class="animate-fadeIn">
             <EditQuestions :company-ids="selectedCompanyIds" />
+          </div>
+          <div v-show="activeTab === 'clear-assessment'" class="animate-fadeIn">
+            <ClearAssessmentData />
           </div>
         </div>
 

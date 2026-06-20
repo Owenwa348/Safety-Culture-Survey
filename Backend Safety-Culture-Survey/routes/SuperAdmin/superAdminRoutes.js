@@ -12,6 +12,8 @@ const {
   updateSuperAdminStatus,
   verifyForPasswordReset,
   resetPassword,
+  clearAssessmentDataByCompany,
+  getAssessmentStatsByCompany,
 } = require('../../controllers/SuperAdmin/superAdminController');
 
 // Route to get all super admins and add a new one
@@ -41,5 +43,11 @@ router.route('/:id')
 
 // Route to update status
 router.put('/:id/status', updateSuperAdminStatus);
+
+// Route to clear assessment data by company
+router.delete('/assessment/clear/:companyId', clearAssessmentDataByCompany);
+
+// Route to get assessment stats before clearing
+router.get('/assessment/stats/:companyId', getAssessmentStatsByCompany);
 
 module.exports = router;

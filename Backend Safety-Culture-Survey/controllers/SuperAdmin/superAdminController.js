@@ -328,6 +328,150 @@ const resetPassword = async (req, res) => {
     }
 };
 
+// 11. Clear Assessment Data by Company (with optional year filter)
+// ลบข้อมูลคำตอบการประเมิน (survey_answer) ของผู้ใช้ทั้งหมดในบริษัทที่เลือก
+const clearAssessmentDataByCompany = async (req, res) => {
+    const { companyId } = req.params;
+    const { year } = req.query; // Optional: filter by year
+
+    if (!companyId) {
+        return res.status(400).json({ message: 'Company ID is required.' });
+    }
+
+    try {
+        // ✅ ตรวจสอบว่ามีบริษัทอยู่
+        const company = await prisma.company.findUnique({
+            where: { id: parseInt(companyId) },
+        });
+
+        if (!company) {
+            return res.status(404).json({ message: 'Company not found.' });
+        }
+
+        // ✅ ดึงผู้ใช้ทั้งหมดในบริษัทนี้
+        const usersInCompany = await prisma.user.findMany({
+            where: { company_id: parseInt(companyId) },
+            select: { id: true },
+        });
+
+        const userIds = usersInCompany.map((u) => u.id);
+
+        if (userIds.length === 0) {
+            return res.status(200).json({
+                message: 'No assessment data found for this company.',
+                deletedCount: 0,
+            });
+        }
+
+        // ✅ สร้างเงื่อนไขสำหรับลบ (รวมปี หากระบุ)
+        const deleteWhere = {
+            userId: {
+                in: userIds,
+            },
+        };
+
+        // ✅ ถ้ามีการระบุปี ให้ filter โดย createdAt
+        if (year) {
+            const yearNumber = parseInt(year);
+            const startDate = new Date(`${yearNumber}-01-01`);
+            const endDate = new Date(`${yearNumber}-12-31T23:59:59`);
+
+            deleteWhere.createdAt = {
+                gte: startDate,
+                lte: endDate,
+            };
+        }
+
+        // ✅ ลบคำตอบการประเมิน (survey_answer)
+        const deleteResult = await prisma.survey_answer.deleteMany({
+            where: deleteWhere,
+        });
+
+        const yearInfo = year ? ` ปี ${year}` : '';
+        res.status(200).json({
+            message: `Assessment data cleared successfully for company: ${company.name}${yearInfo}`,
+            companyName: company.name,
+            deletedCount: deleteResult.count,
+            year: year || 'all',
+        });
+
+    } catch (error) {
+        console.error('Error clearing assessment data:', error);
+        res.status(500).json({ message: 'An error occurred while clearing assessment data.' });
+    }
+};
+
+// 12. Get Assessment Stats by Company (with optional year filter)
+const getAssessmentStatsByCompany = async (req, res) => {
+    const { companyId } = req.params;
+    const { year } = req.query; // Optional: filter by year
+
+    if (!companyId) {
+        return res.status(400).json({ message: 'Company ID is required.' });
+    }
+
+    try {
+        const company = await prisma.company.findUnique({
+            where: { id: parseInt(companyId) },
+        });
+
+        if (!company) {
+            return res.status(404).json({ message: 'Company not found.' });
+        }
+
+        // ดึงผู้ใช้ในบริษัท
+        const usersInCompany = await prisma.user.findMany({
+            where: { company_id: parseInt(companyId) },
+            select: { id: true },
+        });
+
+        const userIds = usersInCompany.map((u) => u.id);
+
+        // ✅ สร้างเงื่อนไขสำหรับนับ (รวมปี หากระบุ)
+        const answerWhere = {
+            userId: {
+                in: userIds,
+            },
+        };
+
+        // ✅ ถ้ามีการระบุปี ให้ filter โดย createdAt
+        if (year) {
+            const yearNumber = parseInt(year);
+            const startDate = new Date(`${yearNumber}-01-01`);
+            const endDate = new Date(`${yearNumber}-12-31T23:59:59`);
+
+            answerWhere.createdAt = {
+                gte: startDate,
+                lte: endDate,
+            };
+        }
+
+        // นับคำตอบการประเมิน
+        const answerCount = await prisma.survey_answer.count({
+            where: answerWhere,
+        });
+
+        // นับผู้ใช้ที่ทำการประเมิน
+        const usersWithAnswers = await prisma.survey_answer.findMany({
+            where: answerWhere,
+            distinct: ['userId'],
+            select: { userId: true },
+        });
+
+        res.status(200).json({
+            companyName: company.name,
+            totalUsers: userIds.length,
+            usersWithAssessment: usersWithAnswers.length,
+            totalAnswers: answerCount,
+            canClear: answerCount > 0,
+            yearSelected: year || 'all',
+        });
+
+    } catch (error) {
+        console.error('Error fetching assessment stats:', error);
+        res.status(500).json({ message: 'An error occurred while fetching stats.' });
+    }
+};
 
 module.exports = {
   addSuperAdmin,
@@ -340,4 +484,6 @@ module.exports = {
   updateSuperAdminStatus,
   verifyForPasswordReset,
   resetPassword,
+  clearAssessmentDataByCompany,
+  getAssessmentStatsByCompany,
 };
