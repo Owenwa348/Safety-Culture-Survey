@@ -17,6 +17,22 @@ const getCompanyScope = (req) => {
 };
 
 // ========================================================
+// Helper: หา "primary company id" สำหรับดึงโครงสร้าง category/question
+// (category/question ผูกกับบริษัทเดียวต่อกลุ่ม ไม่ใช่ per-user data)
+// scope === null (SuperAdmin) → ใช้บริษัท id น้อยสุดในระบบทั้งหมด
+// scope === []   (Admin ไม่มีบริษัท) → ไม่มี primary id
+// scope === [..] (Admin) → ใช้ id น้อยสุดใน scope
+// ========================================================
+const getPrimaryCompanyId = async (scope) => {
+  if (scope === null) {
+    const firstCompany = await prisma.company.findFirst({ orderBy: { id: 'asc' } });
+    return firstCompany?.id ?? null;
+  }
+  if (scope.length === 0) return null;
+  return Math.min(...scope);
+};
+
+// ========================================================
 // getAggregatedSurveyData
 // ========================================================
 const getAggregatedSurveyData = async (req, res) => {
@@ -370,13 +386,28 @@ const getCompanies = async (req, res) => {
 
 // ========================================================
 // getStackedChartData
+// ✅ FIX: category/question เป็นโครงสร้างที่ผูกกับ "บริษัทเจ้าของชุดคำถาม"
+// (ดูตัวอย่างจาก getCategories/getQuestions ใน categoryController.js / questionController.js)
+// เดิมโค้ดนี้ดึง prisma.category.findMany() แบบไม่มี where เลย
+// จึงดึงหมวดหมู่ของทุกบริษัทในระบบมาปนกัน ทั้งที่แต่ละกลุ่มบริษัทควรเห็น
+// เฉพาะชุดคำถาม/หมวดหมู่ของ "บริษัทหลัก" (primary company) ของตัวเองเท่านั้น
 // ========================================================
 const getStackedChartData = async (req, res) => {
   try {
     const { areaId = 'combined', timeframe = 'comparison', year = new Date().getFullYear() } = req.query;
     const scope = getCompanyScope(req);
 
+    // ✅ หา primary company id เพื่อกรองโครงสร้าง category/question ให้ตรงกลุ่มบริษัท
+    const primaryCompanyId = await getPrimaryCompanyId(scope);
+    if (!primaryCompanyId) {
+      return res.status(200).json({
+        labels: [], current: [[], [], [], [], []], future: [[], [], [], [], []],
+        areas: [], categories: [], areaId, timeframe, year, totalResponses: 0
+      });
+    }
+
     const categories = await prisma.category.findMany({
+      where: { companyId: primaryCompanyId }, // ✅ กรองตามบริษัทแล้ว
       include: { questions: { orderBy: { order: 'asc' } } },
       orderBy: { id: 'asc' }
     });
@@ -501,6 +532,9 @@ const getAssessmentYears = async (req, res) => {
 
 // ========================================================
 // getQuestionResultsData
+// ✅ FIX: questionWhere ไม่เคยกรองด้วย companyId ของชุดคำถาม
+// เดิมถ้าไม่ระบุ categoryId (เลือก "ทุกหมวดหมู่") จะดึง "ทุกคำถามในทุกบริษัท"
+// มาคำนวณปนกันหมด ต้องกรองด้วย primaryCompanyId เช่นเดียวกับ getStackedChartData
 // ========================================================
 const getQuestionResultsData = async (req, res) => {
   try {
@@ -536,7 +570,14 @@ const getQuestionResultsData = async (req, res) => {
 
     if (Object.keys(userWhere).length > 0) where.user = userWhere;
 
-    const questionWhere = {};
+    // ✅ หา primary company id เพื่อกรองชุดคำถามให้ตรงกลุ่มบริษัทเสมอ
+    // (ไม่ว่าจะเลือก categoryId เฉพาะ หรือ 'All' ก็ต้องอยู่ในขอบเขตบริษัทเดียวกัน)
+    const primaryCompanyId = await getPrimaryCompanyId(scope);
+    if (!primaryCompanyId) {
+      return res.status(200).json({ current: [], future: [] });
+    }
+
+    const questionWhere = { category: { companyId: primaryCompanyId } };
     if (categoryId && categoryId !== 'All') questionWhere.categoryId = parseInt(categoryId);
 
     const allQuestions = await prisma.question.findMany({
@@ -750,6 +791,9 @@ const getWorkGroupEvaluationData = async (req, res) => {
 
 // ========================================================
 // getEvaluationData
+// ✅ FIX: categories ใช้สร้าง categoryOrder (แกน X ของ SalesBarChartDB.vue)
+// เดิมดึง prisma.category.findMany() แบบไม่กรองบริษัท เลยมีคอลัมน์ของบริษัทอื่น
+// ปนเข้ามาด้วย (เป็น 0 เพราะไม่มีคำตอบ แต่ก็ยังถูกนับเป็นแกนนึงอยู่ดี)
 // ========================================================
 const getEvaluationData = (scoreType) => async (req, res) => {
   try {
@@ -769,7 +813,14 @@ const getEvaluationData = (scoreType) => async (req, res) => {
       if (c.name) companyMap[c.name] = `company_${i + 1}`;
     });
 
-    const categories = await prisma.category.findMany({ orderBy: { id: 'asc' } });
+    // ✅ กรอง category เฉพาะของ primary company (ชุดคำถามของกลุ่มบริษัทตัวเอง)
+    const primaryCompanyId = await getPrimaryCompanyId(scope);
+    const categories = primaryCompanyId
+      ? await prisma.category.findMany({
+          where: { companyId: primaryCompanyId },
+          orderBy: { id: 'asc' }
+        })
+      : [];
     const categoryOrder = categories.map(c => c.id);
 
     const where = {};
@@ -807,6 +858,8 @@ const getEvaluationData = (scoreType) => async (req, res) => {
       const score = answer[scoreField];
 
       if (!position || !company || !categoryId || score === null) continue;
+      // ✅ ข้ามคำตอบของคำถามที่ไม่ได้อยู่ใน category ของ primary company
+      if (!categoryOrder.includes(categoryId)) continue;
 
       if (!intermediate[position]) intermediate[position] = {};
       if (!intermediate[position][company]) intermediate[position][company] = {};
@@ -987,19 +1040,10 @@ const getQuestionsWithCategory = async (req, res) => {
   try {
     const scope = getCompanyScope(req);
 
-    let primaryCompanyId;
+    const primaryCompanyId = await getPrimaryCompanyId(scope);
 
-    if (scope === null) {
-      // SuperAdmin → ใช้บริษัทแรกในระบบ
-      const firstCompany = await prisma.company.findFirst({
-        orderBy: { id: 'asc' }
-      });
-      primaryCompanyId = firstCompany?.id;
-    } else if (scope.length === 0) {
+    if (scope !== null && scope.length === 0) {
       return res.status(200).json([]);
-    } else {
-      // Admin → ใช้ id น้อยสุดใน scope
-      primaryCompanyId = Math.min(...scope);
     }
 
     if (!primaryCompanyId) {
