@@ -33,6 +33,33 @@ const getPrimaryCompanyId = async (scope) => {
 };
 
 // ========================================================
+// ✅ Helper (ใหม่): resolveSiblingIds
+// แก้ปัญหา position/department/work_group มี record ชื่อเดียวกัน
+// แต่คนละ companyId (คนละ id) — ตอน filter ด้วย id เดียว
+// จะตกหล่น user ของบริษัทอื่นที่มีชื่อตรงกันแต่ id ต่างกัน
+//
+// วิธีแก้: รับ id ที่ frontend ส่งมา (เป็น id จาก dropdown ที่ dedupe ตามชื่อ)
+// -> หา "ชื่อ" ของ record นั้น
+// -> หา "ทุก id ที่ชื่อตรงกัน" ทั้งระบบ (ข้ามบริษัทได้)
+// -> ใช้ array นี้ filter ด้วย `{ in: [...] }` แทน id เดียว
+// ========================================================
+const resolveSiblingIds = async (modelName, id) => {
+  if (!id) return [];
+  const parsedId = parseInt(id);
+  if (isNaN(parsedId)) return [];
+
+  const record = await prisma[modelName].findUnique({ where: { id: parsedId } });
+  if (!record) return [parsedId]; // ไม่เจอ record ก็ fallback ไปใช้ id เดิม (จะได้ 0 ผลลัพธ์ ไม่ error)
+
+  const siblings = await prisma[modelName].findMany({
+    where: { name: record.name },
+    select: { id: true },
+  });
+
+  return siblings.map(s => s.id);
+};
+
+// ========================================================
 // getAggregatedSurveyData
 // ========================================================
 const getAggregatedSurveyData = async (req, res) => {
@@ -532,9 +559,11 @@ const getAssessmentYears = async (req, res) => {
 
 // ========================================================
 // getQuestionResultsData
-// ✅ FIX: questionWhere ไม่เคยกรองด้วย companyId ของชุดคำถาม
-// เดิมถ้าไม่ระบุ categoryId (เลือก "ทุกหมวดหมู่") จะดึง "ทุกคำถามในทุกบริษัท"
-// มาคำนวณปนกันหมด ต้องกรองด้วย primaryCompanyId เช่นเดียวกับ getStackedChartData
+// ✅ FIX #1 (เดิม): questionWhere กรองด้วย companyId ของชุดคำถาม (primaryCompanyId)
+// ✅ FIX #2 (ใหม่): positionRecord เดิมใช้ findFirst (เลือกมาแค่ 1 record)
+// แล้ว filter ด้วย id เดียว — ถ้ามีตำแหน่งชื่อเดียวกันหลาย record
+// (คนละบริษัท) จะตกหล่น user ของบริษัทอื่นที่ไม่ตรง id นั้นไปเลย
+// แก้โดยหา "ทุก id ที่ชื่อตรงกัน" แล้ว filter ด้วย `in`
 // ========================================================
 const getQuestionResultsData = async (req, res) => {
   try {
@@ -563,9 +592,13 @@ const getQuestionResultsData = async (req, res) => {
       }
     }
 
+    // ✅ FIX: ใช้ findMany + in แทน findFirst + id เดียว
+    // — รองรับกรณีมีตำแหน่งชื่อเดียวกันหลาย record (คนละบริษัท)
     if (position && position !== 'All') {
-      const positionRecord = await prisma.position.findFirst({ where: { name: position } });
-      if (positionRecord) userWhere.position_id = positionRecord.id;
+      const positionRecords = await prisma.position.findMany({ where: { name: position } });
+      if (positionRecords.length > 0) {
+        userWhere.position_id = { in: positionRecords.map(p => p.id) };
+      }
     }
 
     if (Object.keys(userWhere).length > 0) where.user = userWhere;
@@ -702,6 +735,11 @@ const getWorkGroupRawData = async (req, res) => {
 
 // ========================================================
 // getWorkGroupEvaluationData
+// ✅ FIX: positionId / departmentId / workGroupId ที่ frontend ส่งมา
+// อาจเป็น id ของบริษัทใดบริษัทหนึ่งเท่านั้น (เพราะ dropdown dedupe ตามชื่อ)
+// ต้อง resolve เป็น "ทุก id ที่ชื่อตรงกัน" ก่อน filter ด้วย `in`
+// ไม่ใช่ filter ด้วย id เดียวตรงๆเหมือนเดิม — ไม่งั้น user ของบริษัทอื่น
+// ที่มีตำแหน่ง/สายงานชื่อเดียวกันแต่ id ต่างกันจะตกหล่นไปจากรายงาน
 // ========================================================
 const getWorkGroupEvaluationData = async (req, res) => {
   try {
@@ -714,17 +752,26 @@ const getWorkGroupEvaluationData = async (req, res) => {
       userWhere.company_id = { in: scope };
     }
 
+    // ✅ FIX: resolve ชื่อข้ามบริษัทก่อน filter
     if (positionId && positionId !== 'all') {
-      userWhere.position_id = parseInt(positionId);
+      const ids = await resolveSiblingIds('position', positionId);
+      if (ids.length > 0) userWhere.position_id = { in: ids };
     }
 
     if (departmentId && departmentId !== 'all') {
-      userWhere.department_id = parseInt(departmentId);
+      const ids = await resolveSiblingIds('department', departmentId);
+      if (ids.length > 0) userWhere.department_id = { in: ids };
     }
 
     if (workGroupId && workGroupId !== 'all' && workGroupId.length > 0) {
-      const ids = workGroupId.split(',').map(id => parseInt(id)).filter(id => !isNaN(id));
-      if (ids.length > 0) userWhere.work_group_id = { in: ids };
+      const rawIds = workGroupId.split(',').map(id => parseInt(id)).filter(id => !isNaN(id));
+      if (rawIds.length > 0) {
+        const resolvedSets = await Promise.all(
+          rawIds.map(rid => resolveSiblingIds('work_group', rid))
+        );
+        const allIds = [...new Set(resolvedSets.flat())];
+        if (allIds.length > 0) userWhere.work_group_id = { in: allIds };
+      }
     }
 
     const companyWhere = scope !== null ? { id: { in: scope } } : {};
@@ -1030,6 +1077,7 @@ const getOpinionsData = async (req, res) => {
     res.status(500).json({ error: 'เซิร์ฟเวอร์ขัดข้อง', message: error.message });
   }
 };
+
 // ========================================================
 // ✅ getQuestionsWithCategory (ใหม่)
 // ดึง questions พร้อม categoryId โดยใช้ auth scope แทน companyIds query param

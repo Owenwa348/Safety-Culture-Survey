@@ -15,21 +15,24 @@
       <div class="bg-white rounded-xl shadow-md mb-6 overflow-hidden">
         <div class="bg-gradient-to-r px-8 py-6">
           <h1 class="text-2xl font-bold mb-2">ผลการประเมินบริษัท ประจำปี {{ selectedYear }}</h1>
-          <p>การวิเคราะห์ผลการประเมินตามตำแหน่งและบริษัทการดำเนินงาน</p>
-          
+          <p>วิเคราะห์ผลการประเมินตามตำแหน่งงานและบริษัท</p>
+
           <!-- Error Warning -->
-          <div v-if="error" class="mt-3 bg-red-100 border-l-4 border-red-500 text-red-700 p-3 text-sm rounded">
-            <p class="font-semibold">⚠️ เกิดข้อผิดพลาด</p>
-            <p class="text-xs mt-1">{{ error }}</p>
+          <div v-if="fetchError" class="mt-3 bg-red-100 border-l-4 border-red-500 text-red-700 p-3 text-sm rounded">
+            <p class="font-semibold">⚠️ โหลดข้อมูลไม่สำเร็จ</p>
+            <p class="text-xs mt-1">{{ fetchError }}</p>
+            <button @click="retryFetch" class="mt-2 text-xs text-red-600 hover:text-red-800 underline">
+              ลองอีกครั้ง
+            </button>
           </div>
         </div>
-        
+
         <!-- Filters -->
         <div class="px-8 py-5 bg-gray-50 border-b">
           <div class="flex flex-wrap items-center gap-6">
             <div class="flex items-center space-x-3">
               <label class="text-sm font-semibold text-gray-700">ปี:</label>
-              <select 
+              <select
                 v-model="selectedYear"
                 class="px-4 py-2.5 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"
               >
@@ -40,24 +43,23 @@
             </div>
             <div class="flex items-center space-x-3">
               <label class="text-sm font-semibold text-gray-700">บริษัท:</label>
-              <select 
-                v-model="selectedVersion" 
+              <select
+                v-model="selectedVersion"
                 class="px-4 py-2.5 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"
               >
-                <option value="combined">บริษัททั้งหมด</option>
+                <option value="combined">ทุกบริษัท</option>
                 <option v-for="company in companies" :key="company.id" :value="company.id">
                   {{ company.name }}
                 </option>
               </select>
             </div>
-
             <div class="flex items-center space-x-3">
               <label class="text-sm font-semibold text-gray-700">ช่วงเวลา:</label>
-              <select 
-                v-model="selectedTimePeriod" 
+              <select
+                v-model="selectedTimePeriod"
                 class="px-4 py-2.5 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"
               >
-                <option value="all">เปรียบเทียบ (ปัจจุบัน กับ อนาคต)</option>
+                <option value="all">เปรียบเทียบปัจจุบันกับอนาคต</option>
                 <option value="current">ปัจจุบัน</option>
                 <option value="future">อนาคต</option>
               </select>
@@ -70,12 +72,9 @@
         <!-- Chart Card -->
         <div class="bg-white rounded-lg shadow">
           <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
-            <h2 class="text-lg font-bold text-gray-900">
-              กราฟแสดงผลการประเมิน
-            </h2>
+            <h2 class="text-lg font-bold text-gray-900">กราฟแสดงผลการประเมิน</h2>
             <p class="text-sm text-gray-600 mt-1">เปรียบเทียบคะแนนเฉลี่ยในแต่ละหมวดหมู่</p>
           </div>
-          
           <div class="px-6 py-6">
             <div class="h-[580px] w-full">
               <Bar :key="chartRenderKey" :data="chartData" :options="chartOptions" />
@@ -86,12 +85,9 @@
         <!-- Table Card -->
         <div class="bg-white rounded-lg shadow">
           <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
-            <h2 class="text-lg font-bold text-gray-900">
-              ตารางข้อมูลรายละเอียด
-            </h2>
+            <h2 class="text-lg font-bold text-gray-900">ตารางข้อมูลรายละเอียด</h2>
             <p class="text-sm text-gray-600 mt-1">{{ getTableDescription }}</p>
           </div>
-          
           <div class="overflow-x-auto" style="max-width: calc(100vw - 4rem);">
             <table class="w-auto divide-y divide-gray-200">
               <thead class="bg-gray-50">
@@ -99,9 +95,9 @@
                   <th class="px-4 py-4 text-left text-sm font-bold text-gray-800 min-w-[200px] sticky left-0 bg-gray-50 z-10">
                     {{ tableHeader }}
                   </th>
-                  <th 
-                    v-for="(label, index) in chartLabels" 
-                    :key="`header-${index}`" 
+                  <th
+                    v-for="(label, index) in chartLabels"
+                    :key="`header-${index}`"
                     class="px-4 py-4 text-center text-sm font-semibold text-gray-800 min-w-[140px]"
                     :title="label"
                   >
@@ -110,23 +106,23 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-200 bg-white">
-                <tr 
-                  v-for="(dataset, idx) in chartData.datasets" 
+                <tr
+                  v-for="(dataset, idx) in chartData.datasets"
                   :key="`row-${idx}`"
                   class="hover:bg-gray-50"
                 >
                   <td class="px-4 py-3 text-sm font-medium text-gray-900 min-w-[200px] sticky left-0 bg-white z-10">
                     <div class="flex items-center gap-2">
-                      <span 
-                        class="w-2.5 h-2.5 rounded-sm flex-shrink-0" 
+                      <span
+                        class="w-2.5 h-2.5 rounded-sm flex-shrink-0"
                         :style="{ backgroundColor: dataset.backgroundColor }"
                       ></span>
                       <span class="truncate" :title="dataset.label">{{ dataset.label }}</span>
                     </div>
                   </td>
-                  <td 
-                    v-for="(score, scoreIdx) in dataset.data" 
-                    :key="`score-${idx}-${scoreIdx}`" 
+                  <td
+                    v-for="(score, scoreIdx) in dataset.data"
+                    :key="`score-${idx}-${scoreIdx}`"
                     class="px-4 py-3 text-center text-sm font-semibold min-w-[140px]"
                     :class="getScoreClass(score)"
                   >
@@ -136,7 +132,7 @@
               </tbody>
             </table>
           </div>
-          
+
           <!-- Footer Summary -->
           <div class="px-4 py-4 bg-gray-50 border-t border-gray-200">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -148,7 +144,6 @@
                   จำนวนหมวดหมู่: <span class="text-blue-600">{{ chartLabels.length }}</span>
                 </span>
               </div>
-              
               <div class="flex flex-wrap items-center gap-2.5 text-xs">
                 <div class="flex items-center gap-1.5">
                   <span class="w-3 h-3 bg-green-500 rounded shadow-sm"></span>
@@ -156,11 +151,11 @@
                 </div>
                 <div class="flex items-center gap-1.5">
                   <span class="w-3 h-3 bg-blue-500 rounded shadow-sm"></span>
-                  <span class="text-gray-700 font-medium whitespace-nowrap">ดี 4.0 - 4.49</span>
+                  <span class="text-gray-700 font-medium whitespace-nowrap">ดี 4.0–4.49</span>
                 </div>
                 <div class="flex items-center gap-1.5">
                   <span class="w-3 h-3 bg-yellow-500 rounded shadow-sm"></span>
-                  <span class="text-gray-700 font-medium whitespace-nowrap">ปานกลาง 3.5 - 3.99</span>
+                  <span class="text-gray-700 font-medium whitespace-nowrap">พอใช้ 3.5–3.99</span>
                 </div>
                 <div class="flex items-center gap-1.5">
                   <span class="w-3 h-3 bg-red-500 rounded shadow-sm"></span>
@@ -172,9 +167,19 @@
         </div>
       </template>
 
+      <!-- Empty State -->
       <template v-else>
-        <div class="mt-6 rounded-xl bg-white p-10 text-center shadow-md">
-          <p class="text-lg font-semibold text-gray-500">ยังไม่มีข้อมูลในระบบ</p>
+        <div class="bg-white rounded-lg shadow">
+          <div class="flex flex-col items-center justify-center py-16">
+            <div class="flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+              <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
+            <p class="text-sm font-semibold text-gray-500">ไม่พบข้อมูล</p>
+            <p class="text-xs text-gray-400 mt-1">ลองเปลี่ยนปีหรือบริษัทที่ต้องการดู</p>
+          </div>
         </div>
       </template>
     </div>
@@ -182,7 +187,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -198,64 +203,52 @@ import { apiFetch } from '../../../utils/apiClient';
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 // =======================================
-// Helper: ดึง companyIds จาก JWT token
+// Reactive State
 // =======================================
-const getCompanyIdsFromToken = () => {
-  try {
-    const token = localStorage.getItem('adminToken');
-    if (!token) return [];
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    // matchedCompanyIds มาจาก authMiddleware — อาจเป็น null (SuperAdmin) หรือ array
-    // แต่ใน token ที่ encode มาจะเป็น companyId หรือ companyIds ที่ตอน login ส่งมา
-    // ใช้ companyId เดี่ยว หรือ array ตาม structure ของ token
-    if (payload.companyIds) return Array.isArray(payload.companyIds) ? payload.companyIds : [payload.companyIds];
-    if (payload.companyId) return [payload.companyId];
-    return [];
-  } catch {
-    return [];
-  }
-};
-
-// Reactive state
-const selectedVersion = ref("combined");
-const selectedTimePeriod = ref("all");
+const selectedVersion = ref('combined');
+const selectedTimePeriod = ref('all');
 const currentData = ref({});
 const futureData = ref({});
 const loading = ref(true);
-const error = ref(null);
+
+const fetchError = ref(null);
+
 const companies = ref([]);
 const categories = ref([]);
-const areaNameMap = ref({
-  'combined': 'บริษัททั้งหมด',
-});
-
+const areaNameMap = ref({ combined: 'ทุกบริษัท' });
 const availableYears = ref([]);
 const selectedYear = ref(new Date().getFullYear());
 const chartRenderKey = ref(0);
 
-const chartLabels = computed(() => {
-  if (categories.value && categories.value.length > 0) {
-    return [...categories.value.map(c => c.name), 'AVG'];
-  }
-  return [];
-});
+const abortController = ref(null);
 
-const timePeriodMap = {
-  'all': 'ทั้งหมด',
-  'current': 'ปัจจุบัน',
-  'future': 'อนาคต'
-};
+// =======================================
+// Constants
+// =======================================
+const timePeriodMap = { all: 'ทั้งหมด', current: 'ปัจจุบัน', future: 'อนาคต' };
 
 const colors = {
   'ผู้บริหารระดับสูง / ผู้จัดการส่วน': '#1e40af',
   'ผู้จัดการแผนก / ผู้จัดการ / พนักงานอาวุโส': '#059669',
   'พนักงาน': '#dc2626',
   'ผู้รับเหมาประจำ': '#f97316',
-  'all_current': '#7c3aed',
-  'all_future': '#10b981'
+  all_current: '#7c3aed',
+  all_future: '#10b981',
 };
 
-// ✅ ใส่ /api กลับ — API_BASE_URL = "http://localhost:5000" (ไม่มี /api)
+// =======================================
+// Computed
+// =======================================
+const chartLabels = computed(() => {
+  if (categories.value?.length > 0) {
+    return [...categories.value.map(c => c.name), 'AVG'];
+  }
+  return [];
+});
+
+// =======================================
+// API Functions
+// =======================================
 const fetchAssessmentYears = async () => {
   try {
     const response = await apiFetch('/api/analytics/assessment-years');
@@ -271,7 +264,6 @@ const fetchAssessmentYears = async () => {
   }
 };
 
-// ✅ ใส่ /api กลับ
 const fetchCompanies = async () => {
   try {
     const response = await apiFetch('/api/analytics/companies');
@@ -279,57 +271,73 @@ const fetchCompanies = async () => {
     const data = await response.json();
     const companyNames = data.map(c => c.name).sort();
     companies.value = companyNames.map((name, i) => ({ id: `company_${i + 1}`, name }));
-    areaNameMap.value = { 'combined': 'บริษัททั้งหมด', ...Object.fromEntries(companyNames.map((name, i) => [`company_${i + 1}`, name])) };
+    areaNameMap.value = {
+      combined: 'ทุกบริษัท',
+      ...Object.fromEntries(companyNames.map((name, i) => [`company_${i + 1}`, name])),
+    };
   } catch (err) {
     console.error(err.message);
   }
 };
 
-// ✅ ใส่ /api กลับ + ส่ง companyIds ที่ได้จาก analytics/companies (ไม่ต้องการ companyIds param)
-// SalesBarChartDB ใช้ analytics endpoint แทน /api/categories โดยตรง
-// ดึง categories จาก stacked-chart-data ที่ไม่ต้องการ companyIds
 const fetchCategories = async () => {
   try {
-    // ใช้ analytics/stacked-chart-data เพื่อดึง categories ที่ไม่ต้องการ companyIds
     const response = await apiFetch(`/api/analytics/stacked-chart-data?year=${selectedYear.value}`);
     if (!response.ok) throw new Error('ไม่สามารถดึงข้อมูลหมวดหมู่ได้');
     const data = await response.json();
-    // stacked-chart-data คืน { categories: [{id, name, questionCount}], ... }
     categories.value = data.categories || [];
   } catch (err) {
     console.error(err.message);
   }
 };
 
-// ✅ ใส่ /api กลับ
 const fetchData = async () => {
-  error.value = null;
+  if (abortController.value) abortController.value.abort();
+  abortController.value = new AbortController();
+
+  fetchError.value = null;
   loading.value = true;
   currentData.value = {};
   futureData.value = {};
+
   try {
     const yearQuery = `?year=${selectedYear.value}`;
+    const signal = abortController.value.signal;
+
     const [currentResponse, futureResponse] = await Promise.all([
-      apiFetch(`/api/analytics/evaluation/current${yearQuery}`),
-      apiFetch(`/api/analytics/evaluation/future${yearQuery}`)
+      apiFetch(`/api/analytics/evaluation/current${yearQuery}`, { signal }),
+      apiFetch(`/api/analytics/evaluation/future${yearQuery}`, { signal }),
     ]);
-    if (!currentResponse.ok || !futureResponse.ok) throw new Error('ไม่สามารถดึงข้อมูลจากเซิร์ฟเวอร์ได้');
+
+    if (!currentResponse.ok || !futureResponse.ok) {
+      throw new Error('ดึงข้อมูลจากเซิร์ฟเวอร์ไม่สำเร็จ');
+    }
+
     const [currentResult, futureResult] = await Promise.all([
       currentResponse.json(),
-      futureResponse.json()
+      futureResponse.json(),
     ]);
+
     if (Object.keys(currentResult).length > 0) {
       currentData.value = currentResult;
       futureData.value = futureResult;
     }
   } catch (err) {
+    if (err.name === 'AbortError') return;
     console.error('Fetch error:', err);
-    error.value = err.message;
+    fetchError.value = err.message;
   } finally {
     loading.value = false;
   }
 };
 
+const retryFetch = async () => {
+  await fetchData();
+};
+
+// =======================================
+// Computed — Chart Data
+// =======================================
 const chartData = computed(() => {
   if (!currentData.value || !futureData.value || Object.keys(currentData.value).length === 0) {
     return { labels: chartLabels.value, datasets: [] };
@@ -340,28 +348,24 @@ const chartData = computed(() => {
   const version = selectedVersion.value;
 
   if (timePeriod === 'current' || timePeriod === 'future') {
-    const rawData = (timePeriod === 'current') ? currentData.value : futureData.value;
-    
+    const rawData = timePeriod === 'current' ? currentData.value : futureData.value;
+
     for (const group in rawData) {
       let dataPoints = [];
-      
+
       if (version === 'combined') {
         const company1Data = rawData[group].company_1 || [];
         const company2Data = rawData[group].company_2 || [];
         const maxLength = Math.max(company1Data.length, company2Data.length, chartLabels.value.length);
         for (let i = 0; i < maxLength; i++) {
-          const company1 = company1Data[i] || 0;
-          const company2 = company2Data[i] || 0;
-          if (company1 > 0 && company2 > 0) {
-            dataPoints.push((company1 + company2) / 2);
-          } else {
-            dataPoints.push(company1 || company2);
-          }
+          const c1 = company1Data[i] || 0;
+          const c2 = company2Data[i] || 0;
+          dataPoints.push(c1 > 0 && c2 > 0 ? (c1 + c2) / 2 : c1 || c2);
         }
       } else {
         dataPoints = rawData[group][version] || [];
       }
-      
+
       if (dataPoints.length > 0) {
         datasets.push({
           label: `${group} - ${areaNameMap.value[version]}`,
@@ -371,74 +375,61 @@ const chartData = computed(() => {
       }
     }
   } else {
-    if (version === "combined") {
-      const currentCombined = currentData.value;
-      const futureCombined = futureData.value;
-      const totalGroups = Object.keys(currentCombined).length;
+    if (version === 'combined') {
+      const totalGroups = Object.keys(currentData.value).length;
 
       const currentDataPoints = chartLabels.value.map((_, i) => {
         let sum = 0;
-        for (const group in currentCombined) {
-          const company1 = currentCombined[group].company_1?.[i] || 0;
-          const company2 = currentCombined[group].company_2?.[i] || 0;
-          const avg = (company1 > 0 && company2 > 0) ? (company1 + company2) / 2 : (company1 || company2);
-          sum += avg;
+        for (const group in currentData.value) {
+          const c1 = currentData.value[group].company_1?.[i] || 0;
+          const c2 = currentData.value[group].company_2?.[i] || 0;
+          sum += c1 > 0 && c2 > 0 ? (c1 + c2) / 2 : c1 || c2;
         }
         return totalGroups > 0 ? sum / totalGroups : 0;
       });
 
       const futureDataPoints = chartLabels.value.map((_, i) => {
         let sum = 0;
-        for (const group in futureCombined) {
-          const company1 = futureCombined[group].company_1?.[i] || 0;
-          const company2 = futureCombined[group].company_2?.[i] || 0;
-          const avg = (company1 > 0 && company2 > 0) ? (company1 + company2) / 2 : (company1 || company2);
-          sum += avg;
+        for (const group in futureData.value) {
+          const c1 = futureData.value[group].company_1?.[i] || 0;
+          const c2 = futureData.value[group].company_2?.[i] || 0;
+          sum += c1 > 0 && c2 > 0 ? (c1 + c2) / 2 : c1 || c2;
         }
         return totalGroups > 0 ? sum / totalGroups : 0;
       });
 
       datasets.push({
-        label: `ค่าเฉลี่ยของปัจจุบัน (${areaNameMap.value[version]}) ปี ${selectedYear.value}`,
+        label: `คะแนนเฉลี่ยปัจจุบัน (${areaNameMap.value[version]}) ปี ${selectedYear.value}`,
         backgroundColor: colors.all_current,
         data: currentDataPoints,
       });
-
       datasets.push({
-        label: `ค่าเฉลี่ยของอนาคต (${areaNameMap.value[version]}) ปี ${selectedYear.value}`,
+        label: `คะแนนเฉลี่ยอนาคต (${areaNameMap.value[version]}) ปี ${selectedYear.value}`,
         backgroundColor: colors.all_future,
         data: futureDataPoints,
       });
-
     } else {
-      const currentRawData = currentData.value;
-      const futureRawData = futureData.value;
-      const totalGroups = Object.keys(currentRawData).length;
+      const totalGroups = Object.keys(currentData.value).length;
 
       const currentDataPoints = chartLabels.value.map((_, i) => {
         let sum = 0;
-        for (const group in currentRawData) {
-          sum += currentRawData[group][version]?.[i] || 0;
-        }
+        for (const group in currentData.value) sum += currentData.value[group][version]?.[i] || 0;
         return totalGroups > 0 ? sum / totalGroups : 0;
       });
 
       const futureDataPoints = chartLabels.value.map((_, i) => {
         let sum = 0;
-        for (const group in futureRawData) {
-          sum += futureRawData[group][version]?.[i] || 0;
-        }
+        for (const group in futureData.value) sum += futureData.value[group][version]?.[i] || 0;
         return totalGroups > 0 ? sum / totalGroups : 0;
       });
 
       datasets.push({
-        label: `ค่าเฉลี่ย ปัจจุบัน ${selectedYear.value} (${areaNameMap.value[version]})`,
+        label: `คะแนนเฉลี่ยปัจจุบัน ปี ${selectedYear.value} (${areaNameMap.value[version]})`,
         backgroundColor: colors.all_current,
         data: currentDataPoints,
       });
-
       datasets.push({
-        label: `ค่าเฉลี่ย อนาคต ${selectedYear.value} (${areaNameMap.value[version]})`,
+        label: `คะแนนเฉลี่ยอนาคต ปี ${selectedYear.value} (${areaNameMap.value[version]})`,
         backgroundColor: colors.all_future,
         data: futureDataPoints,
       });
@@ -448,9 +439,10 @@ const chartData = computed(() => {
   return { labels: chartLabels.value, datasets };
 });
 
-const formatScore = (score) => {
-  return typeof score === 'number' ? score.toFixed(2) : '0.00';
-};
+// =======================================
+// Helpers
+// =======================================
+const formatScore = (score) => (typeof score === 'number' ? score.toFixed(2) : '0.00');
 
 const getScoreClass = (score) => {
   if (score >= 4.5) return 'text-green-700 bg-green-50';
@@ -459,32 +451,24 @@ const getScoreClass = (score) => {
   return 'text-red-700 bg-red-50';
 };
 
-const tableHeader = computed(() => {
-  if (selectedTimePeriod.value === 'all') {
-    return 'ช่วงเวลา / บริษัท / ปี';
-  }
-  return 'บริษัท / ปี';
-});
+const tableHeader = computed(() =>
+  selectedTimePeriod.value === 'all' ? 'ช่วงเวลา / บริษัท / ปี' : 'บริษัท / ปี'
+);
 
 const getTableDescription = computed(() => {
   const area = areaNameMap.value[selectedVersion.value];
   const time = timePeriodMap[selectedTimePeriod.value];
-  
-  if (selectedVersion.value === 'combined') {
-    return `รวมทุกบริษัท (${area} - ${time})`;
-  } else {
-    return `ทุกตำแหน่งใน ${area} - ${time}`;
-  }
+  return selectedVersion.value === 'combined'
+    ? `รวมทุกบริษัท (${area} — ${time})`
+    : `ทุกตำแหน่งใน ${area} — ${time}`;
 });
 
 const chartOptions = computed(() => ({
   responsive: true,
   maintainAspectRatio: false,
-  layout: {
-    padding: { left: 5, right: 5, top: 5, bottom: 50 }
-  },
+  layout: { padding: { left: 5, right: 5, top: 5, bottom: 50 } },
   plugins: {
-    legend: { 
+    legend: {
       display: true,
       position: 'bottom',
       align: 'center',
@@ -495,7 +479,7 @@ const chartOptions = computed(() => ({
         pointStyle: 'circle',
         boxWidth: 8,
         boxHeight: 8,
-      }
+      },
     },
     tooltip: {
       enabled: true,
@@ -506,29 +490,29 @@ const chartOptions = computed(() => ({
       cornerRadius: 8,
       displayColors: true,
       callbacks: {
-        label: context => `${context.dataset.label}: ${context.parsed.y.toFixed(2)}`
-      }
+        label: context => `${context.dataset.label}: ${context.parsed.y.toFixed(2)}`,
+      },
     },
-    datalabels: { display: false }
+    datalabels: { display: false },
   },
   scales: {
     y: {
       beginAtZero: false,
       min: 2.0,
       max: 5.0,
-      title: { 
-        display: true, 
+      title: {
+        display: true,
         text: 'คะแนนเฉลี่ย',
         font: { size: 14, weight: '600' },
-        color: '#374151'
+        color: '#374151',
       },
       ticks: {
         stepSize: 0.5,
         callback: val => val.toFixed(1),
         font: { size: 12 },
-        color: '#6b7280'
+        color: '#6b7280',
       },
-      grid: { color: 'rgba(0, 0, 0, 0.06)', drawBorder: false }
+      grid: { color: 'rgba(0, 0, 0, 0.06)', drawBorder: false },
     },
     x: {
       ticks: {
@@ -538,20 +522,20 @@ const chartOptions = computed(() => ({
         color: '#374151',
         autoSkip: false,
         padding: 4,
-        callback: function(value) {
+        callback: function (value) {
           const label = this.getLabelForValue(value);
-          if (label.length > 15) return label.substring(0, 15) + '...';
-          return label;
-        }
+          return label.length > 15 ? label.substring(0, 15) + '...' : label;
+        },
       },
-      grid: { display: false, drawBorder: true }
-    }
+      grid: { display: false, drawBorder: true },
+    },
   },
-  elements: {
-    bar: { borderSkipped: false, borderRadius: 4 }
-  }
+  elements: { bar: { borderSkipped: false, borderRadius: 4 } },
 }));
 
+// =======================================
+// Watchers
+// =======================================
 watch(selectedYear, (newYear, oldYear) => {
   if (newYear !== oldYear) fetchData();
 });
@@ -564,15 +548,18 @@ watch(chartData, () => {
   chartRenderKey.value++;
 }, { deep: true });
 
+// =======================================
+// Lifecycle
+// =======================================
 onMounted(async () => {
   loading.value = true;
   await fetchAssessmentYears();
-  await Promise.all([
-    fetchCompanies(),
-    fetchCategories(),
-    fetchData()
-  ]);
-  loading.value = false;
+  await Promise.all([fetchCompanies(), fetchCategories()]);
+  await fetchData();
+});
+
+onUnmounted(() => {
+  if (abortController.value) abortController.value.abort();
 });
 </script>
 
@@ -587,16 +574,10 @@ select:focus { outline: none; }
 .overflow-x-auto { -webkit-overflow-scrolling: touch; }
 .overflow-x-auto::-webkit-scrollbar { height: 8px; }
 .overflow-x-auto::-webkit-scrollbar-track { background: #f3f4f6; border-radius: 4px; }
+.overflow-x-aux::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 .overflow-x-auto::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 .overflow-x-auto::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-.line-clamp-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
 .line-clamp-3 {
   display: -webkit-box;
   -webkit-line-clamp: 3;

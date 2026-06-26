@@ -9,16 +9,11 @@ const prisma = new PrismaClient();
 /**
  * สร้างติดต่อสอบถามใหม่
  * POST /api/inquiry/create
- * @param {string} name - ชื่อ - นามสกุล
- * @param {string} email - อีเมล
- * @param {string} phone - เบอร์โทรศัพท์
- * @param {string} message - ข้อความ
  */
 const createInquiry = async (req, res) => {
   try {
     const { name, email, phone, message } = req.body;
 
-    // ตรวจสอบข้อมูลที่จำเป็น
     if (!name || !email || !phone || !message) {
       return res.status(400).json({
         success: false,
@@ -26,7 +21,6 @@ const createInquiry = async (req, res) => {
       });
     }
 
-    // ตรวจสอบรูปแบบอีเมล
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return res.status(400).json({
@@ -35,7 +29,6 @@ const createInquiry = async (req, res) => {
       });
     }
 
-    // ตรวจสอบรูปแบบเบอร์โทรศัพท์
     const phoneRegex = /^[0-9]{10}$/;
     if (!phoneRegex.test(phone)) {
       return res.status(400).json({
@@ -44,7 +37,6 @@ const createInquiry = async (req, res) => {
       });
     }
 
-    // บันทึกติดต่อสอบถามลงฐานข้อมูล
     const inquiry = await prisma.inquiry.create({
       data: {
         name: name.trim(),
@@ -75,71 +67,33 @@ const createInquiry = async (req, res) => {
 /**
  * ดึงรายการติดต่อสอบถาม ใช้สำหรับ SuperAdmin
  * GET /api/inquiry/list
- * @param {string} year - (optional) กรองตามปี (format: YYYY)
- * @param {string} month - (optional) กรองตามเดือน (format: M or MM)
- * @param {string} company - (optional) กรองตามบริษัท
- * @param {number} page - (optional) หน้า (default: 1)
- * @param {number} limit - (optional) จำนวนรายการต่อหน้า (default: 10)
+ * Query: { page, limit, year, month }
+ * หมายเหตุ: ไม่มี filter บริษัท เพราะ inquiry ไม่ได้เก็บ company_id
  */
 const getInquiries = async (req, res) => {
   try {
-    const { page = 1, limit = 10, year: yearParam, month: monthParam, company } = req.query;
+    const { page = 1, limit = 10, year: yearParam, month: monthParam } = req.query;
 
-    // สร้างเงื่อนไข filter
     const where = {};
 
     if (yearParam) {
       const year = parseInt(yearParam);
       if (monthParam) {
-        // Filter by year and month
         const month = parseInt(monthParam);
-        const startDate = new Date(year, month - 1, 1);
-        const endDate = new Date(year, month, 1);
         where.createdAt = {
-          gte: startDate,
-          lt: endDate,
+          gte: new Date(year, month - 1, 1),
+          lt: new Date(year, month, 1),
         };
       } else {
-        // Filter by year only
-        const startDate = new Date(year, 0, 1);
-        const endDate = new Date(year + 1, 0, 1);
         where.createdAt = {
-          gte: startDate,
-          lt: endDate,
+          gte: new Date(year, 0, 1),
+          lt: new Date(year + 1, 0, 1),
         };
       }
     }
 
-    if (company) {
-      const usersInCompany = await prisma.user.findMany({
-        where: { company_user: company },
-        select: { email_user: true }
-      });
-      const emails = usersInCompany.map(u => u.email_user);
-      
-      if (emails.length > 0) {
-        where.email = {
-          in: emails
-        };
-      } else {
-        // If no users found for the company, return no inquiries
-        return res.status(200).json({
-          success: true,
-          data: [],
-          pagination: {
-            page: parseInt(page),
-            limit: parseInt(limit),
-            total: 0,
-            totalPages: 0,
-          },
-        });
-      }
-    }
+    const offset = (parseInt(page) - 1) * parseInt(limit);
 
-    // คำนวณ offset
-    const offset = (page - 1) * limit;
-
-    // ดึงข้อมูลติดต่อสอบถาม
     const [inquiries, total] = await Promise.all([
       prisma.inquiry.findMany({
         where,
@@ -157,7 +111,7 @@ const getInquiries = async (req, res) => {
         page: parseInt(page),
         limit: parseInt(limit),
         total,
-        totalPages: Math.ceil(total / limit),
+        totalPages: Math.ceil(total / parseInt(limit)),
       },
     });
   } catch (error) {
