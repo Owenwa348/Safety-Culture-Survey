@@ -463,75 +463,81 @@ const getTableDescription = computed(() => {
     : `ทุกตำแหน่งใน ${area} — ${time}`;
 });
 
-const chartOptions = computed(() => ({
-  responsive: true,
-  maintainAspectRatio: false,
-  layout: { padding: { left: 5, right: 5, top: 5, bottom: 50 } },
-  plugins: {
-    legend: {
-      display: true,
-      position: 'bottom',
-      align: 'center',
-      labels: {
-        font: { size: 12, weight: '600' },
-        padding: 10,
-        usePointStyle: true,
-        pointStyle: 'circle',
-        boxWidth: 8,
-        boxHeight: 8,
-      },
-    },
-    tooltip: {
-      enabled: true,
-      backgroundColor: 'rgba(0, 0, 0, 0.85)',
-      titleFont: { size: 14, weight: 'bold' },
-      bodyFont: { size: 13 },
-      padding: 12,
-      cornerRadius: 8,
-      displayColors: true,
-      callbacks: {
-        label: context => `${context.dataset.label}: ${context.parsed.y.toFixed(2)}`,
-      },
-    },
-    datalabels: { display: false },
-  },
-  scales: {
-    y: {
-      beginAtZero: false,
-      min: 2.0,
-      max: 5.0,
-      title: {
+const chartOptions = computed(() => {
+  const allValues = chartData.value.datasets.flatMap(d => d.data).filter(v => v > 0);
+  const dataMin = allValues.length > 0 ? Math.min(...allValues) : 2.0;
+  const yMin = Math.max(0, Math.floor((dataMin - 0.5) * 2) / 2);
+
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    layout: { padding: { left: 5, right: 5, top: 5, bottom: 50 } },
+    plugins: {
+      legend: {
         display: true,
-        text: 'คะแนนเฉลี่ย',
-        font: { size: 14, weight: '600' },
-        color: '#374151',
-      },
-      ticks: {
-        stepSize: 0.5,
-        callback: val => val.toFixed(1),
-        font: { size: 12 },
-        color: '#6b7280',
-      },
-      grid: { color: 'rgba(0, 0, 0, 0.06)', drawBorder: false },
-    },
-    x: {
-      ticks: {
-        maxRotation: 45,
-        minRotation: 45,
-        font: { size: 10, weight: '500' },
-        color: '#374151',
-        autoSkip: false,
-        padding: 4,
-        callback: function (value) {
-          const label = this.getLabelForValue(value);
-          return label.length > 15 ? label.substring(0, 15) + '...' : label;
+        position: 'bottom',
+        align: 'center',
+        labels: {
+          font: { size: 12, weight: '600' },
+          padding: 10,
+          usePointStyle: true,
+          pointStyle: 'circle',
+          boxWidth: 8,
+          boxHeight: 8,
         },
       },
-      grid: { display: false, drawBorder: true },
+      tooltip: {
+        enabled: true,
+        backgroundColor: 'rgba(0, 0, 0, 0.85)',
+        titleFont: { size: 14, weight: 'bold' },
+        bodyFont: { size: 13 },
+        padding: 12,
+        cornerRadius: 8,
+        displayColors: true,
+        callbacks: {
+          label: context => `${context.dataset.label}: ${context.parsed.y.toFixed(2)}`,
+        },
+      },
+      datalabels: { display: false },
     },
-  },
-  elements: { bar: { borderSkipped: false, borderRadius: 4 } },
-}));
+    scales: {
+      y: {
+        beginAtZero: false,
+        min: yMin,
+        max: 5.0,
+        title: {
+          display: true,
+          text: 'คะแนนเฉลี่ย',
+          font: { size: 14, weight: '600' },
+          color: '#374151',
+        },
+        ticks: {
+          stepSize: 0.5,
+          callback: val => val.toFixed(1),
+          font: { size: 12 },
+          color: '#6b7280',
+        },
+        grid: { color: 'rgba(0, 0, 0, 0.06)', drawBorder: false },
+      },
+      x: {
+        ticks: {
+          maxRotation: 45,
+          minRotation: 45,
+          font: { size: 10, weight: '500' },
+          color: '#374151',
+          autoSkip: false,
+          padding: 4,
+          callback: function (value) {
+            const label = this.getLabelForValue(value);
+            return label.length > 15 ? label.substring(0, 15) + '...' : label;
+          },
+        },
+        grid: { display: false, drawBorder: true },
+      },
+    },
+    elements: { bar: { borderSkipped: false, borderRadius: 4 } },
+  };
+});
 
 // =======================================
 // Watchers
