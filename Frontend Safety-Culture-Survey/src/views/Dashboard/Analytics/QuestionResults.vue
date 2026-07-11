@@ -354,20 +354,20 @@ const chartData = computed(() => {
   <div class="flex min-h-screen bg-gray-50">
     <NavbarDashboard />
 
-    <main class="flex-1 ml-60 p-6">
+    <main class="flex-1 ml-0 md:ml-60 p-3 sm:p-6">
 
       <!-- หัวข้อหน้า -->
-      <header class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-800">ผลประเมินตามข้อคำถาม</h1>
-        <p class="text-sm text-gray-600 mt-1">วิเคราะห์และเปรียบเทียบคะแนนในแต่ละข้อคำถาม</p>
+      <header class="mb-4 sm:mb-6">
+        <h1 class="text-lg sm:text-2xl font-bold text-gray-800">ผลประเมินตามข้อคำถาม</h1>
+        <p class="text-xs sm:text-sm text-gray-600 mt-1">วิเคราะห์และเปรียบเทียบคะแนนในแต่ละข้อคำถาม</p>
       </header>
 
       <!-- ส่วนตัวกรองข้อมูล -->
-      <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 mb-4 sm:mb-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
 
           <div class="space-y-2">
-            <label for="company-select" class="block text-sm font-medium text-gray-700">บริษัท</label>
+            <label for="company-select" class="block text-xs sm:text-sm font-medium text-gray-700">บริษัท</label>
             <select id="company-select" v-model="selectedCompany"
               class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 transition-colors">
               <option v-for="option in companyOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
@@ -375,7 +375,7 @@ const chartData = computed(() => {
           </div>
 
           <div class="space-y-2">
-            <label for="position-select" class="block text-sm font-medium text-gray-700">ตำแหน่ง</label>
+            <label for="position-select" class="block text-xs sm:text-sm font-medium text-gray-700">ตำแหน่ง</label>
             <select id="position-select" v-model="selectedPosition"
               class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 transition-colors">
               <option v-for="option in positionOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
@@ -383,7 +383,7 @@ const chartData = computed(() => {
           </div>
 
           <div class="space-y-2">
-            <label for="category-select" class="block text-sm font-medium text-gray-700">หมวดหมู่</label>
+            <label for="category-select" class="block text-xs sm:text-sm font-medium text-gray-700">หมวดหมู่</label>
             <select id="category-select" v-model="selectedCategory"
               class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 transition-colors">
               <option v-for="option in categoryOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
@@ -391,7 +391,7 @@ const chartData = computed(() => {
           </div>
 
           <div class="space-y-2">
-            <label for="year-select" class="block text-sm font-medium text-gray-700">ปีที่ประเมิน</label>
+            <label for="year-select" class="block text-xs sm:text-sm font-medium text-gray-700">ปีที่ประเมิน</label>
             <select id="year-select" v-model="selectedYear" :disabled="availableYears.length === 0"
               class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed transition-colors">
               <option v-if="availableYears.length === 0" :value="null">ไม่มีข้อมูล</option>
@@ -400,7 +400,7 @@ const chartData = computed(() => {
           </div>
 
           <div class="space-y-2">
-            <label for="timeframe-select" class="block text-sm font-medium text-gray-700">ช่วงเวลา</label>
+            <label for="timeframe-select" class="block text-xs sm:text-sm font-medium text-gray-700">ช่วงเวลา</label>
             <select id="timeframe-select" v-model="selectedTimeframe"
               class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 transition-colors">
               <option v-for="option in timeframeOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
@@ -410,21 +410,21 @@ const chartData = computed(() => {
 
         <!-- สรุปตัวกรอง -->
         <div class="mt-4 pt-4 border-t border-gray-200">
-          <div class="flex flex-wrap items-center gap-2 text-sm text-gray-600">
-            <span class="font-semibold text-gray-700">ตัวกรองที่เลือก:</span>
+          <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-gray-600">
+            <span class="font-semibold text-gray-700 w-full sm:w-auto">ตัวกรองที่เลือก:</span>
             <span class="px-2 py-1 bg-green-50 text-green-700 rounded">{{ getCompanyLabel() }}</span>
-            <span class="text-gray-400">•</span>
+            <span class="text-gray-400 hidden sm:inline">•</span>
             <span class="px-2 py-1 bg-blue-50 text-blue-700 rounded">{{ getPositionLabel() }}</span>
-            <span class="text-gray-400">•</span>
+            <span class="text-gray-400 hidden sm:inline">•</span>
             <span class="px-2 py-1 bg-indigo-50 text-indigo-700 rounded">{{ getCategoryLabel() }}</span>
-            <span class="text-gray-400">•</span>
+            <span class="text-gray-400 hidden sm:inline">•</span>
             <span class="px-2 py-1 bg-purple-50 text-purple-700 rounded">ปี {{ selectedYear }}</span>
-            <span class="text-gray-400">•</span>
+            <span class="text-gray-400 hidden sm:inline">•</span>
             <span class="px-2 py-1 bg-orange-50 text-orange-700 rounded">
               {{ timeframeOptions.find(o => o.value === selectedTimeframe)?.label }}
             </span>
             <template v-if="totalPages > 1">
-              <span class="text-gray-400">•</span>
+              <span class="text-gray-400 hidden sm:inline">•</span>
               <span class="px-2 py-1 bg-gray-50 text-gray-700 rounded">
                 หน้า {{ currentPage }} / {{ totalPages }} (คำถามที่ {{ currentQuestionRange.start + 1 }}–{{ currentQuestionRange.end }})
               </span>
@@ -434,22 +434,22 @@ const chartData = computed(() => {
       </section>
 
       <!-- ส่วนแสดงกราฟ -->
-      <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <header class="mb-6 pb-4 border-b border-gray-200">
-          <h2 class="text-lg font-semibold text-gray-800">{{ getPositionLabel() }}</h2>
-          <p class="text-sm text-gray-500 mt-1">{{ getCompanyLabel() }}</p>
+      <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+        <header class="mb-4 sm:mb-6 pb-3 sm:pb-4 border-b border-gray-200">
+          <h2 class="text-base sm:text-lg font-semibold text-gray-800">{{ getPositionLabel() }}</h2>
+          <p class="text-xs sm:text-sm text-gray-500 mt-1">{{ getCompanyLabel() }}</p>
         </header>
 
         <!-- Loading -->
-        <div v-if="isLoading" class="flex flex-col items-center justify-center py-12">
-          <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-3"></div>
-          <p class="text-sm text-gray-500">กำลังโหลดข้อมูล...</p>
+        <div v-if="isLoading" class="flex flex-col items-center justify-center py-10 sm:py-12">
+          <div class="animate-spin rounded-full h-8 w-8 sm:h-10 sm:w-10 border-b-2 border-blue-600 mb-3"></div>
+          <p class="text-xs sm:text-sm text-gray-500">กำลังโหลดข้อมูล...</p>
         </div>
 
         <!-- [แก้ไข #7] Error State — แสดง fetchError ให้ user เห็นพร้อมปุ่ม retry -->
-        <div v-else-if="fetchError" class="flex flex-col items-center justify-center py-12">
-          <div class="flex items-center justify-center w-14 h-14 bg-red-50 rounded-full mb-4">
-            <svg class="w-7 h-7 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div v-else-if="fetchError" class="flex flex-col items-center justify-center py-10 sm:py-12 px-4 text-center">
+          <div class="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 bg-red-50 rounded-full mb-4">
+            <svg class="w-6 h-6 sm:w-7 sm:h-7 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                 d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
@@ -465,14 +465,14 @@ const chartData = computed(() => {
         </div>
 
         <!-- กราฟ -->
-        <div v-else-if="chartData && chartData.datasets" class="w-full" style="height: 450px;">
+        <div v-else-if="chartData && chartData.datasets" class="w-full h-[320px] sm:h-[450px] overflow-x-auto">
           <StackedBar :chart-data="chartData" :bar-percentage="0.5" :category-percentage="0.6" />
         </div>
 
         <!-- Empty State -->
-        <div v-else class="flex flex-col items-center justify-center py-16">
-          <div class="flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
-            <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div v-else class="flex flex-col items-center justify-center py-14 sm:py-16 px-4 text-center">
+          <div class="flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 bg-gray-100 rounded-full mb-4">
+            <svg class="w-7 h-7 sm:w-8 sm:h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                 d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
@@ -482,21 +482,21 @@ const chartData = computed(() => {
         </div>
 
         <!-- Pagination -->
-        <div v-if="!isLoading && !fetchError && chartData" class="mt-6 pt-4 border-t border-gray-200">
-          <div class="flex items-center justify-between flex-wrap gap-4">
+        <div v-if="!isLoading && !fetchError && chartData" class="mt-4 sm:mt-6 pt-4 border-t border-gray-200">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
 
-            <div class="text-sm text-gray-700">
+            <div class="text-xs sm:text-sm text-gray-700">
               แสดงคำถามที่ <span class="font-semibold">{{ currentQuestionRange.start + 1 }}</span> –
               <span class="font-semibold">{{ currentQuestionRange.end }}</span> จากทั้งหมด
               <span class="font-semibold">{{ fullQuestionMeta.length }}</span> ข้อ
             </div>
 
-            <div class="flex items-center gap-4">
-              <nav v-if="totalPages > 1" class="flex items-center space-x-1">
+            <div class="flex flex-col xs:flex-row items-start xs:items-center gap-3 sm:gap-4">
+              <nav v-if="totalPages > 1" class="flex items-center space-x-0.5 sm:space-x-1 flex-wrap">
                 <button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1"
-                  class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors"
+                  class="px-2 sm:px-3 py-1 sm:py-1.5 text-sm font-medium rounded-md transition-colors"
                   :class="currentPage === 1 ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-100'">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
@@ -505,13 +505,13 @@ const chartData = computed(() => {
                   <span
                     v-if="page === '...'"
                     :key="`dots-${index}`"
-                    class="px-3 py-1.5 text-sm text-gray-500"
+                    class="px-2 sm:px-3 py-1 sm:py-1.5 text-sm text-gray-500"
                   >...</span>
                   <button
                     v-else
                     :key="`page-${index}`"
                     @click="goToPage(page)"
-                    class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors"
+                    class="px-2 sm:px-3 py-1 sm:py-1.5 text-sm font-medium rounded-md transition-colors"
                     :class="currentPage === page ? 'bg-blue-600 text-white hover:bg-blue-700' : 'text-gray-700 hover:bg-gray-100'"
                   >
                     {{ page }}
@@ -519,24 +519,24 @@ const chartData = computed(() => {
                 </template>
 
                 <button @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages"
-                  class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors"
+                  class="px-2 sm:px-3 py-1 sm:py-1.5 text-sm font-medium rounded-md transition-colors"
                   :class="currentPage === totalPages ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-100'">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                   </svg>
                 </button>
               </nav>
 
               <div class="flex items-center space-x-2">
-                <label for="per-page" class="text-sm text-gray-700">แสดงหน้าละ:</label>
+                <label for="per-page" class="text-xs sm:text-sm text-gray-700">แสดงหน้าละ:</label>
                 <select id="per-page" v-model.number="questionsPerPage" @change="currentPage = 1"
-                  class="px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  class="px-2 py-1 text-xs sm:text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                   <option :value="10">10</option>
                   <option :value="20">20</option>
                   <option :value="30">30</option>
                   <option :value="50">50</option>
                 </select>
-                <span class="text-sm text-gray-700">ข้อ</span>
+                <span class="text-xs sm:text-sm text-gray-700">ข้อ</span>
               </div>
             </div>
           </div>

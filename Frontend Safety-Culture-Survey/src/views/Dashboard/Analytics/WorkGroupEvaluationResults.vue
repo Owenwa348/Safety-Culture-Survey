@@ -351,30 +351,30 @@ onUnmounted(() => {
   <div class="min-h-screen bg-gray-50">
     <NavbarDashboard />
 
-    <main class="flex-1 ml-60 p-6">
+    <main class="flex-1 ml-0 md:ml-60 p-3 sm:p-6">
       <div class="max-w-7xl mx-auto">
         <!-- Header -->
-        <header class="mb-6">
-          <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-            <h1 class="text-2xl font-bold text-gray-900 mb-1">ผลการประเมินตามกลุ่มงาน</h1>
-            <p class="text-sm text-gray-600">วิเคราะห์และเปรียบเทียบผลการประเมินตามตำแหน่ง สายงาน และกลุ่มงาน</p>
+        <header class="mb-4 sm:mb-6">
+          <div class="bg-white rounded-lg shadow-sm p-4 sm:p-6 border border-gray-200">
+            <h1 class="text-lg sm:text-2xl font-bold text-gray-900 mb-1">ผลการประเมินตามกลุ่มงาน</h1>
+            <p class="text-xs sm:text-sm text-gray-600">วิเคราะห์และเปรียบเทียบผลการประเมินตามตำแหน่ง สายงาน และกลุ่มงาน</p>
           </div>
         </header>
 
         <!-- Filter Section -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
-          <div class="border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-3.5 rounded-t-lg">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-4 sm:mb-6">
+          <div class="border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 px-4 sm:px-6 py-3 sm:py-3.5 rounded-t-lg">
             <h2 class="text-sm font-semibold text-gray-800 flex items-center">
-              <svg class="w-4 h-4 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-4 h-4 mr-2 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
               </svg>
               ตัวกรองข้อมูล
             </h2>
           </div>
 
-          <div class="p-5">
+          <div class="p-4 sm:p-5">
             <!-- Row 1: บริษัท, ตำแหน่ง, สายงาน -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 mb-4">
               <div>
                 <label class="block text-xs font-medium text-gray-700 mb-1.5">บริษัท</label>
                 <div class="relative">
@@ -413,7 +413,7 @@ onUnmounted(() => {
             </div>
 
             <!-- Row 2: ช่วงเวลา, ปี -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
               <div>
                 <label class="block text-xs font-medium text-gray-700 mb-1.5">ช่วงเวลา</label>
                 <div class="relative">
@@ -446,11 +446,11 @@ onUnmounted(() => {
               <label class="block text-xs font-medium text-gray-700 mb-2">
                 กลุ่มงาน <span class="text-gray-500 text-xs font-normal">(เลือกได้มากกว่า 1 รายการ)</span>
               </label>
-              <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2">
+              <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
                 <label
                   v-for="group in availableWorkGroups"
                   :key="group.id"
-                  class="relative flex items-center px-3 py-2 border rounded-lg cursor-pointer transition-all"
+                  class="relative flex items-center px-2.5 sm:px-3 py-2 border rounded-lg cursor-pointer transition-all"
                   :class="{
                     'border-blue-500 bg-blue-50 ring-1 ring-blue-500': selectedGroups.includes(group.id),
                     'border-gray-300 bg-white hover:border-blue-300 hover:bg-gray-50': !selectedGroups.includes(group.id)
@@ -468,34 +468,34 @@ onUnmounted(() => {
             </div>
 
             <!-- Summary Info -->
-            <div class="bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg p-4 border border-gray-200">
+            <div class="bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg p-3 sm:p-4 border border-gray-200">
               <h3 class="text-xs font-semibold text-gray-700 mb-2.5 flex items-center">
-                <svg class="w-3.5 h-3.5 mr-1.5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                <svg class="w-3.5 h-3.5 mr-1.5 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path>
                   <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"></path>
                 </svg>
                 สรุปตัวกรองที่เลือก
               </h3>
-              <div class="grid grid-cols-2 md:grid-cols-5 gap-2.5">
-                <div class="bg-white rounded-md p-2.5 border border-gray-200">
-                  <p class="text-xs text-gray-500 mb-0.5">ตำแหน่ง</p>
-                  <p class="text-sm font-semibold text-gray-900 truncate" :title="dataSummary.department">{{ dataSummary.department }}</p>
+              <div class="grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-2.5">
+                <div class="bg-white rounded-md p-2 sm:p-2.5 border border-gray-200">
+                  <p class="text-[11px] sm:text-xs text-gray-500 mb-0.5">ตำแหน่ง</p>
+                  <p class="text-xs sm:text-sm font-semibold text-gray-900 truncate" :title="dataSummary.department">{{ dataSummary.department }}</p>
                 </div>
-                <div class="bg-white rounded-md p-2.5 border border-gray-200">
-                  <p class="text-xs text-gray-500 mb-0.5">สายงาน</p>
-                  <p class="text-sm font-semibold text-gray-900 truncate" :title="dataSummary.unit">{{ dataSummary.unit }}</p>
+                <div class="bg-white rounded-md p-2 sm:p-2.5 border border-gray-200">
+                  <p class="text-[11px] sm:text-xs text-gray-500 mb-0.5">สายงาน</p>
+                  <p class="text-xs sm:text-sm font-semibold text-gray-900 truncate" :title="dataSummary.unit">{{ dataSummary.unit }}</p>
                 </div>
-                <div class="bg-white rounded-md p-2.5 border border-gray-200">
-                  <p class="text-xs text-gray-500 mb-0.5">กลุ่มงาน</p>
-                  <p class="text-sm font-semibold text-gray-900 truncate" :title="dataSummary.group">{{ dataSummary.group }}</p>
+                <div class="bg-white rounded-md p-2 sm:p-2.5 border border-gray-200">
+                  <p class="text-[11px] sm:text-xs text-gray-500 mb-0.5">กลุ่มงาน</p>
+                  <p class="text-xs sm:text-sm font-semibold text-gray-900 truncate" :title="dataSummary.group">{{ dataSummary.group }}</p>
                 </div>
-                <div class="bg-white rounded-md p-2.5 border border-gray-200">
-                  <p class="text-xs text-gray-500 mb-0.5">บริษัท</p>
-                  <p class="text-sm font-semibold text-gray-900 truncate" :title="dataSummary.company">{{ dataSummary.company }}</p>
+                <div class="bg-white rounded-md p-2 sm:p-2.5 border border-gray-200">
+                  <p class="text-[11px] sm:text-xs text-gray-500 mb-0.5">บริษัท</p>
+                  <p class="text-xs sm:text-sm font-semibold text-gray-900 truncate" :title="dataSummary.company">{{ dataSummary.company }}</p>
                 </div>
-                <div class="bg-white rounded-md p-2.5 border border-gray-200 ring-2 ring-blue-500">
-                  <p class="text-xs text-gray-500 mb-0.5">จำนวนข้อมูลทั้งหมด</p>
-                  <p class="text-sm font-bold text-blue-600">{{ dataSummary.total }} รายการ</p>
+                <div class="bg-white rounded-md p-2 sm:p-2.5 border border-gray-200 ring-2 ring-blue-500 col-span-2 md:col-span-1">
+                  <p class="text-[11px] sm:text-xs text-gray-500 mb-0.5">จำนวนข้อมูลทั้งหมด</p>
+                  <p class="text-xs sm:text-sm font-bold text-blue-600">{{ dataSummary.total }} รายการ</p>
                 </div>
               </div>
             </div>
@@ -504,36 +504,36 @@ onUnmounted(() => {
 
         <!-- Chart Section -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-blue-50">
+          <div class="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-blue-50">
             <h2 class="text-sm font-semibold text-gray-800 mb-2.5 flex items-center">
-              <svg class="w-4 h-4 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-4 h-4 mr-2 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
               </svg>
               แผนภูมิแสดงค่าเฉลี่ยคะแนนการประเมิน
             </h2>
-            <div class="flex items-center gap-4 text-xs">
+            <div class="flex items-center flex-wrap gap-3 sm:gap-4 text-xs">
               <div class="flex items-center gap-1.5">
-                <div class="w-3 h-3 bg-blue-800 rounded"></div>
+                <div class="w-3 h-3 bg-blue-800 rounded flex-shrink-0"></div>
                 <span class="text-gray-700">ปัจจุบัน</span>
               </div>
               <div class="flex items-center gap-1.5">
-                <div class="w-3 h-3 bg-blue-500 rounded"></div>
+                <div class="w-3 h-3 bg-blue-500 rounded flex-shrink-0"></div>
                 <span class="text-gray-700">อนาคต</span>
               </div>
             </div>
           </div>
 
-          <div class="p-6">
+          <div class="p-3 sm:p-6">
             <!-- Loading -->
-            <div v-if="isLoading" class="flex flex-col items-center justify-center py-12">
-              <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-3"></div>
-              <p class="text-sm text-gray-500">กำลังโหลดข้อมูล...</p>
+            <div v-if="isLoading" class="flex flex-col items-center justify-center py-10 sm:py-12">
+              <div class="animate-spin rounded-full h-8 w-8 sm:h-10 sm:w-10 border-b-2 border-blue-600 mb-3"></div>
+              <p class="text-xs sm:text-sm text-gray-500">กำลังโหลดข้อมูล...</p>
             </div>
 
             <!-- [แก้ไข #10] Error State — แสดงข้อความแจ้งเตือนพร้อมปุ่มลองใหม่ -->
-            <div v-else-if="fetchError" class="flex flex-col items-center justify-center py-12">
-              <div class="flex items-center justify-center w-14 h-14 bg-red-50 rounded-full mb-4">
-                <svg class="w-7 h-7 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div v-else-if="fetchError" class="flex flex-col items-center justify-center py-10 sm:py-12 px-4 text-center">
+              <div class="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 bg-red-50 rounded-full mb-4">
+                <svg class="w-6 h-6 sm:w-7 sm:h-7 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                     d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
@@ -549,9 +549,9 @@ onUnmounted(() => {
             </div>
 
             <!-- Empty State -->
-            <div v-else-if="chartData.labels.length === 0" class="flex flex-col items-center justify-center py-12">
-              <div class="flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
-                <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div v-else-if="chartData.labels.length === 0" class="flex flex-col items-center justify-center py-10 sm:py-12 px-4 text-center">
+              <div class="flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 bg-gray-100 rounded-full mb-4">
+                <svg class="w-7 h-7 sm:w-8 sm:h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                     d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
@@ -561,7 +561,11 @@ onUnmounted(() => {
             </div>
 
             <!-- Chart -->
-            <BetChart v-else :chart-data="chartData" />
+            <div v-else class="w-full overflow-x-auto">
+              <div class="min-w-[480px] sm:min-w-0">
+                <BetChart :chart-data="chartData" />
+              </div>
+            </div>
           </div>
         </div>
       </div>
