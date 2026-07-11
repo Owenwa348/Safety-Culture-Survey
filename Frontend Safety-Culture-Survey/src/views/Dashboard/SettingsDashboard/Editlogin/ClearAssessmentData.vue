@@ -131,28 +131,28 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="p-6">
+  <div class="p-4 sm:p-6">
     <!-- Header -->
-    <div class="mb-6">
-      <h3 class="text-lg font-semibold text-gray-900 mb-2">
+    <div class="mb-5 sm:mb-6">
+      <h3 class="text-base sm:text-lg font-semibold text-gray-900 mb-2">
         ⚠️ ล้างข้อมูลการประเมิน
       </h3>
-      <p class="text-sm text-gray-600">
+      <p class="text-xs sm:text-sm text-gray-600">
         เลือกบริษัทและปีเพื่อล้างข้อมูลคำตอบการประเมิน และรีเซตสถานะผู้ประเมินเป็น "ยังไม่เริ่ม"
       </p>
     </div>
 
     <!-- Alert Messages -->
-    <div v-if="successMessage" class="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-      <p class="text-sm text-green-700">{{ successMessage }}</p>
+    <div v-if="successMessage" class="mb-4 p-3 sm:p-4 bg-green-50 border border-green-200 rounded-lg">
+      <p class="text-xs sm:text-sm text-green-700">{{ successMessage }}</p>
     </div>
 
-    <div v-if="errorMessage" class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-      <p class="text-sm text-red-700">{{ errorMessage }}</p>
+    <div v-if="errorMessage" class="mb-4 p-3 sm:p-4 bg-red-50 border border-red-200 rounded-lg">
+      <p class="text-xs sm:text-sm text-red-700">{{ errorMessage }}</p>
     </div>
 
     <!-- Company & Year Selection -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-5 sm:mb-6">
       <!-- Company Dropdown -->
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -162,7 +162,7 @@ onMounted(() => {
           v-model.number="selectedCompanyId"
           @change="onCompanyChange"
           :disabled="loading"
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+          class="w-full px-3 sm:px-4 py-2.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
         >
           <option :value="null">-- เลือกบริษัท --</option>
           <option v-for="company in companyList" :key="company.id" :value="company.id">
@@ -180,7 +180,7 @@ onMounted(() => {
           v-model.number="selectedYear"
           @change="onYearChange"
           :disabled="!selectedCompanyId || loading"
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+          class="w-full px-3 sm:px-4 py-2.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
         >
           <option v-for="year in yearOptions" :key="year" :value="year">
             ปี {{ year + 543 }} ({{ year }})
@@ -190,32 +190,32 @@ onMounted(() => {
     </div>
 
     <!-- Loading Skeleton -->
-    <div v-if="loading && selectedCompanyId" class="space-y-3 mb-6">
+    <div v-if="loading && selectedCompanyId" class="space-y-3 mb-5 sm:mb-6">
       <div class="h-20 bg-gray-200 rounded-lg animate-pulse"></div>
     </div>
 
     <!-- Stats Display -->
-    <div v-if="stats && !loading" class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-      <h4 class="font-semibold text-gray-900 mb-3">
+    <div v-if="stats && !loading" class="mb-5 sm:mb-6 p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg">
+      <h4 class="font-semibold text-gray-900 mb-3 text-sm sm:text-base">
         📊 สถิติการประเมิน ปี {{ selectedYear + 543 }} ({{ selectedYear }})
       </h4>
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div class="bg-white p-3 rounded-lg border border-gray-200">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        <div class="bg-white p-2.5 sm:p-3 rounded-lg border border-gray-200">
           <p class="text-xs text-gray-500 mb-1">จำนวนพนักงาน</p>
-          <p class="text-2xl font-bold text-blue-600">{{ stats.totalUsers }}</p>
+          <p class="text-xl sm:text-2xl font-bold text-blue-600">{{ stats.totalUsers }}</p>
         </div>
-        <div class="bg-white p-3 rounded-lg border border-gray-200">
+        <div class="bg-white p-2.5 sm:p-3 rounded-lg border border-gray-200">
           <p class="text-xs text-gray-500 mb-1">พนักงานที่ประเมิน</p>
-          <p class="text-2xl font-bold text-blue-600">{{ stats.usersWithAssessment }}</p>
+          <p class="text-xl sm:text-2xl font-bold text-blue-600">{{ stats.usersWithAssessment }}</p>
         </div>
-        <div class="bg-white p-3 rounded-lg border border-gray-200">
+        <div class="bg-white p-2.5 sm:p-3 rounded-lg border border-gray-200">
           <p class="text-xs text-gray-500 mb-1">จำนวนคำตอบทั้งหมด</p>
-          <p class="text-2xl font-bold text-blue-600">{{ stats.totalAnswers }}</p>
+          <p class="text-xl sm:text-2xl font-bold text-blue-600">{{ stats.totalAnswers }}</p>
         </div>
-        <div class="bg-white p-3 rounded-lg border border-gray-200">
+        <div class="bg-white p-2.5 sm:p-3 rounded-lg border border-gray-200">
           <p class="text-xs text-gray-500 mb-1">สถานะ</p>
-          <p v-if="stats.canClear" class="text-2xl font-bold text-green-600">✓ พร้อม</p>
-          <p v-else class="text-2xl font-bold text-gray-400">ว่าง</p>
+          <p v-if="stats.canClear" class="text-xl sm:text-2xl font-bold text-green-600">✓ พร้อม</p>
+          <p v-else class="text-xl sm:text-2xl font-bold text-gray-400">ว่าง</p>
         </div>
       </div>
     </div>
@@ -225,7 +225,7 @@ onMounted(() => {
       <button
         @click="openConfirmDialog"
         :disabled="clearing"
-        class="flex-1 px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition disabled:bg-gray-400"
+        class="flex-1 px-4 py-3 sm:py-2 text-sm sm:text-base bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition disabled:bg-gray-400"
       >
         <span v-if="!clearing">🗑️ ล้างข้อมูลการประเมิน ปี {{ selectedYear + 543 }}</span>
         <span v-else>กำลังโปรเซส...</span>
@@ -234,16 +234,16 @@ onMounted(() => {
 
     <!-- Confirmation Dialog -->
     <div v-if="showConfirmDialog" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 border-l-4 border-red-600">
-        <h3 class="text-lg font-bold text-gray-900 mb-2">⚠️ ยืนยันการล้างข้อมูล</h3>
-        <p class="text-gray-600 mb-2">
+      <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-4 sm:p-6 border-l-4 border-red-600 max-h-[90vh] overflow-y-auto">
+        <h3 class="text-base sm:text-lg font-bold text-gray-900 mb-2">⚠️ ยืนยันการล้างข้อมูล</h3>
+        <p class="text-sm sm:text-base text-gray-600 mb-2">
           คุณต้องการล้างข้อมูลคำตอบการประเมินของบริษัท <strong>{{ stats?.companyName }}</strong> 
           ประจำปี <strong>{{ selectedYear + 543 }} ({{ selectedYear }})</strong> ใช่หรือไม่?
         </p>
-        <p class="text-sm text-gray-600 mb-2">
+        <p class="text-xs sm:text-sm text-gray-600 mb-2">
           ✓ และจะรีเซตสถานะของผู้ประเมินเป็น <strong>"ยังไม่เริ่ม"</strong>
         </p>
-        <p class="text-sm text-red-600 font-semibold mb-4">
+        <p class="text-xs sm:text-sm text-red-600 font-semibold mb-4">
           ⚠️ การดำเนินการนี้ไม่สามารถย้อนกลับได้ ({{ stats?.totalAnswers }} รายการจะถูกลบถาวร)
         </p>
         
@@ -251,14 +251,14 @@ onMounted(() => {
           <button
             @click="closeConfirmDialog"
             :disabled="clearing"
-            class="flex-1 px-4 py-2 bg-gray-300 text-gray-900 font-semibold rounded-lg hover:bg-gray-400 transition disabled:opacity-50"
+            class="flex-1 px-4 py-3 sm:py-2 text-sm sm:text-base bg-gray-300 text-gray-900 font-semibold rounded-lg hover:bg-gray-400 transition disabled:opacity-50"
           >
             ยกเลิก
           </button>
           <button
             @click="clearData"
             :disabled="clearing"
-            class="flex-1 px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition disabled:opacity-50"
+            class="flex-1 px-4 py-3 sm:py-2 text-sm sm:text-base bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition disabled:opacity-50"
           >
             <span v-if="!clearing">ยืนยันการลบ</span>
             <span v-else>กำลังลบ...</span>

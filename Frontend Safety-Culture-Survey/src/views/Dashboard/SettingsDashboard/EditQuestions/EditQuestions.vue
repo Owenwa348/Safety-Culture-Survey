@@ -1,45 +1,46 @@
+<!-- EditQuestions.vue -->
 <template>
-  <div class="bg-white rounded-lg border border-gray-300 p-6">
+  <div class="bg-white rounded-lg border border-gray-300 p-4 sm:p-6">
     <!-- Header -->
-    <div class="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
-      <h4 class="text-xl font-semibold text-gray-800">จัดการคำถามและหมวดหมู่</h4>
-      <div class="flex gap-3">
-        <button @click="openCategoryForm" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-medium">+ เพิ่มหมวดหมู่</button>
-        <button @click="showAddForm = true" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium">+ เพิ่มคำถาม</button>
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5 sm:mb-6 pb-4 border-b border-gray-200">
+      <h4 class="text-lg sm:text-xl font-semibold text-gray-800">จัดการคำถามและหมวดหมู่</h4>
+      <div class="flex gap-2 sm:gap-3">
+        <button @click="openCategoryForm" class="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 text-white px-3 sm:px-4 py-2.5 sm:py-2 rounded text-xs sm:text-sm font-medium">+ เพิ่มหมวดหมู่</button>
+        <button @click="showAddForm = true" class="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-2.5 sm:py-2 rounded text-xs sm:text-sm font-medium">+ เพิ่มคำถาม</button>
       </div>
     </div>
 
-    <div v-if="loading" class="text-center py-12">
+    <div v-if="loading" class="text-center py-10 sm:py-12">
       <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-gray-300 border-t-blue-600"></div>
-      <p class="mt-3 text-gray-600">กำลังโหลดข้อมูล...</p>
+      <p class="mt-3 text-sm sm:text-base text-gray-600">กำลังโหลดข้อมูล...</p>
     </div>
 
-    <div v-if="error" class="mb-4 p-3 bg-red-50 border border-red-300 rounded text-red-700 text-sm flex items-center justify-between">
-      <span>{{ error }}</span>
-      <button @click="error = ''" class="text-red-800 hover:text-red-900">
+    <div v-if="error" class="mb-4 p-3 bg-red-50 border border-red-300 rounded text-red-700 text-sm flex items-start sm:items-center justify-between gap-2">
+      <span class="min-w-0">{{ error }}</span>
+      <button @click="error = ''" class="text-red-800 hover:text-red-900 flex-shrink-0">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
       </button>
     </div>
 
-    <div v-if="successMessage" class="mb-4 p-3 bg-green-50 border border-green-300 rounded text-green-700 text-sm flex items-center justify-between">
-      <span>{{ successMessage }}</span>
-      <button @click="successMessage = ''" class="text-green-800 hover:text-green-900">
+    <div v-if="successMessage" class="mb-4 p-3 bg-green-50 border border-green-300 rounded text-green-700 text-sm flex items-start sm:items-center justify-between gap-2">
+      <span class="min-w-0">{{ successMessage }}</span>
+      <button @click="successMessage = ''" class="text-green-800 hover:text-green-900 flex-shrink-0">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
       </button>
     </div>
 
     <template v-if="!loading">
       <!-- Add Category Form -->
-      <div v-if="showCategoryForm" class="mb-6 p-4 bg-gray-50 rounded border border-gray-300">
-        <h5 class="font-medium text-gray-800 mb-3">เพิ่มหมวดหมู่ใหม่</h5>
+      <div v-if="showCategoryForm" class="mb-5 sm:mb-6 p-3 sm:p-4 bg-gray-50 rounded border border-gray-300">
+        <h5 class="font-medium text-gray-800 mb-3 text-sm sm:text-base">เพิ่มหมวดหมู่ใหม่</h5>
         <div class="space-y-3">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อหมวดหมู่</label>
-            <input v-model="newCategoryName" type="text" placeholder="ชื่อหมวดหมู่" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent" @keyup.enter="addCategory" />
+            <input v-model="newCategoryName" type="text" placeholder="ชื่อหมวดหมู่" class="w-full px-3 py-2.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent" @keyup.enter="addCategory" />
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">แทรกที่ตำแหน่ง</label>
-            <select v-model="newCategoryOrder" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
+            <select v-model="newCategoryOrder" class="w-full px-3 py-2.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
               <option v-for="(cat, idx) in categories" :key="cat.id" :value="idx">
                 ก่อนลำดับที่ {{ idx + 1 }} — {{ cat.name }}
               </option>
@@ -47,63 +48,63 @@
             </select>
           </div>
           <div class="flex gap-2">
-            <button @click="addCategory" :disabled="submitting" class="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-4 py-2 rounded text-sm font-medium">{{ submitting ? 'กำลังบันทึก...' : 'บันทึก' }}</button>
-            <button @click="cancelCategoryForm" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm font-medium">ยกเลิก</button>
+            <button @click="addCategory" :disabled="submitting" class="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-4 py-2.5 sm:py-2 rounded text-sm font-medium">{{ submitting ? 'กำลังบันทึก...' : 'บันทึก' }}</button>
+            <button @click="cancelCategoryForm" class="flex-1 sm:flex-none bg-gray-500 hover:bg-gray-600 text-white px-4 py-2.5 sm:py-2 rounded text-sm font-medium">ยกเลิก</button>
           </div>
         </div>
       </div>
 
       <!-- Add Question Form -->
-      <div v-if="showAddForm" class="mb-6 p-4 bg-gray-50 rounded border border-gray-300">
-        <h5 class="font-medium text-gray-800 mb-3">เพิ่มคำถามใหม่</h5>
+      <div v-if="showAddForm" class="mb-5 sm:mb-6 p-3 sm:p-4 bg-gray-50 rounded border border-gray-300">
+        <h5 class="font-medium text-gray-800 mb-3 text-sm sm:text-base">เพิ่มคำถามใหม่</h5>
         <div class="space-y-3">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">หมวดหมู่</label>
-            <select v-model="newQuestion.categoryId" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <select v-model="newQuestion.categoryId" class="w-full px-3 py-2.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
               <option value="">เลือกหมวดหมู่</option>
               <option v-for="category in categories" :key="category.id" :value="category.id">{{ category.name }}</option>
             </select>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">คำถาม</label>
-            <textarea v-model="newQuestion.text" rows="3" placeholder="กรอกคำถาม" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+            <textarea v-model="newQuestion.text" rows="3" placeholder="กรอกคำถาม" class="w-full px-3 py-2.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">ตัวเลือกคำตอบ</label>
             <div class="space-y-2">
-              <div v-for="(option, index) in newQuestion.options" :key="index" class="flex gap-2 items-center min-w-0 overflow-hidden">
+              <div v-for="(option, index) in newQuestion.options" :key="index" class="flex gap-1 sm:gap-2 items-center min-w-0 overflow-hidden">
                 <button v-if="index > 0" @click="moveOptionUp(index, 'new')" class="text-gray-500 hover:text-gray-700 flex-shrink-0" title="เลื่อนขึ้น">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" /></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" /></svg>
                 </button>
-                <button v-else class="w-5 h-5 flex-shrink-0"></button>
+                <button v-else class="w-4 sm:w-5 h-4 sm:h-5 flex-shrink-0"></button>
                 <button v-if="index < newQuestion.options.length - 1" @click="moveOptionDown(index, 'new')" class="text-gray-500 hover:text-gray-700 flex-shrink-0" title="เลื่อนลง">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                 </button>
-                <button v-else class="w-5 h-5 flex-shrink-0"></button>
-                <span class="flex items-center justify-center w-8 h-10 bg-gray-200 text-gray-700 rounded text-sm font-medium flex-shrink-0">{{ index + 1 }}</span>
-                <input v-model="option.text" type="text" :placeholder="`ตัวเลือกที่ ${index + 1}`" class="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-                <button v-if="newQuestion.options.length > 1" @click="removeOption(index)" class="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded text-sm flex-shrink-0">ลบ</button>
+                <button v-else class="w-4 sm:w-5 h-4 sm:h-5 flex-shrink-0"></button>
+                <span class="flex items-center justify-center w-7 sm:w-8 h-9 sm:h-10 bg-gray-200 text-gray-700 rounded text-xs sm:text-sm font-medium flex-shrink-0">{{ index + 1 }}</span>
+                <input v-model="option.text" type="text" :placeholder="`ตัวเลือกที่ ${index + 1}`" class="flex-1 min-w-0 px-2 sm:px-3 py-2 text-sm sm:text-base border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                <button v-if="newQuestion.options.length > 1" @click="removeOption(index)" class="bg-red-500 hover:bg-red-600 text-white px-2 sm:px-3 py-2 rounded text-xs sm:text-sm flex-shrink-0">ลบ</button>
               </div>
-              <button @click="addOption" class="w-full bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded text-sm font-medium">+ เพิ่มตัวเลือก</button>
+              <button @click="addOption" class="w-full bg-gray-600 hover:bg-gray-700 text-white px-3 py-2.5 sm:py-2 rounded text-sm font-medium">+ เพิ่มตัวเลือก</button>
             </div>
           </div>
           <div class="flex gap-2 pt-2">
-            <button @click="addQuestion" :disabled="submitting" class="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-4 py-2 rounded text-sm font-medium">{{ submitting ? 'กำลังบันทึก...' : 'บันทึก' }}</button>
-            <button @click="cancelAdd" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm font-medium">ยกเลิก</button>
+            <button @click="addQuestion" :disabled="submitting" class="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-4 py-2.5 sm:py-2 rounded text-sm font-medium">{{ submitting ? 'กำลังบันทึก...' : 'บันทึก' }}</button>
+            <button @click="cancelAdd" class="flex-1 sm:flex-none bg-gray-500 hover:bg-gray-600 text-white px-4 py-2.5 sm:py-2 rounded text-sm font-medium">ยกเลิก</button>
           </div>
         </div>
       </div>
 
       <!-- Categories and Questions List -->
-      <div class="space-y-6">
+      <div class="space-y-5 sm:space-y-6">
         <div v-for="(category, catIndex) in categories" :key="category.id" class="border border-gray-300 rounded overflow-hidden">
 
           <!-- Category Header -->
-          <div class="bg-gray-100 px-4 py-3 border-b border-gray-300">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-3">
+          <div class="bg-gray-100 px-3 sm:px-4 py-3 border-b border-gray-300">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div class="flex items-center gap-2 sm:gap-3 min-w-0 flex-wrap">
 
-                <div class="flex flex-col gap-0.5">
+                <div class="flex flex-col gap-0.5 flex-shrink-0">
                   <button
                     @click="reorderCategory(category.id, 'up')"
                     :disabled="catIndex === 0 || submitting"
@@ -126,65 +127,65 @@
                   </button>
                 </div>
 
-                <span class="inline-flex items-center justify-center w-6 h-6 bg-gray-700 text-white rounded text-xs font-semibold">{{ catIndex + 1 }}</span>
+                <span class="inline-flex items-center justify-center w-6 h-6 bg-gray-700 text-white rounded text-xs font-semibold flex-shrink-0">{{ catIndex + 1 }}</span>
 
-                <div v-if="!category.editing" class="flex items-center gap-2">
-                  <h5 class="font-semibold text-gray-800 text-base">{{ category.name }}</h5>
-                  <button @click="startCategoryEdit(category)" class="text-blue-600 hover:text-blue-800" title="แก้ไข">
+                <div v-if="!category.editing" class="flex items-center gap-2 min-w-0">
+                  <h5 class="font-semibold text-gray-800 text-sm sm:text-base truncate">{{ category.name }}</h5>
+                  <button @click="startCategoryEdit(category)" class="text-blue-600 hover:text-blue-800 flex-shrink-0" title="แก้ไข">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                   </button>
                 </div>
-                <div v-else class="flex items-center gap-2">
-                  <input v-model="category.tempName" type="text" class="font-semibold text-gray-800 text-base bg-white border border-blue-400 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500" @keyup.enter="saveCategoryName(category)" @keyup.escape="cancelCategoryEdit(category)" />
-                  <button @click="saveCategoryName(category)" :disabled="submitting" class="text-green-600 hover:text-green-800 disabled:text-gray-400" title="บันทึก">
+                <div v-else class="flex items-center gap-2 min-w-0">
+                  <input v-model="category.tempName" type="text" class="font-semibold text-gray-800 text-sm sm:text-base bg-white border border-blue-400 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-0" @keyup.enter="saveCategoryName(category)" @keyup.escape="cancelCategoryEdit(category)" />
+                  <button @click="saveCategoryName(category)" :disabled="submitting" class="text-green-600 hover:text-green-800 disabled:text-gray-400 flex-shrink-0" title="บันทึก">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
                   </button>
-                  <button @click="cancelCategoryEdit(category)" class="text-gray-600 hover:text-gray-800" title="ยกเลิก">
+                  <button @click="cancelCategoryEdit(category)" class="text-gray-600 hover:text-gray-800 flex-shrink-0" title="ยกเลิก">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                   </button>
                 </div>
-                <span class="text-sm text-gray-600">({{ getQuestionsByCategory(category.id).length }} คำถาม)</span>
+                <span class="text-xs sm:text-sm text-gray-600 flex-shrink-0">({{ getQuestionsByCategory(category.id).length }} คำถาม)</span>
               </div>
-              <button @click="deleteCategory(category.id)" class="text-red-600 hover:text-red-800 text-sm font-medium" title="ลบหมวดหมู่">ลบหมวดหมู่</button>
+              <button @click="deleteCategory(category.id)" class="self-end sm:self-auto text-red-600 hover:text-red-800 text-xs sm:text-sm font-medium flex-shrink-0" title="ลบหมวดหมู่">ลบหมวดหมู่</button>
             </div>
           </div>
 
           <!-- Questions in Category -->
-          <div class="p-4 bg-white">
+          <div class="p-3 sm:p-4 bg-white">
             <div class="space-y-3">
               <div
                 v-for="question in getQuestionsWithSequentialNumbers(category.id)"
                 :key="question.id"
-                class="border border-gray-300 rounded p-4"
+                class="border border-gray-300 rounded p-3 sm:p-4"
                 :class="editingQuestionId === question.id ? 'bg-blue-50 border-blue-400' : 'bg-white'"
               >
-                <div class="flex gap-3 min-w-0">
+                <div class="flex gap-2 sm:gap-3 min-w-0">
                   <div class="flex flex-col gap-1 flex-shrink-0">
-                    <input v-if="editingQuestionId === question.id" v-model="inlineEditData.displayNumber" type="text" class="w-16 h-8 text-center bg-blue-600 text-white rounded text-sm font-semibold border-2 border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500" title="เลขข้อ" placeholder="เลข" />
-                    <span v-else class="inline-flex items-center justify-center w-16 h-8 bg-blue-600 text-white rounded text-sm font-semibold">{{ question.sequentialNumber }}</span>
-                    <span v-if="editingQuestionId === question.id" class="text-xs text-gray-500 text-center">แก้ไขได้</span>
+                    <input v-if="editingQuestionId === question.id" v-model="inlineEditData.displayNumber" type="text" class="w-12 sm:w-16 h-8 text-center bg-blue-600 text-white rounded text-xs sm:text-sm font-semibold border-2 border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500" title="เลขข้อ" placeholder="เลข" />
+                    <span v-else class="inline-flex items-center justify-center w-12 sm:w-16 h-8 bg-blue-600 text-white rounded text-xs sm:text-sm font-semibold">{{ question.sequentialNumber }}</span>
+                    <span v-if="editingQuestionId === question.id" class="text-xs text-gray-500 text-center hidden sm:block">แก้ไขได้</span>
                   </div>
 
                   <div class="flex-1 min-w-0 overflow-hidden">
                     <div class="mb-3">
                       <div v-if="editingQuestionId !== question.id" class="flex items-start justify-between gap-2">
-                        <p class="text-gray-800 font-medium break-words min-w-0 flex-1">{{ question.text }}</p>
+                        <p class="text-sm sm:text-base text-gray-800 font-medium break-words min-w-0 flex-1">{{ question.text }}</p>
                         <button @click="startInlineEdit(question)" class="text-blue-600 hover:text-blue-800 flex-shrink-0" title="แก้ไข">
                           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                         </button>
                       </div>
                       <div v-else>
-                        <textarea v-model="inlineEditData.text" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" @keyup.escape="cancelInlineEdit"></textarea>
+                        <textarea v-model="inlineEditData.text" rows="2" class="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" @keyup.escape="cancelInlineEdit"></textarea>
                       </div>
                     </div>
 
-                    <div class="bg-gray-50 rounded p-3 border border-gray-200">
+                    <div class="bg-gray-50 rounded p-2.5 sm:p-3 border border-gray-200">
                       <label class="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">ตัวเลือกคำตอบ</label>
                       <div class="space-y-2">
                         <div
                           v-for="(option, optIndex) in editingQuestionId === question.id ? inlineEditData.options : question.options"
                           :key="option.id || optIndex"
-                          class="flex items-center gap-2 min-w-0 overflow-hidden"
+                          class="flex items-center gap-1 sm:gap-2 min-w-0 overflow-hidden"
                         >
                           <template v-if="editingQuestionId === question.id">
                             <button v-if="optIndex > 0" @click="moveOptionUp(optIndex, 'edit')" class="text-gray-500 hover:text-gray-700 flex-shrink-0">
@@ -197,30 +198,31 @@
                             <div v-else class="w-4 h-4 flex-shrink-0"></div>
                           </template>
 
-                          <span class="inline-flex items-center justify-center w-6 h-6 bg-blue-600 text-white rounded-full text-xs font-semibold flex-shrink-0">{{ optIndex + 1 }}</span>
+                          <span class="inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 bg-blue-600 text-white rounded-full text-xs font-semibold flex-shrink-0">{{ optIndex + 1 }}</span>
                           <input v-if="editingQuestionId === question.id" v-model="option.text" type="text" class="flex-1 min-w-0 text-gray-700 text-sm px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
                           <span v-else class="text-gray-700 text-sm flex-1 min-w-0 break-all">{{ option.text }}</span>
                           <button v-if="editingQuestionId === question.id && inlineEditData.options.length > 1" @click="removeInlineEditOption(optIndex)" class="text-red-600 hover:text-red-800 flex-shrink-0">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                           </button>
                         </div>
-                        <button v-if="editingQuestionId === question.id" @click="addInlineEditOption" class="w-full bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-xs font-medium">+ เพิ่มตัวเลือก</button>
+                        <button v-if="editingQuestionId === question.id" @click="addInlineEditOption" class="w-full bg-gray-600 hover:bg-gray-700 text-white px-3 py-1.5 sm:py-1 rounded text-xs font-medium">+ เพิ่มตัวเลือก</button>
                       </div>
                     </div>
 
                     <div v-if="editingQuestionId === question.id" class="flex gap-2 mt-3">
-                      <button @click="saveInlineEdit" :disabled="submitting" class="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-4 py-2 rounded text-sm font-medium">{{ submitting ? 'กำลังบันทึก...' : 'บันทึก' }}</button>
-                      <button @click="cancelInlineEdit" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm font-medium">ยกเลิก</button>
+                      <button @click="saveInlineEdit" :disabled="submitting" class="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-4 py-2.5 sm:py-2 rounded text-sm font-medium">{{ submitting ? 'กำลังบันทึก...' : 'บันทึก' }}</button>
+                      <button @click="cancelInlineEdit" class="flex-1 sm:flex-none bg-gray-500 hover:bg-gray-600 text-white px-4 py-2.5 sm:py-2 rounded text-sm font-medium">ยกเลิก</button>
                     </div>
                   </div>
+                </div>
 
-                  <div class="flex flex-col gap-2 flex-shrink-0">
-                    <select :value="question.categoryId" @change="moveQuestion(question.id, $event.target.value)" class="text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" title="ย้ายหมวดหมู่">
-                      <option value="">ย้ายไป...</option>
-                      <option v-for="cat in categories" :key="cat.id" :value="cat.id" :disabled="cat.id === question.categoryId">{{ cat.name }}</option>
-                    </select>
-                    <button @click="deleteQuestion(question.id)" class="text-red-600 hover:text-red-800 text-xs font-medium border border-red-300 rounded px-2 py-1 hover:bg-red-50">ลบ</button>
-                  </div>
+                <!-- Question Actions: move category / delete (own row so it doesn't cramp on mobile) -->
+                <div class="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100">
+                  <select :value="question.categoryId" @change="moveQuestion(question.id, $event.target.value)" class="flex-1 sm:flex-none text-xs border border-gray-300 rounded px-2 py-1.5 sm:py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" title="ย้ายหมวดหมู่">
+                    <option value="">ย้ายไป...</option>
+                    <option v-for="cat in categories" :key="cat.id" :value="cat.id" :disabled="cat.id === question.categoryId">{{ cat.name }}</option>
+                  </select>
+                  <button @click="deleteQuestion(question.id)" class="flex-shrink-0 text-red-600 hover:text-red-800 text-xs font-medium border border-red-300 rounded px-3 py-1.5 sm:py-1 hover:bg-red-50">ลบ</button>
                 </div>
               </div>
             </div>
@@ -228,14 +230,14 @@
           </div>
         </div>
 
-        <div v-if="categories.length === 0" class="text-center py-12 text-gray-500 border-2 border-dashed border-gray-300 rounded">
-          <p class="font-medium">ไม่มีหมวดหมู่</p>
-          <p class="text-sm mt-1">กรุณาเพิ่มหมวดหมู่ใหม่เพื่อเริ่มต้น</p>
+        <div v-if="categories.length === 0" class="text-center py-12 text-gray-500 border-2 border-dashed border-gray-300 rounded px-4">
+          <p class="font-medium text-sm sm:text-base">ไม่มีหมวดหมู่</p>
+          <p class="text-xs sm:text-sm mt-1">กรุณาเพิ่มหมวดหมู่ใหม่เพื่อเริ่มต้น</p>
         </div>
       </div>
 
       <div class="mt-6 pt-4 border-t border-gray-200">
-        <div class="flex items-center justify-between text-sm text-gray-600">
+        <div class="flex items-center justify-between text-xs sm:text-sm text-gray-600">
           <span><strong class="text-gray-800">สรุป:</strong> {{ categories.length }} หมวดหมู่, {{ allQuestions.length }} คำถาม</span>
         </div>
       </div>
