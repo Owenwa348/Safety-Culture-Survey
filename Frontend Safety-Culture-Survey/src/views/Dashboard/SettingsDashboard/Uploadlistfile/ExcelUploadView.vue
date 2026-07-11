@@ -5,26 +5,26 @@
 
     <!-- Content with proper spacing for sidebar -->
     <div class="ml-0 lg:ml-64 transition-all duration-200 ease-in-out">
-      <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           <!-- Header -->
-          <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-6 border-b border-gray-200">
+          <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-4 sm:px-6 py-4 sm:py-6 border-b border-gray-200">
             <div class="flex items-center space-x-3">
-              <div class="bg-blue-600 rounded-lg p-2">
-                <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="bg-blue-600 rounded-lg p-2 flex-shrink-0">
+                <svg class="h-5 w-5 sm:h-6 sm:w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
                 </svg>
               </div>
-              <div>
-                <h1 class="text-2xl font-bold text-gray-900">อัปโหลดไฟล์ Excel</h1>
-                <p class="text-sm text-gray-600 mt-1">อัปโหลดไฟล์ Excel เพื่อนำเข้าข้อมูลสู่ระบบ</p>
+              <div class="min-w-0">
+                <h1 class="text-lg sm:text-2xl font-bold text-gray-900">อัปโหลดไฟล์ Excel</h1>
+                <p class="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1">อัปโหลดไฟล์ Excel เพื่อนำเข้าข้อมูลสู่ระบบ</p>
               </div>
             </div>
           </div>
 
           <!-- Main Content -->
-          <div class="p-8">
-            <form @submit.prevent="handleUpload" class="max-w-2xl mx-auto space-y-8">
+          <div class="p-4 sm:p-6 md:p-8">
+            <form @submit.prevent="handleUpload" class="max-w-2xl mx-auto space-y-6 sm:space-y-8">
               <!-- File Upload Area -->
               <div class="space-y-4">
                 <label class="block text-sm font-semibold text-gray-700 mb-2">
@@ -32,38 +32,40 @@
                 </label>
                 
                 <!-- Drag & Drop Area -->
-                <div class="relative">
+                <div v-if="!file" class="relative">
                   <input
+                    id="excel-file-input"
                     type="file"
                     accept=".xlsx"
                     @change="onFileChange"
-                    class="block w-full text-sm text-gray-600
-                           file:mr-4 file:py-3 file:px-6
-                           file:rounded-full file:border-0
-                           file:text-sm file:font-semibold
-                           file:bg-blue-600 file:text-white
-                           hover:file:bg-blue-700
-                           file:transition-colors file:duration-200
-                           border-2 border-dashed border-gray-300 rounded-xl p-8
-                           bg-gray-50 hover:bg-gray-100 transition-colors
-                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    class="sr-only"
                   />
-                  
-                  <!-- Upload Icon Overlay -->
-                  <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none" v-if="!file">
-                    <svg class="h-12 w-12 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <label
+                    for="excel-file-input"
+                    @dragover.prevent="isDragging = true"
+                    @dragleave.prevent="isDragging = false"
+                    @drop.prevent="handleDrop"
+                    class="flex flex-col items-center justify-center cursor-pointer
+                           border-2 border-dashed rounded-xl p-6 sm:p-10 text-center
+                           transition-colors duration-200"
+                    :class="isDragging
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400'"
+                  >
+                    <svg class="h-9 w-9 sm:h-12 sm:w-12 text-gray-400 mb-2 sm:mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                     </svg>
-                    <p class="text-gray-500 text-center">
-                      <span class="font-medium">คลิกเพื่อเลือกไฟล์</span> หรือลากไฟล์มาวางที่นี่
+                    <p class="text-xs sm:text-base text-gray-500">
+                      <span class="font-medium text-blue-600">คลิกเพื่อเลือกไฟล์</span> หรือลากไฟล์มาวางที่นี่
                     </p>
-                  </div>
+                    <p class="text-xs text-gray-400 mt-1">รองรับเฉพาะไฟล์ .xlsx ขนาดไม่เกิน 10 MB</p>
+                  </label>
                 </div>
 
                 <!-- File Info -->
-                <div v-if="file" class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div v-if="file" class="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
                   <div class="flex items-center">
-                    <svg class="h-8 w-8 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="h-7 w-7 sm:h-8 sm:w-8 text-green-500 mr-2 sm:mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>
                     <div class="flex-1 min-w-0">
@@ -73,7 +75,7 @@
                     <button
                       type="button"
                       @click="removeFile"
-                      class="ml-3 text-blue-400 hover:text-blue-600 transition-colors"
+                      class="ml-2 sm:ml-3 text-blue-400 hover:text-blue-600 transition-colors flex-shrink-0"
                     >
                       <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -87,7 +89,7 @@
               <div class="flex justify-center">
                 <button
                   type="submit"
-                  class="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 
+                  class="w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 bg-gradient-to-r from-blue-600 to-indigo-600 
                          hover:from-blue-700 hover:to-indigo-700 
                          disabled:from-blue-400 disabled:to-indigo-400
                          text-white font-semibold rounded-xl shadow-lg
@@ -95,7 +97,7 @@
                          hover:scale-105 hover:shadow-xl
                          focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50
                          disabled:cursor-not-allowed disabled:transform-none disabled:shadow-lg
-                         min-w-[200px]"
+                         sm:min-w-[200px]"
                   :disabled="loading || !file"
                 >
                   <span v-if="loading" class="flex items-center justify-center">
@@ -105,8 +107,8 @@
                     </svg>
                     กำลังอัปโหลด...
                   </span>
-                  <span v-else class="flex items-center">
-                    <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <span v-else class="flex items-center justify-center">
+                    <svg class="mr-2 h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                     </svg>
                     อัปโหลดไฟล์
@@ -122,31 +124,31 @@
               <!-- Messages -->
               <div v-if="message || error" class="space-y-4">
                 <!-- Success Message -->
-                <div v-if="message" class="bg-green-50 border border-green-200 rounded-xl p-6 shadow-sm">
+                <div v-if="message" class="bg-green-50 border border-green-200 rounded-xl p-4 sm:p-6 shadow-sm">
                   <div class="flex items-center">
-                    <div class="bg-green-100 rounded-full p-2 mr-4">
-                      <svg class="h-6 w-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                    <div class="bg-green-100 rounded-full p-2 mr-3 sm:mr-4 flex-shrink-0">
+                      <svg class="h-5 w-5 sm:h-6 sm:w-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                       </svg>
                     </div>
-                    <div>
-                      <p class="font-semibold text-green-800">สำเร็จ!</p>
-                      <p class="text-sm text-green-700">{{ message }}</p>
+                    <div class="min-w-0">
+                      <p class="text-sm sm:text-base font-semibold text-green-800">สำเร็จ!</p>
+                      <p class="text-xs sm:text-sm text-green-700">{{ message }}</p>
                     </div>
                   </div>
                 </div>
 
                 <!-- Error Message -->
-                <div v-if="error" class="bg-red-50 border border-red-200 rounded-xl p-6 shadow-sm">
+                <div v-if="error" class="bg-red-50 border border-red-200 rounded-xl p-4 sm:p-6 shadow-sm">
                   <div class="flex items-center">
-                    <div class="bg-red-100 rounded-full p-2 mr-4">
-                      <svg class="h-6 w-6 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                    <div class="bg-red-100 rounded-full p-2 mr-3 sm:mr-4 flex-shrink-0">
+                      <svg class="h-5 w-5 sm:h-6 sm:w-6 text-red-600" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
                       </svg>
                     </div>
-                    <div>
-                      <p class="font-semibold text-red-800">เกิดข้อผิดพลาด</p>
-                      <p class="text-sm text-red-700">{{ error }}</p>
+                    <div class="min-w-0">
+                      <p class="text-sm sm:text-base font-semibold text-red-800">เกิดข้อผิดพลาด</p>
+                      <p class="text-xs sm:text-sm text-red-700">{{ error }}</p>
                     </div>
                   </div>
                 </div>
@@ -168,27 +170,39 @@ const file = ref(null)
 const loading = ref(false)
 const message = ref('')
 const error = ref('')
+const isDragging = ref(false)
 
-const onFileChange = (e) => {
-  const selectedFile = e.target.files[0]
-  
+// ✅ Logic ตรวจสอบไฟล์แบบกลาง ใช้ร่วมกันทั้งตอนเลือกไฟล์และลากไฟล์มาวาง
+const validateAndSetFile = (selectedFile) => {
+  if (!selectedFile) return
+
   // Validate file type
-  if (selectedFile && !selectedFile.name.toLowerCase().endsWith('.xlsx')) {
+  if (!selectedFile.name.toLowerCase().endsWith('.xlsx')) {
     error.value = 'รองรับเฉพาะไฟล์ .xlsx เท่านั้น'
-    e.target.value = ''
     return
   }
-  
+
   // Validate file size (10MB limit)
-  if (selectedFile && selectedFile.size > 10 * 1024 * 1024) {
+  if (selectedFile.size > 10 * 1024 * 1024) {
     error.value = 'ขนาดไฟล์ไม่ควรเกิน 10 MB'
-    e.target.value = ''
     return
   }
-  
+
   file.value = selectedFile
   message.value = ''
   error.value = ''
+}
+
+const onFileChange = (e) => {
+  const selectedFile = e.target.files[0]
+  validateAndSetFile(selectedFile)
+  if (!file.value) e.target.value = ''
+}
+
+const handleDrop = (e) => {
+  isDragging.value = false
+  const droppedFile = e.dataTransfer.files[0]
+  validateAndSetFile(droppedFile)
 }
 
 const removeFile = () => {

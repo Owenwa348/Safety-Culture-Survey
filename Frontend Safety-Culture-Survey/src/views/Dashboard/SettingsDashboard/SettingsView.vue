@@ -7,15 +7,8 @@ import EditWorkGroup from './Editlogin/EditWorkGroup.vue'
 import EditExperience from './Editlogin/EditExperience.vue'
 import EditQuestions from './EditQuestions/EditQuestions.vue'
 import ClearAssessmentData from './Editlogin/ClearAssessmentData.vue'
-import { ref, onMounted, computed } from 'vue'
+import { ref, watch, onMounted, computed } from 'vue'
 import { axiosAuth as axios } from '../../../utils/apiClient'
-
-const activeTab = ref('position')
-const selectedGroupPrefix = ref(null)
-const selectedCompanyIds = ref([])
-const companyGroups = ref([])
-const loadingGroups = ref(false)
-const groupDropdownOpen = ref(false)
 
 const tabs = [
   { id: 'position',   name: 'ตำแหน่งงาน', icon: '👤' },
@@ -25,6 +18,21 @@ const tabs = [
   { id: 'questions',  name: 'คำถาม',       icon: '❓' },
   { id: 'clear-assessment', name: 'ล้างข้อมูลประเมิน', icon: '🗑️' },
 ]
+
+// ✅ จำแท็บที่เปิดล่าสุดไว้ใน localStorage กันหน้าเด้งกลับไป "ตำแหน่งงาน" ทุกครั้งที่รีเฟรช
+const ACTIVE_TAB_KEY = 'settings_active_tab'
+const savedTab = localStorage.getItem(ACTIVE_TAB_KEY)
+const activeTab = ref(tabs.some(t => t.id === savedTab) ? savedTab : 'position')
+
+watch(activeTab, (newTab) => {
+  localStorage.setItem(ACTIVE_TAB_KEY, newTab)
+})
+
+const selectedGroupPrefix = ref(null)
+const selectedCompanyIds = ref([])
+const companyGroups = ref([])
+const loadingGroups = ref(false)
+const groupDropdownOpen = ref(false)
 
 const fetchCompanyGroups = async () => {
   loadingGroups.value = true
