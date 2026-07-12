@@ -1,4 +1,4 @@
-<!-- StackedBarChartDB.vue -->
+﻿<!-- StackedBarChartDB.vue -->
 <template>
   <div class="bg-white rounded-lg shadow relative">
     <!-- Header -->
@@ -52,9 +52,9 @@
               @change="onTimeframeChange"
               class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer appearance-none bg-white bg-[url('data:image/svg+xml,%3csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20fill=%27none%27%20viewBox=%270%200%2020%2020%27%3e%3cpath%20stroke=%27%236b7280%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%20stroke-width=%271.5%27%20d=%27M6%208l4%204%204-4%27/%3e%3c/svg%3e')] bg-[length:1.25em_1.25em] bg-[right_0.5rem_center] bg-no-repeat pr-10 hover:border-gray-400 transition-all"
             >
-              <option value="comparison">เปรียบเทียบ (ปัจจุบัน vs อนาคต)</option>
+              <option value="comparison">เปรียบเทียบ (ปัจจุบัน vs เป้าหมาย)</option>
               <option value="current">ปัจจุบัน</option>
-              <option value="future">อนาคต</option>
+              <option value="future">เป้าหมาย</option>
             </select>
           </div>
         </div>
@@ -96,7 +96,7 @@
         <div class="bg-blue-50 border border-blue-200 rounded-md p-3">
           <p class="text-sm text-blue-900">
             <span class="font-medium">วิธีดูกราฟ:</span>
-            แท่งสีเข้มทางซ้ายคือข้อมูลปัจจุบัน ส่วนแท่งสีอ่อนทางขวาคือข้อมูลที่คาดว่าจะเป็นในอนาคต
+            แท่งสีเข้มทางซ้ายคือข้อมูลปัจจุบัน ส่วนแท่งสีอ่อนทางขวาคือข้อมูลที่คาดว่าจะเป็นในเป้าหมาย
           </p>
         </div>
       </div>
@@ -281,9 +281,9 @@ const selectedAreaName = computed(() => {
 
 const selectedTimeframeLabel = computed(() => {
   const labels = {
-    comparison: 'เปรียบเทียบ (ปัจจุบัน vs อนาคต)',
+    comparison: 'เปรียบเทียบ (ปัจจุบัน vs เป้าหมาย)',
     current: 'ข้อมูลปัจจุบัน',
-    future: 'ข้อมูลคาดการณ์อนาคต',
+    future: 'ข้อมูลคาดการณ์เป้าหมาย',
   };
   return labels[selectedTimeframe.value];
 });
@@ -456,7 +456,7 @@ const chartOptions = computed(() => {
               ...Array.from({ length: 5 }, (_, i) => {
                 const dataset = chart.data.datasets[i + 5];
                 return {
-                  text: `ระดับ ${i + 1} (อนาคต)`,
+                  text: `ระดับ ${i + 1} (เป้าหมาย)`,
                   fillStyle: colorsLight[i],
                   strokeStyle: colorsLight[i],
                   lineWidth: dataset?.hidden ? 2 : 0,
@@ -505,7 +505,7 @@ const chartOptions = computed(() => {
             const categoryName = items[0].label;
 
             if (isComparison) {
-              // แยกเป็น 2 บรรทัด: ปัจจุบัน / อนาคต ตาม stack
+              // แยกเป็น 2 บรรทัด: ปัจจุบัน / เป้าหมาย ตาม stack
               const currentItem = items.find(i => i.dataset.stack === 'current');
               const futureItem = items.find(i => i.dataset.stack === 'future');
               const lines = [`📊 ${categoryName}`];
@@ -515,22 +515,22 @@ const chartOptions = computed(() => {
               }
               if (futureItem) {
                 const total = futureItem.dataset.totalPerCategory[futureItem.dataIndex];
-                lines.push(`อนาคต: คำตอบรวมในหมวดนี้ ${total} คำตอบ`);
+                lines.push(`เป้าหมาย: คำตอบรวมในหมวดนี้ ${total} คำตอบ`);
               }
               return lines;
             }
 
             const total = items[0].dataset.totalPerCategory[items[0].dataIndex];
-            const period = selectedTimeframe.value === 'current' ? 'ปัจจุบัน' : 'อนาคต';
+            const period = selectedTimeframe.value === 'current' ? 'ปัจจุบัน' : 'เป้าหมาย';
             return [`📊 ${categoryName}`, `${period}: คำตอบรวมในหมวดนี้ ${total} คำตอบ`];
           },
 
-          // รายละเอียดแต่ละระดับ: ชื่อระดับ + จำนวนคำตอบ + เปอร์เซ็นต์ พร้อมระบุปัจจุบัน/อนาคต
+          // รายละเอียดแต่ละระดับ: ชื่อระดับ + จำนวนคำตอบ + เปอร์เซ็นต์ พร้อมระบุปัจจุบัน/เป้าหมาย
           label: ctx => {
             const raw = ctx.dataset.rawData[ctx.dataIndex];
             const pct = ctx.parsed.y.toFixed(1);
             const period = isComparison
-              ? (ctx.dataset.stack === 'current' ? ' (ปัจจุบัน)' : ' (อนาคต)')
+              ? (ctx.dataset.stack === 'current' ? ' (ปัจจุบัน)' : ' (เป้าหมาย)')
               : '';
             return `${ctx.dataset.label}${period}: ${raw} คำตอบ (${pct}%)`;
           },

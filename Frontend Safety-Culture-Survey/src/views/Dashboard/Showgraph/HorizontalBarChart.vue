@@ -1,4 +1,4 @@
-<!-- HorizontalBarChart.vue -->
+﻿<!-- HorizontalBarChart.vue -->
 <template>
   <div class="min-h-screen bg-gray-50 py-8 px-4">
     <div class="max-w-7xl mx-auto">
@@ -8,7 +8,7 @@
           การวิเคราะห์การประเมินประจำปี {{ selectedYear }}
         </h1>
         <p class="text-sm text-gray-600 mb-6">
-          เปรียบเทียบคะแนนของแต่ละหมวดหมู่ระหว่างปัจจุบันและอนาคต
+          เปรียบเทียบคะแนนของแต่ละหมวดหมู่ระหว่างปัจจุบันและเป้าหมาย
         </p>
 
         <!-- Loading State -->
@@ -68,9 +68,9 @@
                 v-model="selectedView"
                 class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white cursor-pointer appearance-none bg-[url('data:image/svg+xml,%3csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20fill=%27none%27%20viewBox=%270%200%2020%2020%27%3e%3cpath%20stroke=%27%236b7280%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%20stroke-width=%271.5%27%20d=%27M6%208l4%204%204-4%27/%3e%3c/svg%3e')] bg-[length:1.25em_1.25em] bg-[right_0.5rem_center] bg-no-repeat pr-10"
               >
-                <option value="both">เปรียบเทียบ (ปัจจุบัน กับ อนาคต)</option>
+                <option value="both">เปรียบเทียบ (ปัจจุบัน กับ เป้าหมาย)</option>
                 <option value="current">ปัจจุบัน</option>
-                <option value="future">อนาคต</option>
+                <option value="future">เป้าหมาย</option>
               </select>
             </div>
           </div>
@@ -132,7 +132,7 @@
           <div class="flex items-center gap-6 mb-6 pb-4 border-b border-gray-200">
             <div v-if="selectedView === 'both' || selectedView === 'future'" class="flex items-center gap-2">
               <div class="w-4 h-4 rounded bg-emerald-500"></div>
-              <span class="text-sm font-medium text-gray-700">อนาคต (เป้าหมาย)</span>
+              <span class="text-sm font-medium text-gray-700">เป้าหมาย (เป้าหมาย)</span>
             </div>
             <div v-if="selectedView === 'both' || selectedView === 'current'" class="flex items-center gap-2">
               <div class="w-4 h-4 rounded bg-blue-500"></div>

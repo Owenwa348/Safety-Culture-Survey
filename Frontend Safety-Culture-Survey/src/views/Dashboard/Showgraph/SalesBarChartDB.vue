@@ -1,4 +1,4 @@
-<!-- SalesBarChartDB.vue -->
+﻿<!-- SalesBarChartDB.vue -->
 <template>
   <div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4 sm:p-6 overflow-x-hidden">
     <!-- Loading State -->
@@ -59,9 +59,9 @@
                 v-model="selectedTimePeriod"
                 class="px-4 py-2.5 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"
               >
-                <option value="all">เปรียบเทียบปัจจุบันกับอนาคต</option>
+                <option value="all">เปรียบเทียบปัจจุบันกับเป้าหมาย</option>
                 <option value="current">ปัจจุบัน</option>
-                <option value="future">อนาคต</option>
+                <option value="future">เป้าหมาย</option>
               </select>
             </div>
           </div>
@@ -225,7 +225,7 @@ const abortController = ref(null);
 // =======================================
 // Constants
 // =======================================
-const timePeriodMap = { all: 'ทั้งหมด', current: 'ปัจจุบัน', future: 'อนาคต' };
+const timePeriodMap = { all: 'ทั้งหมด', current: 'ปัจจุบัน', future: 'เป้าหมาย' };
 
 const colors = {
   'ผู้บริหารระดับสูง / ผู้จัดการส่วน': '#1e40af',
@@ -404,7 +404,7 @@ const chartData = computed(() => {
         data: currentDataPoints,
       });
       datasets.push({
-        label: `คะแนนเฉลี่ยอนาคต (${areaNameMap.value[version]}) ปี ${selectedYear.value}`,
+        label: `คะแนนเฉลี่ยเป้าหมาย (${areaNameMap.value[version]}) ปี ${selectedYear.value}`,
         backgroundColor: colors.all_future,
         data: futureDataPoints,
       });
@@ -429,7 +429,7 @@ const chartData = computed(() => {
         data: currentDataPoints,
       });
       datasets.push({
-        label: `คะแนนเฉลี่ยอนาคต ปี ${selectedYear.value} (${areaNameMap.value[version]})`,
+        label: `คะแนนเฉลี่ยเป้าหมาย ปี ${selectedYear.value} (${areaNameMap.value[version]})`,
         backgroundColor: colors.all_future,
         data: futureDataPoints,
       });

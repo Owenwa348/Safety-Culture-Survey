@@ -1,4 +1,4 @@
-<!-- QuestionResults.vue -->
+﻿<!-- QuestionResults.vue -->
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { axiosAuth as axios } from '../../../utils/apiClient';
@@ -40,9 +40,9 @@ const companyOptions = ref([{ value: "All", label: "ทุกบริษัท"
 const categoryOptions = ref([{ value: "All", label: "ทุกหมวดหมู่" }]);
 
 const timeframeOptions = [
-  { value: "compare", label: "เปรียบเทียบ (ปัจจุบัน vs อนาคต)" },
+  { value: "compare", label: "เปรียบเทียบ (ปัจจุบัน vs เป้าหมาย)" },
   { value: "current", label: "ปัจจุบัน" },
-  { value: "future", label: "คาดการณ์อนาคต" },
+  { value: "future", label: "คาดการณ์เป้าหมาย" },
 ];
 
 const availableYears = ref([]);
@@ -331,7 +331,7 @@ const chartData = computed(() => {
           scoreCounts: alignScoresToMeta(chartAPIData.value.current, meta, startIndex),
         },
         {
-          label: `${positionLabel} - ${companyLabel} (อนาคต)`,
+          label: `${positionLabel} - ${companyLabel} (เป้าหมาย)`,
           scoreCounts: alignScoresToMeta(chartAPIData.value.future, meta, startIndex),
         },
       ],
@@ -339,7 +339,7 @@ const chartData = computed(() => {
   }
 
   const dataKey = selectedTimeframe.value;
-  const timeLabel = dataKey === 'current' ? 'ปัจจุบัน' : 'คาดการณ์อนาคต';
+  const timeLabel = dataKey === 'current' ? 'ปัจจุบัน' : 'คาดการณ์เป้าหมาย';
   return {
     labels,
     datasets: [{

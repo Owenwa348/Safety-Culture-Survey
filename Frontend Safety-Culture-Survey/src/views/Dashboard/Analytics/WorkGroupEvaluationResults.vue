@@ -1,4 +1,4 @@
-<!-- WorkGroupEvaluationResults.vue -->
+﻿<!-- WorkGroupEvaluationResults.vue -->
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from "vue";
 import BetChart from "../Showgraph/BetChart.vue";
@@ -234,7 +234,7 @@ const chartData = computed(() => {
     datasets.push({ label: "ปัจจุบัน", backgroundColor: "#1e40af", data: currentScores });
   }
   if (shouldIncludePeriod("future")) {
-    datasets.push({ label: "อนาคต", backgroundColor: "#3b82f6", data: futureScores });
+    datasets.push({ label: "เป้าหมาย", backgroundColor: "#3b82f6", data: futureScores });
   }
 
   return { labels, datasets };
@@ -418,9 +418,9 @@ onUnmounted(() => {
                 <label class="block text-xs font-medium text-gray-700 mb-1.5">ช่วงเวลา</label>
                 <div class="relative">
                   <select v-model="selectedPeriod" class="w-full px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white transition-all text-sm appearance-none hover:border-gray-400">
-                    <option value="both">ปัจจุบันและอนาคต</option>
+                    <option value="both">ปัจจุบันและเป้าหมาย</option>
                     <option value="current">เฉพาะปัจจุบัน</option>
-                    <option value="future">เฉพาะอนาคต</option>
+                    <option value="future">เฉพาะเป้าหมาย</option>
                   </select>
                   <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -518,7 +518,7 @@ onUnmounted(() => {
               </div>
               <div class="flex items-center gap-1.5">
                 <div class="w-3 h-3 bg-blue-500 rounded flex-shrink-0"></div>
-                <span class="text-gray-700">อนาคต</span>
+                <span class="text-gray-700">เป้าหมาย</span>
               </div>
             </div>
           </div>

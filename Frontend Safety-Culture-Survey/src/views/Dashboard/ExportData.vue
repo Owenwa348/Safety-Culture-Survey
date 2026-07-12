@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="flex min-h-screen bg-gray-50">
     <NavbarDashboard />
     <div class="flex-1 pl-64 transition-all duration-300">
@@ -238,7 +238,7 @@ const generateExcel = async () => {
         labels: sortedByGap.map(q=>`Q${q.idx+1}`),
         datasets: [
           { label:'คะแนนปัจจุบัน',            data: sortedByGap.map(q=>parseFloat(q.currentScore.toFixed(2))), backgroundColor:'rgba(6,32,43,0.82)', borderColor:'#06202b', borderWidth:1, borderRadius:3, barPercentage:0.7, categoryPercentage:0.8 },
-          { label:'คะแนนที่ต้องการในอนาคต',   data: sortedByGap.map(q=>parseFloat(q.futureScore.toFixed(2))),  backgroundColor:'rgba(122,226,207,0.85)', borderColor:'#7ae2cf', borderWidth:1, borderRadius:3, barPercentage:0.7, categoryPercentage:0.8 }
+          { label:'คะแนนที่ต้องการในเป้าหมาย',   data: sortedByGap.map(q=>parseFloat(q.futureScore.toFixed(2))),  backgroundColor:'rgba(122,226,207,0.85)', borderColor:'#7ae2cf', borderWidth:1, borderRadius:3, barPercentage:0.7, categoryPercentage:0.8 }
         ]
       },
       options: {
@@ -246,7 +246,7 @@ const generateExcel = async () => {
         layout:{ padding:{ top:20,right:60,bottom:20,left:20 } },
         plugins:{
           legend:{ position:'top', labels:{ font:{size:16,family:'Calibri'}, padding:20, boxWidth:22 } },
-          title:{ display:true, text:[`คะแนนปัจจุบัน vs อนาคต เรียงตาม Gap (สูงสุด → ต่ำสุด)`,`ปี ${currentYear} — ช่วงคะแนน 1–5`], font:{size:20,weight:'bold',family:'Calibri'}, padding:{bottom:24}, color:'#06202b' }
+          title:{ display:true, text:[`คะแนนปัจจุบัน vs เป้าหมาย เรียงตาม Gap (สูงสุด → ต่ำสุด)`,`ปี ${currentYear} — ช่วงคะแนน 1–5`], font:{size:20,weight:'bold',family:'Calibri'}, padding:{bottom:24}, color:'#06202b' }
         },
         scales:{
           x:{ min:0, max:5, ticks:{stepSize:1,font:{size:13}}, title:{display:true,text:'คะแนนเฉลี่ย (1–5)',font:{size:14}}, grid:{color:'rgba(0,0,0,0.07)'} },
@@ -266,14 +266,14 @@ const generateExcel = async () => {
         labels: catNames,
         datasets:[
           { label:'ปัจจุบัน', data:catCurAvg, backgroundColor:'rgba(6,32,43,0.18)', borderColor:'#06202b', borderWidth:2.5, pointBackgroundColor:'#06202b', pointRadius:5 },
-          { label:'อนาคต',    data:catFutAvg, backgroundColor:'rgba(122,226,207,0.25)', borderColor:'#5cc4b0', borderWidth:2.5, pointBackgroundColor:'#5cc4b0', pointRadius:5 }
+          { label:'เป้าหมาย',    data:catFutAvg, backgroundColor:'rgba(122,226,207,0.25)', borderColor:'#5cc4b0', borderWidth:2.5, pointBackgroundColor:'#5cc4b0', pointRadius:5 }
         ]
       },
       options:{
         layout:{padding:40},
         plugins:{
           legend:{ position:'bottom', labels:{font:{size:17,family:'Calibri'},padding:20} },
-          title:{ display:true, text:[`คะแนนเฉลี่ยรายหมวดหมู่ ปัจจุบัน vs อนาคต`,`ปี ${currentYear}`], font:{size:20,weight:'bold',family:'Calibri'}, padding:{bottom:20}, color:'#06202b' }
+          title:{ display:true, text:[`คะแนนเฉลี่ยรายหมวดหมู่ ปัจจุบัน vs เป้าหมาย`,`ปี ${currentYear}`], font:{size:20,weight:'bold',family:'Calibri'}, padding:{bottom:20}, color:'#06202b' }
         },
         scales:{ r:{ min:0, max:5, ticks:{stepSize:1,font:{size:13},backdropColor:'transparent'}, pointLabels:{font:{size:14,family:'Calibri'},color:'#1a1a1a'}, grid:{color:'rgba(0,0,0,0.1)'}, angleLines:{color:'rgba(0,0,0,0.12)'} } }
       }
@@ -309,7 +309,7 @@ const generateExcel = async () => {
       type:'bar',
       data:{ labels:binEdges, datasets:[
         { label:'ปัจจุบัน', data:curBins, backgroundColor:'rgba(6,32,43,0.82)', borderColor:'#06202b', borderWidth:1, borderRadius:4, barPercentage:0.72, categoryPercentage:0.82 },
-        { label:'อนาคต',   data:futBins, backgroundColor:'rgba(122,226,207,0.85)', borderColor:'#5cc4b0', borderWidth:1, borderRadius:4, barPercentage:0.72, categoryPercentage:0.82 }
+        { label:'เป้าหมาย',   data:futBins, backgroundColor:'rgba(122,226,207,0.85)', borderColor:'#5cc4b0', borderWidth:1, borderRadius:4, barPercentage:0.72, categoryPercentage:0.82 }
       ]},
       options:{
         layout:{padding:{top:24,right:40,bottom:24,left:24}},
@@ -337,14 +337,14 @@ const generateExcel = async () => {
       type:'bar',
       data:{ labels:tb10Labels, datasets:[
         { label:'คะแนนปัจจุบัน', data:tb10CurVals, backgroundColor:tb10Colors, borderColor:tb10Colors, borderWidth:1, borderRadius:3, barPercentage:0.65, categoryPercentage:0.82 },
-        { label:'คะแนนอนาคต',   data:tb10FutVals, backgroundColor:'rgba(122,226,207,0.80)', borderColor:'#5cc4b0', borderWidth:1, borderRadius:3, barPercentage:0.65, categoryPercentage:0.82 }
+        { label:'คะแนนเป้าหมาย',   data:tb10FutVals, backgroundColor:'rgba(122,226,207,0.80)', borderColor:'#5cc4b0', borderWidth:1, borderRadius:3, barPercentage:0.65, categoryPercentage:0.82 }
       ]},
       options:{
         indexAxis:'y',
         layout:{padding:{top:20,right:60,bottom:20,left:20}},
         plugins:{
           legend:{position:'top',labels:{font:{size:15,family:'Calibri'},padding:18}},
-          title:{display:true,text:['Top 10 คะแนนสูงสุด (■ เข้ม) vs Bottom 10 คะแนนต่ำสุด (■ แดง)',`ปี ${currentYear} — เปรียบเทียบปัจจุบัน & อนาคต`],font:{size:19,weight:'bold',family:'Calibri'},padding:{bottom:22},color:'#06202b'}
+          title:{display:true,text:['Top 10 คะแนนสูงสุด (■ เข้ม) vs Bottom 10 คะแนนต่ำสุด (■ แดง)',`ปี ${currentYear} — เปรียบเทียบปัจจุบัน & เป้าหมาย`],font:{size:19,weight:'bold',family:'Calibri'},padding:{bottom:22},color:'#06202b'}
         },
         scales:{
           x:{min:0,max:5,ticks:{stepSize:1,font:{size:13}},title:{display:true,text:'คะแนนเฉลี่ย (1–5)',font:{size:14}},grid:{color:'rgba(0,0,0,0.07)'}},
@@ -430,7 +430,7 @@ const generateExcel = async () => {
 
     // Header row 3
     const aHeaderRow = analysisSheet.getRow(3)
-    ;['ข้อที่','หมวดหมู่','คำถาม','คะแนนปัจจุบัน\n(เฉลี่ย)','คะแนนอนาคต\n(เฉลี่ย)','Gap\n(อนาคต − ปัจจุบัน)']
+    ;['ข้อที่','หมวดหมู่','คำถาม','คะแนนปัจจุบัน\n(เฉลี่ย)','คะแนนเป้าหมาย\n(เฉลี่ย)','Gap\n(เป้าหมาย − ปัจจุบัน)']
       .forEach((h,i)=>{
         const cell = aHeaderRow.getCell(i+1)
         cell.value     = h
@@ -521,10 +521,10 @@ const generateExcel = async () => {
 
     // Charts A
     const aChart1TitleRow = legendRowNum+2
-    addSectionTitle(analysisSheet, aChart1TitleRow, `  กราฟที่ 1 — คะแนนปัจจุบัน vs อนาคต เรียงตาม Gap (ปี ${currentYear})`, 6)
+    addSectionTitle(analysisSheet, aChart1TitleRow, `  กราฟที่ 1 — คะแนนปัจจุบัน vs เป้าหมาย เรียงตาม Gap (ปี ${currentYear})`, 6)
     const aChart1DescRow  = aChart1TitleRow+1
     addChartDescription(analysisSheet, aChart1DescRow,
-      '📊 กราฟแท่งแนวนอนเรียงตาม Gap สูงสุด → ต่ำสุด  ■ เข้ม = คะแนนปัจจุบัน  ■ เขียวอ่อน = คะแนนที่ต้องการในอนาคต  คำถามที่มี Gap สูงสุด (แท่งอนาคตยาวกว่ามาก) = ต้องเร่งพัฒนาก่อน', 6)
+      '📊 กราฟแท่งแนวนอนเรียงตาม Gap สูงสุด → ต่ำสุด  ■ เข้ม = คะแนนปัจจุบัน  ■ เขียวอ่อน = คะแนนที่ต้องการในเป้าหมาย  คำถามที่มี Gap สูงสุด (แท่งเป้าหมายยาวกว่ามาก) = ต้องเร่งพัฒนาก่อน', 6)
 
     const gapImgH      = Math.min(900, Math.max(600, Q_COUNT*14+220))
     analysisSheet.addImage(
@@ -537,7 +537,7 @@ const generateExcel = async () => {
     addSectionTitle(analysisSheet, aChart2TitleRow, `  กราฟที่ 2 — คะแนนเฉลี่ยรายหมวดหมู่ Radar Chart (ปี ${currentYear})`, 6)
     const aChart2DescRow = aChart2TitleRow+1
     addChartDescription(analysisSheet, aChart2DescRow,
-      '🕸️ Radar Chart แสดง Profile รายหมวดหมู่  เส้นเข้ม = ปัจจุบัน  เส้นเขียว = อนาคต  พื้นที่ห่างระหว่างสองเส้น = ช่องว่างที่ต้องพัฒนา  หมวดที่ห่างมากที่สุดควรวางแผนพัฒนาก่อน', 6)
+      '🕸️ Radar Chart แสดง Profile รายหมวดหมู่  เส้นเข้ม = ปัจจุบัน  เส้นเขียว = เป้าหมาย  พื้นที่ห่างระหว่างสองเส้น = ช่องว่างที่ต้องพัฒนา  หมวดที่ห่างมากที่สุดควรวางแผนพัฒนาก่อน', 6)
     analysisSheet.addImage(
       wb.addImage({ base64:imgRadar, extension:'png' }),
       { tl:{ col:0, row:aChart2DescRow }, ext:{ width:780, height:780 } }
@@ -581,7 +581,7 @@ const generateExcel = async () => {
     allQuestions.forEach((_,idx)=>{
       ;[6+idx*2,7+idx*2].forEach((colNum,ci)=>{
         const cell=rawHeaderRow.getCell(colNum)
-        cell.value=ci===0?`Q${idx+1}\nปัจจุบัน`:`Q${idx+1}\nอนาคต`
+        cell.value=ci===0?`Q${idx+1}\nปัจจุบัน`:`Q${idx+1}\nเป้าหมาย`
         cell.font={bold:true,color:{argb:'FFFFFFFF'},name:'Calibri',size:10}
         cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:ci===0?'FF1A3C50':'FF2E6B80'}}
         cell.alignment={vertical:'middle',horizontal:'center',wrapText:true}
@@ -661,7 +661,7 @@ const generateExcel = async () => {
     addSectionTitle(rawSheet,rawDataEnd,`  กราฟที่ 1 — การกระจายคะแนนเฉลี่ยรายบุคคล (ปี ${currentYear})`,10,'FF1A3C50')
     const bChart1DescRow=rawDataEnd+1
     addChartDescription(rawSheet,bChart1DescRow,
-      '📊 Histogram การกระจายคะแนนเฉลี่ยรายบุคคล  แกน X = ช่วงคะแนน (1.0–5.0)  แกน Y = จำนวนผู้ประเมิน  ■ เข้ม = ปัจจุบัน  ■ เขียวอ่อน = อนาคต  แท่งที่สูงที่สุด = ช่วงคะแนนที่ผู้ประเมินส่วนใหญ่กระจุกตัวอยู่',
+      '📊 Histogram การกระจายคะแนนเฉลี่ยรายบุคคล  แกน X = ช่วงคะแนน (1.0–5.0)  แกน Y = จำนวนผู้ประเมิน  ■ เข้ม = ปัจจุบัน  ■ เขียวอ่อน = เป้าหมาย  แท่งที่สูงที่สุด = ช่วงคะแนนที่ผู้ประเมินส่วนใหญ่กระจุกตัวอยู่',
       10,'FFEBF5FB')
     rawSheet.addImage(
       wb.addImage({base64:imgRawHist,extension:'png'}),
@@ -672,7 +672,7 @@ const generateExcel = async () => {
     addSectionTitle(rawSheet,rawChart2Row,`  กราฟที่ 2 — Top 10 & Bottom 10 คำถาม (ปี ${currentYear})`,10,'FF1A3C50')
     const bChart2DescRow=rawChart2Row+1
     addChartDescription(rawSheet,bChart2DescRow,
-      '📊 Top 10 คำถามคะแนนสูงสุด (■ เข้ม) และ Bottom 10 คะแนนต่ำสุด (■ แดง)  ■ เขียวอ่อน = คะแนนอนาคต  คำถามกลุ่ม Bottom ที่มี Gap สูงควรได้รับการ prioritize ก่อน',
+      '📊 Top 10 คำถามคะแนนสูงสุด (■ เข้ม) และ Bottom 10 คะแนนต่ำสุด (■ แดง)  ■ เขียวอ่อน = คะแนนเป้าหมาย  คำถามกลุ่ม Bottom ที่มี Gap สูงควรได้รับการ prioritize ก่อน',
       10,'FFEBF5FB')
     rawSheet.addImage(
       wb.addImage({base64:imgTopBottom,extension:'png'}),

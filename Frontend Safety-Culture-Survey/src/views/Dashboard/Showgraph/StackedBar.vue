@@ -1,4 +1,4 @@
-<!-- StackedBar.vue -->
+﻿<!-- StackedBar.vue -->
 <template>
   <div class="w-full h-full">
     <Bar v-if="formattedChartData?.datasets?.length" :data="formattedChartData" :options="chartOptions" />
@@ -91,7 +91,7 @@ const formattedChartData = computed(() => {
 
     for (let level = 1; level <= 5; level++) {
       datasets.push({
-        label: `คะแนน ${level} (อนาคต)`,
+        label: `คะแนน ${level} (เป้าหมาย)`,
         data: futureData.scoreCounts.map(scores => scores[level]),
         backgroundColor: futureColors[level],
         borderColor: 'rgba(255, 255, 255, 0.8)',
@@ -168,7 +168,7 @@ const chartOptions = computed(() => ({
               fontColor: '#9CA3AF'
             })
             labels.push({
-              text: '■ ปัจจุบัน (เข้ม)   ■ อนาคต (อ่อน)',
+              text: '■ ปัจจุบัน (เข้ม)   ■ เป้าหมาย (อ่อน)',
               fillStyle: 'transparent',
               strokeStyle: 'transparent',
               lineWidth: 0,
@@ -213,7 +213,7 @@ const chartOptions = computed(() => ({
 
           if (futureTotal > 0) {
             // โหมด compare: แสดงแยก
-            return `━━━━━━━━━━━\nรวมปัจจุบัน: ${currentTotal} คน\nรวมอนาคต: ${futureTotal} คน`
+            return `━━━━━━━━━━━\nรวมปัจจุบัน: ${currentTotal} คน\nรวมเป้าหมาย: ${futureTotal} คน`
           }
           return currentTotal > 0 ? `━━━━━━━━━━━\nรวมทั้งหมด: ${currentTotal} คน` : ''
         }
