@@ -1,21 +1,21 @@
 ﻿<!-- SalesBarChartDB.vue -->
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4 sm:p-6 overflow-x-hidden">
+  <div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-3 sm:p-6 overflow-x-hidden">
     <!-- Loading State -->
-    <div v-if="loading" class="flex items-center justify-center min-h-screen">
+    <div v-if="loading" class="flex items-center justify-center py-16 sm:py-24">
       <div class="text-center">
-        <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto"></div>
-        <p class="mt-4 text-gray-600 font-semibold">กำลังโหลดข้อมูล...</p>
+        <div class="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-b-4 border-blue-600 mx-auto"></div>
+        <p class="mt-4 text-sm sm:text-base text-gray-600 font-semibold">กำลังโหลดข้อมูล...</p>
       </div>
     </div>
 
     <!-- Main Content -->
-    <div v-else class="max-w-7xl mx-auto space-y-6">
+    <div v-else class="max-w-7xl mx-auto space-y-4 sm:space-y-6">
       <!-- Header Card -->
-      <div class="bg-white rounded-xl shadow-md mb-6 overflow-hidden">
-        <div class="bg-gradient-to-r px-8 py-6">
-          <h1 class="text-2xl font-bold mb-2">ผลการประเมินบริษัท ประจำปี {{ selectedYear }}</h1>
-          <p>วิเคราะห์ผลการประเมินตามตำแหน่งงานและบริษัท</p>
+      <div class="bg-white rounded-xl shadow-md mb-4 sm:mb-6 overflow-hidden">
+        <div class="bg-gradient-to-r px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          <h1 class="text-lg sm:text-2xl font-bold mb-1 sm:mb-2">ผลการประเมินบริษัท ประจำปี {{ selectedYear }}</h1>
+          <p class="text-sm sm:text-base">วิเคราะห์ผลการประเมินตามตำแหน่งงานและบริษัท</p>
 
           <!-- Error Warning -->
           <div v-if="fetchError" class="mt-3 bg-red-100 border-l-4 border-red-500 text-red-700 p-3 text-sm rounded">
@@ -28,24 +28,24 @@
         </div>
 
         <!-- Filters -->
-        <div class="px-8 py-5 bg-gray-50 border-b">
-          <div class="flex flex-wrap items-center gap-6">
-            <div class="flex items-center space-x-3">
+        <div class="px-4 sm:px-6 lg:px-8 py-4 sm:py-5 bg-gray-50 border-b">
+          <div class="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 sm:gap-6">
+            <div class="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 w-full sm:w-auto">
               <label class="text-sm font-semibold text-gray-700">ปี:</label>
               <select
                 v-model="selectedYear"
-                class="px-4 py-2.5 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"
+                class="w-full sm:w-auto px-4 py-2.5 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"
               >
                 <option v-for="year in availableYears" :key="year" :value="year">
                   {{ year }}
                 </option>
               </select>
             </div>
-            <div class="flex items-center space-x-3">
+            <div class="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 w-full sm:w-auto">
               <label class="text-sm font-semibold text-gray-700">บริษัท:</label>
               <select
                 v-model="selectedVersion"
-                class="px-4 py-2.5 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"
+                class="w-full sm:w-auto px-4 py-2.5 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"
               >
                 <option value="combined">ทุกบริษัท</option>
                 <option v-for="company in companies" :key="company.id" :value="company.id">
@@ -53,11 +53,11 @@
                 </option>
               </select>
             </div>
-            <div class="flex items-center space-x-3">
+            <div class="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 w-full sm:w-auto">
               <label class="text-sm font-semibold text-gray-700">ช่วงเวลา:</label>
               <select
                 v-model="selectedTimePeriod"
-                class="px-4 py-2.5 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"
+                class="w-full sm:w-auto px-4 py-2.5 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"
               >
                 <option value="all">เปรียบเทียบปัจจุบันกับเป้าหมาย</option>
                 <option value="current">ปัจจุบัน</option>
@@ -71,12 +71,12 @@
       <template v-if="chartData.datasets.length > 0">
         <!-- Chart Card -->
         <div class="bg-white rounded-lg shadow">
-          <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
-            <h2 class="text-lg font-bold text-gray-900">กราฟแสดงผลการประเมิน</h2>
-            <p class="text-sm text-gray-600 mt-1">เปรียบเทียบคะแนนเฉลี่ยในแต่ละหมวดหมู่</p>
+          <div class="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 bg-gray-50">
+            <h2 class="text-base sm:text-lg font-bold text-gray-900">กราฟแสดงผลการประเมิน</h2>
+            <p class="text-xs sm:text-sm text-gray-600 mt-1">เปรียบเทียบคะแนนเฉลี่ยในแต่ละหมวดหมู่</p>
           </div>
-          <div class="px-6 py-6">
-            <div class="h-[580px] w-full">
+          <div class="px-2 sm:px-6 py-4 sm:py-6">
+            <div class="h-[380px] sm:h-[480px] lg:h-[580px] w-full">
               <Bar :key="chartRenderKey" :data="chartData" :options="chartOptions" />
             </div>
           </div>
@@ -84,21 +84,21 @@
 
         <!-- Table Card -->
         <div class="bg-white rounded-lg shadow">
-          <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
-            <h2 class="text-lg font-bold text-gray-900">ตารางข้อมูลรายละเอียด</h2>
-            <p class="text-sm text-gray-600 mt-1">{{ getTableDescription }}</p>
+          <div class="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 bg-gray-50">
+            <h2 class="text-base sm:text-lg font-bold text-gray-900">ตารางข้อมูลรายละเอียด</h2>
+            <p class="text-xs sm:text-sm text-gray-600 mt-1">{{ getTableDescription }}</p>
           </div>
-          <div class="overflow-x-auto" style="max-width: calc(100vw - 4rem);">
+          <div class="overflow-x-auto max-w-[calc(100vw-1.5rem)] sm:max-w-[calc(100vw-3rem)]">
             <table class="w-auto divide-y divide-gray-200">
               <thead class="bg-gray-50">
                 <tr>
-                  <th class="px-4 py-4 text-left text-sm font-bold text-gray-800 min-w-[200px] sticky left-0 bg-gray-50 z-10">
+                  <th class="px-3 sm:px-4 py-3 sm:py-4 text-left text-sm font-bold text-gray-800 min-w-[160px] sm:min-w-[200px] sticky left-0 bg-gray-50 z-10">
                     {{ tableHeader }}
                   </th>
                   <th
                     v-for="(label, index) in chartLabels"
                     :key="`header-${index}`"
-                    class="px-4 py-4 text-center text-sm font-semibold text-gray-800 min-w-[140px]"
+                    class="px-3 sm:px-4 py-3 sm:py-4 text-center text-sm font-semibold text-gray-800 min-w-[120px] sm:min-w-[140px]"
                     :title="label"
                   >
                     <div class="line-clamp-3 leading-relaxed">{{ label }}</div>
@@ -111,7 +111,7 @@
                   :key="`row-${idx}`"
                   class="hover:bg-gray-50"
                 >
-                  <td class="px-4 py-3 text-sm font-medium text-gray-900 min-w-[200px] sticky left-0 bg-white z-10">
+                  <td class="px-3 sm:px-4 py-3 text-sm font-medium text-gray-900 min-w-[160px] sm:min-w-[200px] sticky left-0 bg-white z-10">
                     <div class="flex items-center gap-2">
                       <span
                         class="w-2.5 h-2.5 rounded-sm flex-shrink-0"
@@ -123,7 +123,7 @@
                   <td
                     v-for="(score, scoreIdx) in dataset.data"
                     :key="`score-${idx}-${scoreIdx}`"
-                    class="px-4 py-3 text-center text-sm font-semibold min-w-[140px]"
+                    class="px-3 sm:px-4 py-3 text-center text-sm font-semibold min-w-[120px] sm:min-w-[140px]"
                     :class="getScoreClass(score)"
                   >
                     {{ formatScore(score) }}
@@ -134,9 +134,9 @@
           </div>
 
           <!-- Footer Summary -->
-          <div class="px-4 py-4 bg-gray-50 border-t border-gray-200">
+          <div class="px-3 sm:px-4 py-3 sm:py-4 bg-gray-50 border-t border-gray-200">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div class="flex items-center gap-4 text-sm text-gray-700 flex-wrap">
+              <div class="flex items-center gap-3 sm:gap-4 text-xs sm:text-sm text-gray-700 flex-wrap">
                 <span class="font-semibold whitespace-nowrap">
                   จำนวนกลุ่ม: <span class="text-blue-600">{{ chartData.datasets.length }}</span>
                 </span>
@@ -144,21 +144,21 @@
                   จำนวนหมวดหมู่: <span class="text-blue-600">{{ chartLabels.length }}</span>
                 </span>
               </div>
-              <div class="flex flex-wrap items-center gap-2.5 text-xs">
+              <div class="flex flex-wrap items-center gap-2 sm:gap-2.5 text-xs">
                 <div class="flex items-center gap-1.5">
-                  <span class="w-3 h-3 bg-green-500 rounded shadow-sm"></span>
+                  <span class="w-3 h-3 bg-green-500 rounded shadow-sm flex-shrink-0"></span>
                   <span class="text-gray-700 font-medium whitespace-nowrap">ดีเยี่ยม ≥ 4.5</span>
                 </div>
                 <div class="flex items-center gap-1.5">
-                  <span class="w-3 h-3 bg-blue-500 rounded shadow-sm"></span>
+                  <span class="w-3 h-3 bg-blue-500 rounded shadow-sm flex-shrink-0"></span>
                   <span class="text-gray-700 font-medium whitespace-nowrap">ดี 4.0–4.49</span>
                 </div>
                 <div class="flex items-center gap-1.5">
-                  <span class="w-3 h-3 bg-yellow-500 rounded shadow-sm"></span>
+                  <span class="w-3 h-3 bg-yellow-500 rounded shadow-sm flex-shrink-0"></span>
                   <span class="text-gray-700 font-medium whitespace-nowrap">พอใช้ 3.5–3.99</span>
                 </div>
                 <div class="flex items-center gap-1.5">
-                  <span class="w-3 h-3 bg-red-500 rounded shadow-sm"></span>
+                  <span class="w-3 h-3 bg-red-500 rounded shadow-sm flex-shrink-0"></span>
                   <span class="text-gray-700 font-medium whitespace-nowrap">ต้องพัฒนา &lt; 3.5</span>
                 </div>
               </div>
@@ -170,9 +170,9 @@
       <!-- Empty State -->
       <template v-else>
         <div class="bg-white rounded-lg shadow">
-          <div class="flex flex-col items-center justify-center py-16">
-            <div class="flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
-              <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="flex flex-col items-center justify-center py-12 sm:py-16 px-4 text-center">
+            <div class="flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 bg-gray-100 rounded-full mb-4">
+              <svg class="w-7 h-7 sm:w-8 sm:h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                   d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>

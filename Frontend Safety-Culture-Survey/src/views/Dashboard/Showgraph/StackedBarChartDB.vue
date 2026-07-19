@@ -2,11 +2,11 @@
 <template>
   <div class="bg-white rounded-lg shadow relative">
     <!-- Header -->
-    <div class="border-b border-gray-200 px-5 py-4">
-      <h3 class="text-lg font-bold text-gray-800">กราฟผลการประเมินรายข้อ (บริษัท)</h3>
-      <p class="text-sm text-gray-600 mt-1">แสดงจำนวนคำตอบในแต่ละระดับคะแนน แยกตามหมวดหมู่คำถาม</p>
-      <div v-if="selectedAreaName" class="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
-        <span class="text-sm font-medium text-blue-900">🏢 บริษัท: {{ selectedAreaName }}</span>
+    <div class="border-b border-gray-200 px-3 sm:px-5 py-3 sm:py-4">
+      <h3 class="text-base sm:text-lg font-bold text-gray-800">กราฟผลการประเมินรายข้อ (บริษัท)</h3>
+      <p class="text-xs sm:text-sm text-gray-600 mt-1">แสดงจำนวนคำตอบในแต่ละระดับคะแนน แยกตามหมวดหมู่คำถาม</p>
+      <div v-if="selectedAreaName" class="mt-3 p-2.5 sm:p-3 bg-blue-50 border border-blue-200 rounded-md">
+        <span class="text-xs sm:text-sm font-medium text-blue-900">🏢 บริษัท: {{ selectedAreaName }}</span>
       </div>
     </div>
 
@@ -20,37 +20,37 @@
       </div>
 
       <!-- Controls -->
-      <div class="px-5 py-4 border-b border-gray-200">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="px-3 sm:px-5 py-3 sm:py-4 border-b border-gray-200">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">เลือกปี</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">เลือกปี</label>
             <select
               v-model="selectedYear"
               @change="onYearChange"
               :disabled="availableYears.length === 0"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer appearance-none bg-white bg-[url('data:image/svg+xml,%3csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20fill=%27none%27%20viewBox=%270%200%2020%2020%27%3e%3cpath%20stroke=%27%236b7280%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%20stroke-width=%271.5%27%20d=%27M6%208l4%204%204-4%27/%3e%3c/svg%3e')] bg-[length:1.25em_1.25em] bg-[right_0.5rem_center] bg-no-repeat pr-10 hover:border-gray-400 transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
+              class="w-full px-3 py-2.5 sm:py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer appearance-none bg-white bg-[url('data:image/svg+xml,%3csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20fill=%27none%27%20viewBox=%270%200%2020%2020%27%3e%3cpath%20stroke=%27%236b7280%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%20stroke-width=%271.5%27%20d=%27M6%208l4%204%204-4%27/%3e%3c/svg%3e')] bg-[length:1.25em_1.25em] bg-[right_0.5rem_center] bg-no-repeat pr-10 hover:border-gray-400 transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
             >
               <option v-if="availableYears.length === 0" :value="null">ไม่มีข้อมูลปี</option>
               <option v-for="year in availableYears" :key="year" :value="year">{{ year }}</option>
             </select>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">เลือกบริษัท</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">เลือกบริษัท</label>
             <select
               v-model="selectedArea"
               @change="onAreaChange"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer appearance-none bg-white bg-[url('data:image/svg+xml,%3csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20fill=%27none%27%20viewBox=%270%200%2020%2020%27%3e%3cpath%20stroke=%27%236b7280%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%20stroke-width=%271.5%27%20d=%27M6%208l4%204%204-4%27/%3e%3c/svg%3e')] bg-[length:1.25em_1.25em] bg-[right_0.5rem_center] bg-no-repeat pr-10 hover:border-gray-400 transition-all"
+              class="w-full px-3 py-2.5 sm:py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer appearance-none bg-white bg-[url('data:image/svg+xml,%3csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20fill=%27none%27%20viewBox=%270%200%2020%2020%27%3e%3cpath%20stroke=%27%236b7280%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%20stroke-width=%271.5%27%20d=%27M6%208l4%204%204-4%27/%3e%3c/svg%3e')] bg-[length:1.25em_1.25em] bg-[right_0.5rem_center] bg-no-repeat pr-10 hover:border-gray-400 transition-all"
             >
               <option value="combined">บริษัททั้งหมด</option>
               <option v-for="area in areas" :key="area.id" :value="area.id">{{ area.name }}</option>
             </select>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">ช่วงเวลา</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">ช่วงเวลา</label>
             <select
               v-model="selectedTimeframe"
               @change="onTimeframeChange"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer appearance-none bg-white bg-[url('data:image/svg+xml,%3csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20fill=%27none%27%20viewBox=%270%200%2020%2020%27%3e%3cpath%20stroke=%27%236b7280%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%20stroke-width=%271.5%27%20d=%27M6%208l4%204%204-4%27/%3e%3c/svg%3e')] bg-[length:1.25em_1.25em] bg-[right_0.5rem_center] bg-no-repeat pr-10 hover:border-gray-400 transition-all"
+              class="w-full px-3 py-2.5 sm:py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer appearance-none bg-white bg-[url('data:image/svg+xml,%3csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20fill=%27none%27%20viewBox=%270%200%2020%2020%27%3e%3cpath%20stroke=%27%236b7280%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%20stroke-width=%271.5%27%20d=%27M6%208l4%204%204-4%27/%3e%3c/svg%3e')] bg-[length:1.25em_1.25em] bg-[right_0.5rem_center] bg-no-repeat pr-10 hover:border-gray-400 transition-all"
             >
               <option value="comparison">เปรียบเทียบ (ปัจจุบัน vs เป้าหมาย)</option>
               <option value="current">ปัจจุบัน</option>
@@ -60,27 +60,27 @@
         </div>
 
         <!-- Summary -->
-        <div class="mt-4 pt-4 border-t border-gray-200 text-sm text-gray-600">
+        <div class="mt-4 pt-4 border-t border-gray-200 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:text-sm text-gray-600">
           <span class="font-medium">กำลังแสดง:</span>
-          <span class="ml-2 font-semibold text-blue-800">ปี {{ selectedYear || 'N/A' }}</span>
-          <span class="mx-2">•</span>
-          <span class="ml-1">{{ selectedAreaName }}</span>
-          <span class="mx-2">•</span>
+          <span class="font-semibold text-blue-800">ปี {{ selectedYear || 'N/A' }}</span>
+          <span class="text-gray-300">•</span>
+          <span>{{ selectedAreaName }}</span>
+          <span class="text-gray-300">•</span>
           <span>{{ selectedTimeframeLabel }}</span>
         </div>
       </div>
 
       <!-- Chart or Empty State -->
-      <div class="px-5 py-5">
+      <div class="px-2 sm:px-5 py-4 sm:py-5">
         <template v-if="chartData">
-          <div :class="selectedTimeframe === 'comparison' ? 'h-[500px]' : 'h-[450px]'">
+          <div :class="selectedTimeframe === 'comparison' ? 'h-[380px] sm:h-[450px] md:h-[500px]' : 'h-[320px] sm:h-[400px] md:h-[450px]'">
             <Bar :data="chartData" :options="chartOptions" />
           </div>
         </template>
         <template v-else>
-          <div class="flex flex-col items-center justify-center py-16">
-            <div class="flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
-              <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="flex flex-col items-center justify-center py-12 sm:py-16 px-4 text-center">
+            <div class="flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 bg-gray-100 rounded-full mb-4">
+              <svg class="w-7 h-7 sm:w-8 sm:h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                   d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
@@ -92,9 +92,9 @@
       </div>
 
       <!-- Info for comparison mode -->
-      <div v-if="selectedTimeframe === 'comparison' && chartData" class="px-5 pb-5">
-        <div class="bg-blue-50 border border-blue-200 rounded-md p-3">
-          <p class="text-sm text-blue-900">
+      <div v-if="selectedTimeframe === 'comparison' && chartData" class="px-3 sm:px-5 pb-4 sm:pb-5">
+        <div class="bg-blue-50 border border-blue-200 rounded-md p-2.5 sm:p-3">
+          <p class="text-xs sm:text-sm text-blue-900">
             <span class="font-medium">วิธีดูกราฟ:</span>
             แท่งสีเข้มทางซ้ายคือข้อมูลปัจจุบัน ส่วนแท่งสีอ่อนทางขวาคือข้อมูลที่คาดว่าจะเป็นในเป้าหมาย
           </p>
@@ -102,20 +102,20 @@
       </div>
 
       <!-- Categories -->
-      <div v-if="categories.length > 0" class="px-5 pb-5 border-t border-gray-200">
-        <div class="mt-5">
+      <div v-if="categories.length > 0" class="px-3 sm:px-5 pb-4 sm:pb-5 border-t border-gray-200">
+        <div class="mt-4 sm:mt-5">
           <h4 class="text-sm font-bold text-gray-800 mb-3">📋 หมวดหมู่คำถาม</h4>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3">
             <div
               v-for="(category, index) in categories"
               :key="category.id"
-              class="p-3 border border-gray-200 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors"
+              class="p-2.5 sm:p-3 border border-gray-200 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors"
             >
               <div class="flex items-start">
                 <span class="inline-flex items-center justify-center h-6 w-6 rounded-full bg-blue-600 text-white text-xs font-semibold mr-3 flex-shrink-0">
                   {{ index + 1 }}
                 </span>
-                <div class="flex-1">
+                <div class="flex-1 min-w-0">
                   <h5 class="text-sm font-medium text-gray-900">{{ category.name }}</h5>
                   <p class="text-xs text-gray-600 mt-1">คำถาม: {{ category.questionCount }} ข้อ</p>
                 </div>
@@ -128,9 +128,9 @@
 
     <!-- Error State -->
     <template v-else>
-      <div class="flex flex-col items-center justify-center py-16">
-        <div class="flex items-center justify-center w-16 h-16 bg-red-50 rounded-full mb-4">
-          <svg class="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="flex flex-col items-center justify-center py-12 sm:py-16 px-4 text-center">
+        <div class="flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 bg-red-50 rounded-full mb-4">
+          <svg class="w-7 h-7 sm:w-8 sm:h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
               d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>

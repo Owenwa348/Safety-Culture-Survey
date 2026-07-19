@@ -29,12 +29,12 @@ const isOpen = ref(false);
 
           <!-- Headline -->
           <h1 class="hero-title animate-slide-up">
-            Safety Culture<br />Survey
+            Safety Culture Survey
           </h1>
 
           <!-- Tagline pill -->
           <div class="hero-tagline animate-slide-up-delay">
-            "Delivering Safety Expertise with Innovative Solutions"
+            "Delivering Safety Expertise with Human-Centered Solutions"
           </div>
 
           <!-- CTA Buttons -->
@@ -84,6 +84,7 @@ const isOpen = ref(false);
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  font-family: 'Inter', Arial, Helvetica, sans-serif;
 }
 
 .hero-bg {
@@ -125,7 +126,7 @@ const isOpen = ref(false);
 }
 
 .hero-inner {
-  max-width: 720px;
+  max-width: 900px;
   width: 100%;
   text-align: center;
   display: flex;
@@ -148,11 +149,12 @@ const isOpen = ref(false);
 /* ─── Headline ───────────────────────────────────────── */
 .hero-title {
   margin: 0;
-  font-size: clamp(2.8rem, 8vw, 4.5rem);
-  font-weight: 800;
-  line-height: 1.05;
-  letter-spacing: -0.02em;
+  font-size: clamp(1.9rem, 5.6vw, 3.75rem);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
   color: #ffffff;
+  white-space: nowrap;
   text-shadow: 0 2px 40px rgba(6, 32, 43, 0.5);
 }
 
@@ -319,11 +321,18 @@ const isOpen = ref(false);
     font-size: 0.85rem;
     padding: 10px 16px;
   }
+
+  .hero-title {
+    /* On very narrow screens, keeping one line would shrink text too much,
+       so let it wrap gracefully as a fallback */
+    white-space: normal;
+    font-size: clamp(1.7rem, 8vw, 2.2rem);
+  }
 }
 
 @media (max-width: 360px) {
   .hero-title {
-    font-size: 2.4rem;
+    font-size: 1.6rem;
   }
 }
 

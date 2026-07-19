@@ -4,7 +4,7 @@
     <NavbarDashboard />
     
     <!-- Main Content -->
-    <div class="flex-1 pl-64 max-w-full overflow-x-hidden">
+    <div class="flex-1 pl-0 lg:pl-64 max-w-full overflow-x-hidden">
       <!-- Header Section -->
       <!-- <div class="bg-white border-b shadow-sm sticky top-0 z-50">
         <div class="px-8 py-6">
@@ -24,42 +24,42 @@
       </div> -->
 
       <!-- Content Area -->
-      <div class="p-8 space-y-8">
+      <div class="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 lg:space-y-8">
         <!-- Loading State -->
-        <div v-if="loading" class="flex items-center justify-center py-20">
+        <div v-if="loading" class="flex items-center justify-center py-14 sm:py-20">
           <div class="text-center">
-            <div class="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 border-t-blue-600 mx-auto"></div>
-            <p class="mt-6 text-gray-600 font-medium">กำลังโหลดข้อมูล...</p>
+            <div class="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-4 border-blue-200 border-t-blue-600 mx-auto"></div>
+            <p class="mt-4 sm:mt-6 text-sm sm:text-base text-gray-600 font-medium">กำลังโหลดข้อมูล...</p>
           </div>
         </div>
 
         <!-- Dashboard Content -->
-        <div v-else class="space-y-8">
+        <div v-else class="space-y-4 sm:space-y-6 lg:space-y-8">
 
           <!-- Pie Charts Section -->
           <div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
-            <div class="p-8 bg-gray-50">
+            <div class="p-3 sm:p-6 lg:p-8 bg-gray-50">
               <PieChart :company1Data="company1ChartData" :company2Data="company2ChartData" />
             </div>
           </div>
 
           <!-- Sales Bar Chart Section -->
           <div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
-            <div class="p-8 bg-gray-50">
+            <div class="p-3 sm:p-6 lg:p-8 bg-gray-50">
               <SalesBarChart />
             </div>
           </div>
 
           <!-- Horizontal Bar Chart Section -->
           <div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
-            <div class="p-8 bg-gray-50">
+            <div class="p-3 sm:p-6 lg:p-8 bg-gray-50">
               <HorizontalBarChart />
             </div>
           </div>
 
           <!-- Stacked Bar Chart Section -->
           <div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
-            <div class="p-8 bg-gray-50">
+            <div class="p-3 sm:p-6 lg:p-8 bg-gray-50">
               <StackedBarChart />
             </div>
           </div>
