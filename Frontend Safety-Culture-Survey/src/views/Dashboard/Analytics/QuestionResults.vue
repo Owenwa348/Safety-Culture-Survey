@@ -304,23 +304,7 @@ const chartData = computed(() => {
   // startIndex คือ offset ของหน้าปัจจุบันใน rawScores ทั้งหมด
   // เช่น หน้า 2 แสดง 10/หน้า → startIndex = 10
   const startIndex = currentQuestionRange.value.start;
-  // ===================== DEBUG — ลบออกหลังแก้เสร็จ =====================
-  console.log('=== DEBUG chartData ===')
-  console.log('fullQuestionMeta.length :', fullQuestionMeta.value.length)
-  console.log('allQuestions.length     :', allQuestions.value.length)
-  console.log('chartAPIData.current.length:', chartAPIData.value?.current?.length)
-  console.log('chartAPIData.future.length :', chartAPIData.value?.future?.length)
-  console.log('currentPage             :', currentPage.value)
-  console.log('startIndex              :', startIndex)
-  console.log('pagedQuestionMeta ids   :', meta.map(q => q.id))
-  console.log('--- scores ที่ index 0 (Q แรก) ---')
-  console.log('current[0]:', JSON.stringify(chartAPIData.value?.current?.[0]))
-  console.log('future[0] :', JSON.stringify(chartAPIData.value?.future?.[0]))
-  console.log('--- scores ที่ index 1 ---')
-  console.log('current[1]:', JSON.stringify(chartAPIData.value?.current?.[1]))
-  console.log('future[1] :', JSON.stringify(chartAPIData.value?.future?.[1]))
-  console.log('======================')
-  // ===================== END DEBUG =====================
+  // Debug logs removed to avoid leaking internal chart data in console
 
   if (isCompareMode.value) {
     return {

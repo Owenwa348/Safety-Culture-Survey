@@ -411,9 +411,8 @@ function onAnswerChange(index) {
     const answer = answers.value[index];
     const question = questions.value[index];
     if (answer.level !== null && answer.futureLevel !== null) {
-      try {
+        try {
         await submitAnswer(question.id, answer.level, answer.futureLevel, answer.comment);
-        console.log('✅ Auto-saved question', index + 1);
       } catch (error) {
         console.error('❌ Auto-save failed for question', index + 1, error);
       }
@@ -443,7 +442,6 @@ async function loadDraft() {
   try {
     const response = await axios.get(`/api/assessment/answers/${userId.value}`);
     if (response.data && response.data.length > 0) {
-      console.log('📥 Loading saved answers from server...');
       response.data.forEach(savedAnswer => {
         const questionIndex = questions.value.findIndex(q => q.id === savedAnswer.questionId);
         if (questionIndex !== -1) {
@@ -458,7 +456,7 @@ async function loadDraft() {
       return true;
     }
   } catch (error) {
-    console.log('ไม่พบข้อมูลจาก server กำลังตรวจสอบ localStorage...');
+    // Server draft not found; fallback to localStorage
   }
 
   // 2) fallback → localStorage
@@ -473,7 +471,7 @@ async function loadDraft() {
       if (draftAge < oneWeek && draft.answers && draft.answers.length === answers.value.length) {
         answers.value = draft.answers;
         currentIndex.value = draft.currentIndex || 0;
-        console.log('📥 Loaded draft from localStorage');
+        // Loaded draft from localStorage (debug log removed)
         showNotification('พบข้อมูลที่บันทึกไว้ในเครื่อง คุณสามารถทำต่อจากที่ค้างไว้ได้');
         return true;
       }

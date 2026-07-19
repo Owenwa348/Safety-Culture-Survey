@@ -91,7 +91,6 @@ const currentDate = computed(() => {
 onMounted(async () => {
   try {
     const res = await axios.get('/user_excel/with-status')
-    console.log('API Response:', res.data)
     
     // Ensure allUsers is always an array
     if (Array.isArray(res.data)) {
@@ -104,7 +103,7 @@ onMounted(async () => {
       allUsers.value = []
     }
     
-    console.log('Dashboard loaded users:', allUsers.value.length)
+    // Debug log removed: dashboard user count
   } catch (err) {
     console.error('โหลดข้อมูลล้มเหลว:', err)
     allUsers.value = [] // Set to empty array on error

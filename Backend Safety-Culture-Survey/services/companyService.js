@@ -21,8 +21,7 @@ async function getMatchedCompanyIds(adminCompanyName) {
     `
   );
 
-  console.log(`[companyService] searching: "${name}" (firstWord: "${firstWord}")`);
-  console.log(`[companyService] matched:`, matched);
+  // Debug logs removed: avoid logging query parameters and DB results
 
   return matched.map((row) => row.id);
 }

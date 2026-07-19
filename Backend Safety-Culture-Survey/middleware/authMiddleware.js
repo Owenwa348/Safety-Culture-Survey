@@ -17,7 +17,7 @@ const authMiddleware = async (req, res, next) => {
     // ✅ Query matchedCompanyIds จาก DB ทุก request (real-time เสมอ)
     const normalizedRole = decoded.role?.replace(/\s+/g, '') || 'Admin';
 
-    console.log(`[authMiddleware] role="${decoded.role}" companyName="${decoded.companyName}"`);
+    // Debug log removed: avoid leaking token/identity details in logs
 
     if (normalizedRole === 'Admin' && decoded.companyName) {
       decoded.matchedCompanyIds = await getMatchedCompanyIds(decoded.companyName);

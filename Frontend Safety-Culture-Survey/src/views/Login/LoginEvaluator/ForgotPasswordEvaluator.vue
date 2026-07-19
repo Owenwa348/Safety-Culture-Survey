@@ -488,7 +488,6 @@ const handleEmailSubmit = async () => {
     // Generate OTP from response (for testing) or generate locally
     // In production, the server would send OTP via SMS
     generatedOtp.value = data.otp || Math.floor(100000 + Math.random() * 900000).toString()
-    console.log('Generated OTP:', generatedOtp.value) // For testing purposes
     
     // Proceed to OTP verification step
     currentStep.value = 'otp'
@@ -521,7 +520,7 @@ const handleOtpVerified = async (otpCode) => {
 const handleOtpResend = () => {
   // Generate new OTP
   generatedOtp.value = Math.floor(100000 + Math.random() * 900000).toString()
-  console.log('New OTP:', generatedOtp.value) // For testing purposes
+  // Debug log removed: do not print OTPs to console
 }
 
 const handlePasswordReset = async () => {

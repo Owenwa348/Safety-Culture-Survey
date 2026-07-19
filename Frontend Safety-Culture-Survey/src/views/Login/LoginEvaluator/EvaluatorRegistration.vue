@@ -592,7 +592,7 @@ const submitForm = async () => {
           window.refreshUsersList()
         }
       } catch (e) {
-        console.log('Could not refresh user list:', e)
+        // Suppress debug log for refreshUsersList error
       }
     } else {
       throw new Error('Registration failed')
