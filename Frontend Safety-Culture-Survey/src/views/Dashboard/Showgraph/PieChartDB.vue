@@ -1,6 +1,6 @@
 <template>
   <div class="w-full max-w-full overflow-x-hidden">
-    <h2 class="text-xl font-semibold text-gray-800 mb-4 sm:mb-6 text-center px-4">
+    <h2 class="text-lg sm:text-xl font-semibold text-gray-800 mb-4 sm:mb-6 text-center px-4">
       เปอร์เซ็นต์การทำแบบประเมิน
     </h2>
 
@@ -34,8 +34,8 @@
     </div>
 
     <!-- Dynamic Charts based on available areas -->
-    <div v-if="!loading && !error" class="w-full px-4 sm:px-6 lg:px-8">
-      <div class="grid gap-4 sm:gap-6 w-full max-w-7xl mx-auto"
+    <div v-if="!loading && !error" class="w-full px-3 sm:px-6 lg:px-8">
+      <div class="grid gap-3 sm:gap-6 w-full max-w-7xl mx-auto"
            :class="{
              'grid-cols-1': availableAreas.length === 1,
              'grid-cols-2': availableAreas.length === 2,
@@ -45,13 +45,13 @@
              'grid-cols-2 md:grid-cols-3 lg:grid-cols-4': availableAreas.length >= 6
            }">
         <div v-for="area in availableAreas" :key="area" 
-             class="text-center flex flex-col items-center min-w-0 p-2">
-          <h3 class="text-sm sm:text-base font-medium text-gray-700 mb-1 truncate w-full" :title="area">
+             class="text-center flex flex-col items-center min-w-0 p-1.5 sm:p-2">
+          <h3 class="text-xs sm:text-base font-medium text-gray-700 mb-1 truncate w-full" :title="area">
             {{ area }}
           </h3>
-          <p class="text-xs text-gray-500 mb-3">{{ getAreaStats(area).total }} คน</p>
+          <p class="text-xs text-gray-500 mb-2 sm:mb-3">{{ getAreaStats(area).total }} คน</p>
           
-          <div class="relative inline-block w-full max-w-[140px] sm:max-w-[160px] mx-auto transition-transform hover:scale-105 duration-200">
+          <div class="relative inline-block w-full max-w-[110px] sm:max-w-[140px] md:max-w-[160px] mx-auto transition-transform hover:scale-105 duration-200">
             <!-- Dynamic Pie Chart -->
             <div class="relative w-full aspect-square">
               <svg viewBox="0 0 120 120" class="w-full h-full">
@@ -103,25 +103,25 @@
               
               <!-- Center Text -->
               <div class="absolute inset-0 flex flex-col items-center justify-center">
-                <div class="text-xl sm:text-2xl font-bold text-gray-800">
+                <div class="text-base sm:text-xl md:text-2xl font-bold text-gray-800">
                   {{ getAreaStats(area).percentDone }}%
                 </div>
-                <div class="text-xs text-gray-500">COMPLETE</div>
+                <div class="text-[9px] sm:text-xs text-gray-500">COMPLETE</div>
               </div>
             </div>
           </div>
           
           <!-- Legend -->
-          <div class="flex justify-center items-center mt-3 gap-3 flex-wrap">
+          <div class="flex justify-center items-center mt-2 sm:mt-3 gap-2 sm:gap-3 flex-wrap">
             <div class="flex items-center whitespace-nowrap">
               <div class="w-2.5 h-2.5 rounded-full mr-1.5 flex-shrink-0" 
                    :style="{ backgroundColor: getAreaColor(area, 100) }"></div>
-              <span class="text-xs text-gray-600">ทำแล้ว</span>
+              <span class="text-[10px] sm:text-xs text-gray-600">ทำแล้ว</span>
             </div>
             <div class="flex items-center whitespace-nowrap">
               <div class="w-2.5 h-2.5 rounded-full mr-1.5 flex-shrink-0" 
                    :style="{ backgroundColor: getAreaColor(area, 0) }"></div>
-              <span class="text-xs text-gray-600">ยังไม่ได้ทำ</span>
+              <span class="text-[10px] sm:text-xs text-gray-600">ยังไม่ได้ทำ</span>
             </div>
           </div>
           
@@ -134,14 +134,16 @@
     </div>
     
     <!-- Debug Info -->
-    <div v-if="showDebug" class="mt-8 mx-4 sm:mx-6 lg:mx-8 p-4 bg-gray-100 rounded-lg max-w-7xl mx-auto">
-      <h4 class="font-semibold mb-2 text-sm sm:text-base">ข้อมูลทั้งหมด:</h4>
-      <div class="text-xs sm:text-sm">
-        <p class="mb-2">ผู้ทำแบบสอบถามทั้งหมด: {{ allUsers.length }}</p>
-        <p class="break-words">บริษัท: {{ availableAreas.join(', ') }}</p>
-        <div v-for="area in availableAreas" :key="area" class="mt-2 break-words">
-          <strong>{{ area }}:</strong> {{ getAreaStats(area).done }}/{{ getAreaStats(area).total }} 
-          ({{ getAreaStats(area).percentDone }}%)
+    <div v-if="showDebug" class="mt-6 sm:mt-8 px-3 sm:px-6 lg:px-8">
+      <div class="max-w-7xl mx-auto p-3 sm:p-4 bg-gray-100 rounded-lg">
+        <h4 class="font-semibold mb-2 text-sm sm:text-base">ข้อมูลทั้งหมด:</h4>
+        <div class="text-xs sm:text-sm">
+          <p class="mb-2">ผู้ทำแบบสอบถามทั้งหมด: {{ allUsers.length }}</p>
+          <p class="break-words">บริษัท: {{ availableAreas.join(', ') }}</p>
+          <div v-for="area in availableAreas" :key="area" class="mt-2 break-words">
+            <strong>{{ area }}:</strong> {{ getAreaStats(area).done }}/{{ getAreaStats(area).total }} 
+            ({{ getAreaStats(area).percentDone }}%)
+          </div>
         </div>
       </div>
     </div>
@@ -151,6 +153,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import axios from 'axios';
+import { apiGet } from '../../../utils/apiClient';
 
 // Props (if needed from parent)
 const props = defineProps({
@@ -179,9 +182,8 @@ const colorPalette = [
 const loadData = async () => {
   loading.value = true;
   error.value = null;
-  
   try {
-    const response = await axios.get('/api/analytics/completion-status');
+    const response = await apiGet('/api/analytics/completion-status'); 
     allUsers.value = response.data;
   } catch (err) {
     error.value = 'ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่อีกครั้ง';

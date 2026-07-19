@@ -2,7 +2,7 @@
 <template>
   <div class="min-h-screen flex bg-gray-50">
     <!-- Left Panel - Image/Branding -->
-    <div class="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-teal-600 via-teal-500 to-cyan-500 relative overflow-hidden">
+    <div class="hidden lg:flex lg:w-1/2 lg:h-screen lg:sticky lg:top-0 lg:self-start bg-gradient-to-br from-teal-600 via-teal-500 to-cyan-500 relative overflow-hidden">
       <!-- Geometric Pattern Background -->
       <div class="absolute inset-0 opacity-10">
         <div class="absolute inset-0" style="background-image: linear-gradient(30deg, #0d9488 12%, transparent 12.5%, transparent 87%, #0d9488 87.5%, #0d9488), linear-gradient(150deg, #0d9488 12%, transparent 12.5%, transparent 87%, #0d9488 87.5%, #0d9488), linear-gradient(30deg, #0d9488 12%, transparent 12.5%, transparent 87%, #0d9488 87.5%, #0d9488), linear-gradient(150deg, #0d9488 12%, transparent 12.5%, transparent 87%, #0d9488 87.5%, #0d9488); background-size: 80px 140px; background-position: 0 0, 0 0, 40px 70px, 40px 70px;"></div>

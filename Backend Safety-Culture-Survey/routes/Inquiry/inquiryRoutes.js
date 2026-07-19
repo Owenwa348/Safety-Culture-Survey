@@ -12,38 +12,16 @@ const {
   deleteInquiry,
 } = require("../../controllers/Inquiry/inquiryController");
 
-/**
- * Public Routes (เปิดให้ใช้งานสำหรับผู้ประเมิน)
- */
-
-/**
- * POST /api/inquiry/create
- * ส่งติดต่อสอบถาม
- * Body: { name, email, phone, message }
- */
+// POST /api/inquiry/create
 router.post("/create", createInquiry);
 
-/**
- * SuperAdmin Routes (ต้องยืนยันตัวตน)
- */
-
-/**
- * GET /api/inquiry/list
- * ดึงรายการติดต่อสอบถาม
- * Query: { page, limit, year, month, company }
- */
+// GET /api/inquiry/list
 router.get("/list", getInquiries);
 
-/**
- * GET /api/inquiry/:id
- * ดึงรายละเอียดติดต่อสอบถาม
- */
+// GET /api/inquiry/:id
 router.get("/:id", getInquiryById);
 
-/**
- * DELETE /api/inquiry/:id
- * ลบติดต่อสอบถาม
- */
+// DELETE /api/inquiry/:id
 router.delete("/:id", deleteInquiry);
 
 module.exports = router;

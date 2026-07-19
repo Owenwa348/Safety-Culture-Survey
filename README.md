@@ -1,4 +1,4 @@
-# Safety Culture Survey Platform 🛡️
+﻿# Safety Culture Survey Platform 🛡️
 
 **แพลตฟอร์มแบบประเมินวัฒนธรรมความปลอดภัยภายในองค์กร**
 
@@ -285,7 +285,7 @@ model SurveyAnswer {
   questionId         Int
   question           Question @relation(fields: [questionId], references: [id])
   currentScore       Int      // 1-5: คะแนนสถานการณ์ปัจจุบัน
-  expectedScore      Int      // 1-5: คะแนนคาดหวังในอนาคต
+  expectedScore      Int      // 1-5: คะแนนคาดหวังในเป้าหมาย
   comment            String?  // ความคิดเห็นเพิ่มเติม
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
@@ -1642,3 +1642,4 @@ MIT License (หรือ license ที่ต้องการ)
 
 **Last Updated:** 2025-01-12  
 **README Version:** 1.0.0
+

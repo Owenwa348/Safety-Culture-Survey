@@ -1,3 +1,4 @@
+// routes/index.js
 const excelUploadRouter = require('./UploadExcel/excelUploadRoutes');
 const companyRoutes = require('./Company/companyRoutes');
 const adminAuthRoutes = require('./Admin/adminAuthRoutes');

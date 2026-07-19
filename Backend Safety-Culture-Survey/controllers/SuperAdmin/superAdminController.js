@@ -1,3 +1,4 @@
+// controllers/SuperAdmin/superAdminController.js
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const bcrypt = require('bcryptjs');
@@ -112,7 +113,7 @@ const setupAccount = async (req, res) => {
     res.status(500).json({ message: 'An error occurred during account setup.' });
   }
 };
-
+const jwt = require('jsonwebtoken');
 // 5. SuperAdmin Login
 const login = async (req, res) => {
     const { email, password } = req.body;
@@ -131,19 +132,32 @@ const login = async (req, res) => {
         }
 
         const isMatch = await bcrypt.compare(password, superAdmin.password);
-
         if (!isMatch) {
             return res.status(401).json({ message: 'Invalid credentials.' });
         }
 
-        // Update lastLogin timestamp
         await prisma.super_admin_list.update({
             where: { email },
             data: { lastLogin: new Date() },
         });
-        
-        // In a real app, you would generate a JWT here
-        res.status(200).json({ message: 'Login successful.', role: superAdmin.role });
+
+        // ✅ ออก JWT token
+        const token = jwt.sign(
+            {
+                adminId: superAdmin.id,
+                email: superAdmin.email,
+                role: superAdmin.role || 'Super Admin',
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
+        );
+
+        res.status(200).json({
+            message: 'Login successful.',
+            token,                              // ✅ ส่ง token กลับ
+            role: superAdmin.role || 'Super Admin',
+            email: superAdmin.email,
+        });
 
     } catch (error) {
         console.error('Login error:', error);
@@ -313,7 +327,6 @@ const resetPassword = async (req, res) => {
         res.status(500).json({ message: 'An error occurred during password reset.' });
     }
 };
-
 
 module.exports = {
   addSuperAdmin,

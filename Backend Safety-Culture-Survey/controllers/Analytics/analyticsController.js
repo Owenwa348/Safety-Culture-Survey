@@ -1,17 +1,88 @@
 // controllers/Analytics/analyticsController.js
-const { PrismaClient } = require('@prisma/client')
+const { PrismaClient, Prisma } = require('@prisma/client')
 const prisma = new PrismaClient()
 
-// ดึงข้อมูลที่รวมไว้สำหรับกราฟ
+// ========================================================
+// Helper: สร้าง company filter จาก matchedCompanyIds
+// ถ้า matchedCompanyIds = null → SuperAdmin → ไม่ filter
+// ถ้า matchedCompanyIds = [] → Admin ไม่มีบริษัท → ไม่แสดงข้อมูล
+// ถ้า matchedCompanyIds = [1,2,3] → Admin → filter เฉพาะบริษัทนั้น
+// ========================================================
+const getCompanyScope = (req) => {
+  const ids = req.user?.matchedCompanyIds;
+  // SuperAdmin (null) → ไม่ filter
+  if (ids === null || ids === undefined) return null;
+  // Admin ที่มีบริษัท
+  return ids;
+};
+
+// ========================================================
+// Helper: หา "primary company id" สำหรับดึงโครงสร้าง category/question
+// (category/question ผูกกับบริษัทเดียวต่อกลุ่ม ไม่ใช่ per-user data)
+// scope === null (SuperAdmin) → ใช้บริษัท id น้อยสุดในระบบทั้งหมด
+// scope === []   (Admin ไม่มีบริษัท) → ไม่มี primary id
+// scope === [..] (Admin) → ใช้ id น้อยสุดใน scope
+// ========================================================
+const getPrimaryCompanyId = async (scope) => {
+  if (scope === null) {
+    const firstCompany = await prisma.company.findFirst({ orderBy: { id: 'asc' } });
+    return firstCompany?.id ?? null;
+  }
+  if (scope.length === 0) return null;
+  return Math.min(...scope);
+};
+
+// ========================================================
+// ✅ Helper (ใหม่): resolveSiblingIds
+// แก้ปัญหา position/department/work_group มี record ชื่อเดียวกัน
+// แต่คนละ companyId (คนละ id) — ตอน filter ด้วย id เดียว
+// จะตกหล่น user ของบริษัทอื่นที่มีชื่อตรงกันแต่ id ต่างกัน
+//
+// วิธีแก้: รับ id ที่ frontend ส่งมา (เป็น id จาก dropdown ที่ dedupe ตามชื่อ)
+// -> หา "ชื่อ" ของ record นั้น
+// -> หา "ทุก id ที่ชื่อตรงกัน" ทั้งระบบ (ข้ามบริษัทได้)
+// -> ใช้ array นี้ filter ด้วย `{ in: [...] }` แทน id เดียว
+// ========================================================
+const resolveSiblingIds = async (modelName, id) => {
+  if (!id) return [];
+  const parsedId = parseInt(id);
+  if (isNaN(parsedId)) return [];
+
+  const record = await prisma[modelName].findUnique({ where: { id: parsedId } });
+  if (!record) return [parsedId]; // ไม่เจอ record ก็ fallback ไปใช้ id เดิม (จะได้ 0 ผลลัพธ์ ไม่ error)
+
+  const siblings = await prisma[modelName].findMany({
+    where: { name: record.name },
+    select: { id: true },
+  });
+
+  return siblings.map(s => s.id);
+};
+
+// ========================================================
+// getAggregatedSurveyData
+// ========================================================
 const getAggregatedSurveyData = async (req, res) => {
   try {
     const { companyId } = req.query;
+    const scope = getCompanyScope(req);
+
+    let companyFilter = scope !== null
+      ? { user: { company_id: { in: scope } } }
+      : undefined;
+
+    if (companyId) {
+      const company = await prisma.company.findFirst({ where: { name: companyId } });
+      if (company) {
+        if (scope === null || scope.includes(company.id)) {
+          companyFilter = { user: { company_id: company.id } };
+        }
+      }
+    }
 
     const aggregatedData = await prisma.survey_answer.groupBy({
       by: ['questionId'],
-      where: companyId ? {
-        user: { company_user: companyId }
-      } : undefined,
+      where: companyFilter,
       _avg: { currentScore: true, expectedScore: true },
       _count: { id: true },
       _min: { createdAt: true },
@@ -49,14 +120,25 @@ const getAggregatedSurveyData = async (req, res) => {
   }
 };
 
-// ดึงข้อมูลตามกลุ่มประชากร
+// ========================================================
+// getDemographicAnalysis
+// ========================================================
 const getDemographicAnalysis = async (req, res) => {
   try {
     const { companyId } = req.query;
+    const scope = getCompanyScope(req);
 
-    // ดึง user + survey_answers พร้อม position/department/work_group relations
+    let userFilter = scope !== null ? { company_id: { in: scope } } : {};
+
+    if (companyId) {
+      const company = await prisma.company.findFirst({ where: { name: companyId } });
+      if (company && (scope === null || scope.includes(company.id))) {
+        userFilter = { company_id: company.id };
+      }
+    }
+
     const users = await prisma.user.findMany({
-      where: companyId ? { company_user: companyId } : undefined,
+      where: userFilter,
       include: {
         position: true,
         department: true,
@@ -67,7 +149,6 @@ const getDemographicAnalysis = async (req, res) => {
       }
     });
 
-    // จัดกลุ่มตาม position
     const grouped = {};
     for (const user of users) {
       const key = user.position?.name || 'ไม่ระบุ';
@@ -93,30 +174,86 @@ const getDemographicAnalysis = async (req, res) => {
   }
 };
 
-// ดึงข้อมูลแนวโน้มตามเวลา
+// ========================================================
+// getTrendAnalysis — ใช้ $queryRaw
+// ========================================================
 const getTrendAnalysis = async (req, res) => {
   try {
     const { companyId, months } = req.query;
     const monthsNum = parseInt(months) || 12;
+    const scope = getCompanyScope(req);
 
     const endDate = new Date();
     const startDate = new Date();
     startDate.setMonth(startDate.getMonth() - monthsNum);
 
-    const trendData = await prisma.$queryRaw`
-      SELECT 
-        DATE_FORMAT(sa.createdAt, '%Y-%m') as month,
-        AVG(sa.currentScore) as avgCurrentScore,
-        AVG(sa.expectedScore) as avgExpectedScore,
-        COUNT(*) as responseCount
-      FROM survey_answer sa
-      JOIN user u ON sa.userId = u.id
-      WHERE ${companyId ? prisma.$queryRaw`u.company_user = ${companyId} AND` : prisma.$queryRaw``}
-        sa.createdAt >= ${startDate}
-        AND sa.createdAt <= ${endDate}
-      GROUP BY DATE_FORMAT(sa.createdAt, '%Y-%m')
-      ORDER BY month
-    `;
+    if (scope !== null && scope.length === 0) {
+      return res.status(200).json([]);
+    }
+
+    let trendData;
+
+    if (scope === null) {
+      if (companyId) {
+        const company = await prisma.company.findFirst({ where: { name: companyId } });
+        if (company) {
+          trendData = await prisma.$queryRaw(Prisma.sql`
+            SELECT 
+              DATE_FORMAT(sa.createdAt, '%Y-%m') as month,
+              AVG(sa.currentScore) as avgCurrentScore,
+              AVG(sa.expectedScore) as avgExpectedScore,
+              COUNT(*) as responseCount
+            FROM survey_answer sa
+            JOIN user u ON sa.userId = u.id
+            WHERE u.company_id = ${company.id}
+              AND sa.createdAt >= ${startDate}
+              AND sa.createdAt <= ${endDate}
+            GROUP BY DATE_FORMAT(sa.createdAt, '%Y-%m')
+            ORDER BY month
+          `);
+        } else {
+          trendData = [];
+        }
+      } else {
+        trendData = await prisma.$queryRaw(Prisma.sql`
+          SELECT 
+            DATE_FORMAT(sa.createdAt, '%Y-%m') as month,
+            AVG(sa.currentScore) as avgCurrentScore,
+            AVG(sa.expectedScore) as avgExpectedScore,
+            COUNT(*) as responseCount
+          FROM survey_answer sa
+          JOIN user u ON sa.userId = u.id
+          WHERE sa.createdAt >= ${startDate}
+            AND sa.createdAt <= ${endDate}
+          GROUP BY DATE_FORMAT(sa.createdAt, '%Y-%m')
+          ORDER BY month
+        `);
+      }
+    } else {
+      let effectiveIds = scope;
+
+      if (companyId) {
+        const company = await prisma.company.findFirst({ where: { name: companyId } });
+        if (company && scope.includes(company.id)) {
+          effectiveIds = [company.id];
+        }
+      }
+
+      trendData = await prisma.$queryRaw(Prisma.sql`
+        SELECT 
+          DATE_FORMAT(sa.createdAt, '%Y-%m') as month,
+          AVG(sa.currentScore) as avgCurrentScore,
+          AVG(sa.expectedScore) as avgExpectedScore,
+          COUNT(*) as responseCount
+        FROM survey_answer sa
+        JOIN user u ON sa.userId = u.id
+        WHERE u.company_id IN (${Prisma.join(effectiveIds)})
+          AND sa.createdAt >= ${startDate}
+          AND sa.createdAt <= ${endDate}
+        GROUP BY DATE_FORMAT(sa.createdAt, '%Y-%m')
+        ORDER BY month
+      `);
+    }
 
     res.status(200).json(trendData);
   } catch (error) {
@@ -125,42 +262,51 @@ const getTrendAnalysis = async (req, res) => {
   }
 };
 
-// ดึงสถานะการทำแบบประเมินของผู้ใช้
+// ========================================================
+// getUserCompletionStatus
+// ========================================================
 const getUserCompletionStatus = async (req, res) => {
   try {
-    const potentialUsers = await prisma.user_excel.findMany({
-      select: { email_user: true, company_user: true }
+    const scope = getCompanyScope(req);
+
+    const userWhere = scope !== null ? { company_id: { in: scope } } : {};
+
+    const allUsers = await prisma.user.findMany({
+      where: userWhere,
+      select: {
+        id: true,
+        email_user: true,
+        company_id: true,
+        company: { select: { name: true } },
+        survey_status: true,
+        registration_status: true
+      }
     });
 
-    const registeredUsers = await prisma.user.findMany({
-      select: { email_user: true, survey_status: true }  // ✅ ใช้ survey_status (snake_case)
-    });
+    const userCompletionData = allUsers.map(user => ({
+      id: user.email_user,
+      name: user.email_user.split('@')[0],
+      area: user.company?.name || '-',
+      status: user.registration_status === 'pending' ? 'not_registered' :
+              user.survey_status === 'done' ? 'done' :
+              user.survey_status === 'in_progress' ? 'in_progress' :
+              'not_started'
+    }));
 
-    const registeredUserMap = new Map(
-      registeredUsers.map(u => [u.email_user, u.survey_status])
-    );
-
-    const usersWithStatus = potentialUsers.map(potentialUser => {
-      const survey_status = registeredUserMap.get(potentialUser.email_user);
-      return {
-        id: potentialUser.email_user,
-        name: potentialUser.email_user.split('@')[0],
-        area: potentialUser.company_user,
-        status: survey_status || 'not_registered',
-      };
-    });
-
-    res.status(200).json(usersWithStatus);
+    res.status(200).json(userCompletionData);
   } catch (error) {
-    console.error('Error fetching user completion status:', error);
-    res.status(500).json({ error: 'Internal server error', message: error.message });
+    console.error('Get user completion status error:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 };
 
-// ดึงข้อมูลสำหรับกราฟแนวนอน
+// ========================================================
+// getSurveyDataForChart
+// ========================================================
 const getSurveyDataForChart = async (req, res) => {
   try {
     const { questionId, companyId = 'combined', year = new Date().getFullYear() } = req.query;
+    const scope = getCompanyScope(req);
 
     if (!questionId) {
       return res.status(400).json({ error: 'questionId เป็นข้อมูลบังคับ' });
@@ -181,16 +327,28 @@ const getSurveyDataForChart = async (req, res) => {
       }
     };
 
-    if (companyId !== 'combined') {
-      where.user = { company_user: companyId };
+    if (scope !== null) {
+      where.user = { company_id: { in: scope } };
     }
 
-    const surveyAnswers = await prisma.survey_answer.findMany({  // ✅ survey_answer
+    if (companyId !== 'combined') {
+      const company = await prisma.company.findFirst({ where: { name: companyId } });
+      if (company && (scope === null || scope.includes(company.id))) {
+        where.user = { company_id: company.id };
+      }
+    }
+
+    const surveyAnswers = await prisma.survey_answer.findMany({
       where,
       select: {
         currentScore: true,
         expectedScore: true,
-        user: { select: { company_user: true } }
+        user: {
+          select: {
+            company_id: true,
+            company: { select: { name: true } }
+          }
+        }
       }
     });
 
@@ -202,12 +360,13 @@ const getSurveyDataForChart = async (req, res) => {
     });
 
     let companies = [];
+    const companyQuery = scope !== null
+      ? { where: { id: { in: scope } }, select: { id: true, name: true }, orderBy: { name: 'asc' } }
+      : { select: { id: true, name: true }, orderBy: { name: 'asc' } };
+
     if (companyId === 'combined') {
-      const distinctCompanies = await prisma.user.findMany({
-        distinct: ['company_user'],
-        select: { company_user: true }
-      });
-      companies = distinctCompanies.map(c => ({ id: c.company_user, name: c.company_user }));
+      const allCompanies = await prisma.company.findMany(companyQuery);
+      companies = allCompanies.map(c => ({ id: c.name, name: c.name }));
     } else {
       companies = [{ id: companyId, name: companyId }];
     }
@@ -230,26 +389,52 @@ const getSurveyDataForChart = async (req, res) => {
   }
 };
 
-// ดึงรายชื่อบริษัท
+// ========================================================
+// getCompanies — แสดงเฉพาะบริษัทที่อยู่ใน scope
+// ========================================================
 const getCompanies = async (req, res) => {
   try {
-    const companies = await prisma.user.findMany({
-      distinct: ['company_user'],
-      select: { company_user: true }
+    const scope = getCompanyScope(req);
+
+    const where = scope !== null ? { id: { in: scope } } : {};
+
+    const companies = await prisma.company.findMany({
+      where,
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' }
     });
-    res.status(200).json(companies.map(c => ({ id: c.company_user, name: c.company_user })));
+
+    res.status(200).json(companies.map(c => ({ id: c.name, name: c.name })));
   } catch (error) {
     console.error('เกิดข้อผิดพลาดในการดึงรายชื่อบริษัท:', error);
     res.status(500).json({ error: 'เซิร์ฟเวอร์ขัดข้อง', message: error.message });
   }
 };
 
-// ดึงข้อมูล Stacked Bar Chart
+// ========================================================
+// getStackedChartData
+// ✅ FIX: category/question เป็นโครงสร้างที่ผูกกับ "บริษัทเจ้าของชุดคำถาม"
+// (ดูตัวอย่างจาก getCategories/getQuestions ใน categoryController.js / questionController.js)
+// เดิมโค้ดนี้ดึง prisma.category.findMany() แบบไม่มี where เลย
+// จึงดึงหมวดหมู่ของทุกบริษัทในระบบมาปนกัน ทั้งที่แต่ละกลุ่มบริษัทควรเห็น
+// เฉพาะชุดคำถาม/หมวดหมู่ของ "บริษัทหลัก" (primary company) ของตัวเองเท่านั้น
+// ========================================================
 const getStackedChartData = async (req, res) => {
   try {
     const { areaId = 'combined', timeframe = 'comparison', year = new Date().getFullYear() } = req.query;
+    const scope = getCompanyScope(req);
+
+    // ✅ หา primary company id เพื่อกรองโครงสร้าง category/question ให้ตรงกลุ่มบริษัท
+    const primaryCompanyId = await getPrimaryCompanyId(scope);
+    if (!primaryCompanyId) {
+      return res.status(200).json({
+        labels: [], current: [[], [], [], [], []], future: [[], [], [], [], []],
+        areas: [], categories: [], areaId, timeframe, year, totalResponses: 0
+      });
+    }
 
     const categories = await prisma.category.findMany({
+      where: { companyId: primaryCompanyId }, // ✅ กรองตามบริษัทแล้ว
       include: { questions: { orderBy: { order: 'asc' } } },
       orderBy: { id: 'asc' }
     });
@@ -267,11 +452,18 @@ const getStackedChartData = async (req, res) => {
       }
     };
 
-    if (areaId !== 'combined') {
-      where.user = { company_user: areaId };
+    if (scope !== null) {
+      where.user = { company_id: { in: scope } };
     }
 
-    const surveyAnswers = await prisma.survey_answer.findMany({  // ✅ survey_answer
+    if (areaId !== 'combined') {
+      const company = await prisma.company.findFirst({ where: { name: areaId } });
+      if (company && (scope === null || scope.includes(company.id))) {
+        where.user = { company_id: company.id };
+      }
+    }
+
+    const surveyAnswers = await prisma.survey_answer.findMany({
       where,
       select: { questionId: true, currentScore: true, expectedScore: true }
     });
@@ -307,13 +499,14 @@ const getStackedChartData = async (req, res) => {
       });
     });
 
+    const companyQuery = scope !== null
+      ? { where: { id: { in: scope } }, select: { id: true, name: true }, orderBy: { name: 'asc' } }
+      : { select: { id: true, name: true }, orderBy: { name: 'asc' } };
+
     let areas = [];
     if (areaId === 'combined') {
-      const distinctAreas = await prisma.user.findMany({
-        distinct: ['company_user'],
-        select: { company_user: true }
-      });
-      areas = distinctAreas.map(a => ({ id: a.company_user, name: a.company_user }));
+      const allAreas = await prisma.company.findMany(companyQuery);
+      areas = allAreas.map(a => ({ id: a.name, name: a.name }));
     } else {
       areas = [{ id: areaId, name: areaId }];
     }
@@ -339,10 +532,19 @@ const getStackedChartData = async (req, res) => {
   }
 };
 
-// ดึงปีที่มีข้อมูลการประเมิน
+// ========================================================
+// getAssessmentYears
+// ========================================================
 const getAssessmentYears = async (req, res) => {
   try {
-    const years = await prisma.survey_answer.findMany({  // ✅ survey_answer
+    const scope = getCompanyScope(req);
+
+    const where = scope !== null
+      ? { user: { company_id: { in: scope } } }
+      : {};
+
+    const years = await prisma.survey_answer.findMany({
+      where,
       select: { createdAt: true },
       orderBy: { createdAt: 'desc' }
     });
@@ -355,10 +557,18 @@ const getAssessmentYears = async (req, res) => {
   }
 };
 
-// ดึงข้อมูลผลคำถาม
+// ========================================================
+// getQuestionResultsData
+// ✅ FIX #1 (เดิม): questionWhere กรองด้วย companyId ของชุดคำถาม (primaryCompanyId)
+// ✅ FIX #2 (ใหม่): positionRecord เดิมใช้ findFirst (เลือกมาแค่ 1 record)
+// แล้ว filter ด้วย id เดียว — ถ้ามีตำแหน่งชื่อเดียวกันหลาย record
+// (คนละบริษัท) จะตกหล่น user ของบริษัทอื่นที่ไม่ตรง id นั้นไปเลย
+// แก้โดยหา "ทุก id ที่ชื่อตรงกัน" แล้ว filter ด้วย `in`
+// ========================================================
 const getQuestionResultsData = async (req, res) => {
   try {
     const { company = 'All', position = 'All', year, categoryId } = req.query;
+    const scope = getCompanyScope(req);
 
     if (!year) return res.status(400).json({ error: 'Year is a required parameter.' });
 
@@ -369,19 +579,38 @@ const getQuestionResultsData = async (req, res) => {
       },
     };
 
-    // กรองตาม company
     const userWhere = {};
-    if (company && company !== 'All') userWhere.company_user = company;
 
-    // กรองตาม position โดยใช้ relation
+    if (scope !== null) {
+      userWhere.company_id = { in: scope };
+    }
+
+    if (company && company !== 'All') {
+      const companyRecord = await prisma.company.findFirst({ where: { name: company } });
+      if (companyRecord && (scope === null || scope.includes(companyRecord.id))) {
+        userWhere.company_id = companyRecord.id;
+      }
+    }
+
+    // ✅ FIX: ใช้ findMany + in แทน findFirst + id เดียว
+    // — รองรับกรณีมีตำแหน่งชื่อเดียวกันหลาย record (คนละบริษัท)
     if (position && position !== 'All') {
-      const positionRecord = await prisma.position.findFirst({ where: { name: position } });
-      if (positionRecord) userWhere.position_id = positionRecord.id;
+      const positionRecords = await prisma.position.findMany({ where: { name: position } });
+      if (positionRecords.length > 0) {
+        userWhere.position_id = { in: positionRecords.map(p => p.id) };
+      }
     }
 
     if (Object.keys(userWhere).length > 0) where.user = userWhere;
 
-    const questionWhere = {};
+    // ✅ หา primary company id เพื่อกรองชุดคำถามให้ตรงกลุ่มบริษัทเสมอ
+    // (ไม่ว่าจะเลือก categoryId เฉพาะ หรือ 'All' ก็ต้องอยู่ในขอบเขตบริษัทเดียวกัน)
+    const primaryCompanyId = await getPrimaryCompanyId(scope);
+    if (!primaryCompanyId) {
+      return res.status(200).json({ current: [], future: [] });
+    }
+
+    const questionWhere = { category: { companyId: primaryCompanyId } };
     if (categoryId && categoryId !== 'All') questionWhere.categoryId = parseInt(categoryId);
 
     const allQuestions = await prisma.question.findMany({
@@ -391,7 +620,7 @@ const getQuestionResultsData = async (req, res) => {
     });
     const questionIds = allQuestions.map(q => q.id);
 
-    const surveyAnswers = await prisma.survey_answer.findMany({  // ✅ survey_answer
+    const surveyAnswers = await prisma.survey_answer.findMany({
       where: { ...where, questionId: { in: questionIds } },
       select: { questionId: true, currentScore: true, expectedScore: true }
     });
@@ -427,10 +656,13 @@ const getQuestionResultsData = async (req, res) => {
   }
 };
 
-// ดึงข้อมูลดิบสำหรับ WorkGroup
+// ========================================================
+// getWorkGroupRawData
+// ========================================================
 const getWorkGroupRawData = async (req, res) => {
   try {
     const { year, company } = req.query;
+    const scope = getCompanyScope(req);
 
     const where = {};
     if (year && year !== 'null' && year !== 'undefined') {
@@ -440,27 +672,38 @@ const getWorkGroupRawData = async (req, res) => {
       };
     }
 
-    const companies = await prisma.user.findMany({
-      distinct: ['company_user'],
-      select: { company_user: true },
-      orderBy: { company_user: 'asc' }
+    const companyWhere = scope !== null ? { id: { in: scope } } : {};
+    const companies = await prisma.company.findMany({
+      where: companyWhere,
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' }
     });
+
+    if (scope !== null) {
+      where.user = { company_id: { in: scope } };
+    }
 
     if (company && company !== 'both' && company !== 'all') {
       let companyName = '';
-      if (company === 'company_1' && companies[0]) companyName = companies[0].company_user;
-      if (company === 'company_2' && companies[1]) companyName = companies[1].company_user;
-      if (company === 'company_3' && companies[2]) companyName = companies[2].company_user;
-      if (companyName) where.user = { company_user: companyName };
+      if (company === 'company_1' && companies[0]) companyName = companies[0].name;
+      if (company === 'company_2' && companies[1]) companyName = companies[1].name;
+      if (company === 'company_3' && companies[2]) companyName = companies[2].name;
+      if (companyName) {
+        const companyRecord = await prisma.company.findFirst({ where: { name: companyName } });
+        if (companyRecord && (scope === null || scope.includes(companyRecord.id))) {
+          where.user = { company_id: companyRecord.id };
+        }
+      }
     }
 
-    const answers = await prisma.survey_answer.findMany({  // ✅ survey_answer
+    const answers = await prisma.survey_answer.findMany({
       where,
       select: {
         currentScore: true,
         expectedScore: true,
         user: {
           include: {
+            company: true,
             position: true,
             department: true,
             work_group: true,
@@ -471,16 +714,16 @@ const getWorkGroupRawData = async (req, res) => {
 
     const companyMap = {};
     companies.forEach((c, i) => {
-      if (c.company_user) companyMap[c.company_user] = `company_${i + 1}`;
+      if (c.name) companyMap[c.name] = `company_${i + 1}`;
     });
 
     const formattedData = answers.map(a => ({
       currentScore: a.currentScore,
       expectedScore: a.expectedScore,
-      position: a.user?.position?.name,           // ✅ ใช้ relation
-      jobField: a.user?.department?.name,          // ✅ ใช้ relation
-      workGroup: a.user?.work_group?.name,         // ✅ ใช้ relation
-      version: a.user ? companyMap[a.user.company_user] : null
+      position: a.user?.position?.name,
+      jobField: a.user?.department?.name,
+      workGroup: a.user?.work_group?.name,
+      version: a.user?.company ? companyMap[a.user.company.name] : null
     })).filter(d => d.position && d.jobField && d.workGroup && d.version);
 
     res.status(200).json(formattedData);
@@ -490,38 +733,65 @@ const getWorkGroupRawData = async (req, res) => {
   }
 };
 
-// ดึงข้อมูล WorkGroup Evaluation
+// ========================================================
+// getWorkGroupEvaluationData
+// ✅ FIX: positionId / departmentId / workGroupId ที่ frontend ส่งมา
+// อาจเป็น id ของบริษัทใดบริษัทหนึ่งเท่านั้น (เพราะ dropdown dedupe ตามชื่อ)
+// ต้อง resolve เป็น "ทุก id ที่ชื่อตรงกัน" ก่อน filter ด้วย `in`
+// ไม่ใช่ filter ด้วย id เดียวตรงๆเหมือนเดิม — ไม่งั้น user ของบริษัทอื่น
+// ที่มีตำแหน่ง/สายงานชื่อเดียวกันแต่ id ต่างกันจะตกหล่นไปจากรายงาน
+// ========================================================
 const getWorkGroupEvaluationData = async (req, res) => {
   try {
     const { year, positionId, departmentId, workGroupId, company } = req.query;
+    const scope = getCompanyScope(req);
 
     const userWhere = {};
 
+    if (scope !== null) {
+      userWhere.company_id = { in: scope };
+    }
+
+    // ✅ FIX: resolve ชื่อข้ามบริษัทก่อน filter
     if (positionId && positionId !== 'all') {
-      userWhere.position_id = parseInt(positionId);  // ✅ ใช้ FK id โดยตรง
+      const ids = await resolveSiblingIds('position', positionId);
+      if (ids.length > 0) userWhere.position_id = { in: ids };
     }
 
     if (departmentId && departmentId !== 'all') {
-      userWhere.department_id = parseInt(departmentId);  // ✅ ใช้ FK id โดยตรง
+      const ids = await resolveSiblingIds('department', departmentId);
+      if (ids.length > 0) userWhere.department_id = { in: ids };
     }
 
     if (workGroupId && workGroupId !== 'all' && workGroupId.length > 0) {
-      const ids = workGroupId.split(',').map(id => parseInt(id)).filter(id => !isNaN(id));
-      if (ids.length > 0) userWhere.work_group_id = { in: ids };  // ✅ ใช้ FK id โดยตรง
+      const rawIds = workGroupId.split(',').map(id => parseInt(id)).filter(id => !isNaN(id));
+      if (rawIds.length > 0) {
+        const resolvedSets = await Promise.all(
+          rawIds.map(rid => resolveSiblingIds('work_group', rid))
+        );
+        const allIds = [...new Set(resolvedSets.flat())];
+        if (allIds.length > 0) userWhere.work_group_id = { in: allIds };
+      }
     }
 
-    const companies = await prisma.user.findMany({
-      distinct: ['company_user'],
-      select: { company_user: true },
-      orderBy: { company_user: 'asc' }
+    const companyWhere = scope !== null ? { id: { in: scope } } : {};
+    const companies = await prisma.company.findMany({
+      where: companyWhere,
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' }
     });
 
     if (company && company !== 'both' && company !== 'all') {
       let companyName = '';
-      if (company === 'company_1' && companies[0]) companyName = companies[0].company_user;
-      if (company === 'company_2' && companies[1]) companyName = companies[1].company_user;
-      if (company === 'company_3' && companies[2]) companyName = companies[2].company_user;
-      if (companyName) userWhere.company_user = companyName;
+      if (company === 'company_1' && companies[0]) companyName = companies[0].name;
+      if (company === 'company_2' && companies[1]) companyName = companies[1].name;
+      if (company === 'company_3' && companies[2]) companyName = companies[2].name;
+      if (companyName) {
+        const companyRecord = await prisma.company.findFirst({ where: { name: companyName } });
+        if (companyRecord && (scope === null || scope.includes(companyRecord.id))) {
+          userWhere.company_id = companyRecord.id;
+        }
+      }
     }
 
     const surveyAnswerWhere = { user: userWhere };
@@ -532,13 +802,14 @@ const getWorkGroupEvaluationData = async (req, res) => {
       };
     }
 
-    const answers = await prisma.survey_answer.findMany({  // ✅ survey_answer
+    const answers = await prisma.survey_answer.findMany({
       where: surveyAnswerWhere,
       select: {
         currentScore: true,
         expectedScore: true,
         user: {
           include: {
+            company: true,
             position: true,
             department: true,
             work_group: true,
@@ -547,7 +818,6 @@ const getWorkGroupEvaluationData = async (req, res) => {
       }
     });
 
-    // แปลง relation เป็น string names สำหรับ frontend
     const formattedAnswers = answers.map(a => ({
       currentScore: a.currentScore,
       expectedScore: a.expectedScore,
@@ -555,7 +825,7 @@ const getWorkGroupEvaluationData = async (req, res) => {
         position_user: a.user?.position?.name,
         job_field_user: a.user?.department?.name,
         work_group_user: a.user?.work_group?.name,
-        company_user: a.user?.company_user,
+        company_user: a.user?.company?.name,
       }
     }));
 
@@ -566,27 +836,46 @@ const getWorkGroupEvaluationData = async (req, res) => {
   }
 };
 
-// ดึงข้อมูล Evaluation (current/future)
+// ========================================================
+// getEvaluationData
+// ✅ FIX: categories ใช้สร้าง categoryOrder (แกน X ของ SalesBarChartDB.vue)
+// เดิมดึง prisma.category.findMany() แบบไม่กรองบริษัท เลยมีคอลัมน์ของบริษัทอื่น
+// ปนเข้ามาด้วย (เป็น 0 เพราะไม่มีคำตอบ แต่ก็ยังถูกนับเป็นแกนนึงอยู่ดี)
+// ========================================================
 const getEvaluationData = (scoreType) => async (req, res) => {
   try {
     const { year } = req.query;
+    const scope = getCompanyScope(req);
     const scoreField = scoreType === 'current' ? 'currentScore' : 'expectedScore';
 
-    const companies = await prisma.user.findMany({
-      distinct: ['company_user'],
-      select: { company_user: true },
-      orderBy: { company_user: 'asc' },
+    const companyWhere = scope !== null ? { id: { in: scope } } : {};
+    const companies = await prisma.company.findMany({
+      where: companyWhere,
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
     });
 
     const companyMap = {};
     companies.forEach((c, i) => {
-      if (c.company_user) companyMap[c.company_user] = `company_${i + 1}`;
+      if (c.name) companyMap[c.name] = `company_${i + 1}`;
     });
 
-    const categories = await prisma.category.findMany({ orderBy: { id: 'asc' } });
+    // ✅ กรอง category เฉพาะของ primary company (ชุดคำถามของกลุ่มบริษัทตัวเอง)
+    const primaryCompanyId = await getPrimaryCompanyId(scope);
+    const categories = primaryCompanyId
+      ? await prisma.category.findMany({
+          where: { companyId: primaryCompanyId },
+          orderBy: { id: 'asc' }
+        })
+      : [];
     const categoryOrder = categories.map(c => c.id);
 
     const where = {};
+
+    if (scope !== null) {
+      where.user = { company_id: { in: scope } };
+    }
+
     if (year && year !== 'null' && year !== 'undefined') {
       where.createdAt = {
         gte: new Date(parseInt(year), 0, 1),
@@ -594,12 +883,12 @@ const getEvaluationData = (scoreType) => async (req, res) => {
       };
     }
 
-    const answers = await prisma.survey_answer.findMany({  // ✅ survey_answer
+    const answers = await prisma.survey_answer.findMany({
       where,
       select: {
         [scoreField]: true,
         user: {
-          include: { position: true }  // ✅ ใช้ relation
+          include: { company: true, position: true }
         },
         question: {
           select: { categoryId: true }
@@ -610,12 +899,14 @@ const getEvaluationData = (scoreType) => async (req, res) => {
     const intermediate = {};
 
     for (const answer of answers) {
-      const position = answer.user?.position?.name;  // ✅ ใช้ relation
-      const company = answer.user?.company_user;
+      const position = answer.user?.position?.name;
+      const company = answer.user?.company?.name;
       const categoryId = answer.question?.categoryId;
       const score = answer[scoreField];
 
       if (!position || !company || !categoryId || score === null) continue;
+      // ✅ ข้ามคำตอบของคำถามที่ไม่ได้อยู่ใน category ของ primary company
+      if (!categoryOrder.includes(categoryId)) continue;
 
       if (!intermediate[position]) intermediate[position] = {};
       if (!intermediate[position][company]) intermediate[position][company] = {};
@@ -657,6 +948,174 @@ const getEvaluationData = (scoreType) => async (req, res) => {
   }
 };
 
+// ========================================================
+// getRawAnswers
+// ========================================================
+const getRawAnswers = async (req, res) => {
+  try {
+    const { year } = req.query;
+    const targetYear = year ? parseInt(year) : new Date().getFullYear();
+    const scope = getCompanyScope(req);
+
+    const userWhere = scope !== null ? { company_id: { in: scope } } : {};
+
+    const users = await prisma.user.findMany({
+      where: userWhere,
+      include: {
+        survey_answers: {
+          include: { question: true }
+        }
+      }
+    });
+
+    const result = users.map(user => {
+      const answersInYear = user.survey_answers.filter(answer => {
+        const answerYear = new Date(answer.createdAt).getFullYear();
+        return answerYear === targetYear;
+      });
+
+      return {
+        userEmail: user.email_user,
+        email: user.email_user,
+        name: user.name_user || '-',
+        answers: answersInYear.map(answer => ({
+          questionId: answer.questionId,
+          currentScore: answer.currentScore,
+          futureScore: answer.expectedScore,
+          comment: answer.comment
+        }))
+      };
+    });
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error('Error fetching raw answers:', error);
+    res.status(500).json({ error: 'Internal Server Error', message: error.message });
+  }
+};
+
+// ========================================================
+// getOpinionsData
+// ========================================================
+const getOpinionsData = async (req, res) => {
+  try {
+    const { companyId } = req.query;
+    const scope = getCompanyScope(req);
+
+    // --------------------------------------------------------
+    // สร้าง user filter สำหรับ survey_answers
+    // รวม scope (Admin/SuperAdmin) + companyId (ถ้ามี)
+    // --------------------------------------------------------
+    let userCompanyFilter = {};
+
+    if (scope !== null) {
+      userCompanyFilter = { company_id: { in: scope } };
+    }
+
+    if (companyId && companyId !== 'All') {
+      const company = await prisma.company.findFirst({ where: { name: companyId } });
+      if (company && (scope === null || scope.includes(company.id))) {
+        userCompanyFilter = { company_id: company.id };
+      }
+    }
+
+    const surveyAnswerWhere = {
+      comment: { not: null },
+      ...(Object.keys(userCompanyFilter).length > 0 && {
+        user: userCompanyFilter
+      })
+    };
+
+    // --------------------------------------------------------
+    // สร้าง question filter ตาม companyId (กรองผ่าน category)
+    // --------------------------------------------------------
+    let questionWhere = {};
+
+    if (companyId && companyId !== 'All') {
+      const company = await prisma.company.findFirst({ where: { name: companyId } });
+      if (company && (scope === null || scope.includes(company.id))) {
+        questionWhere = { category: { companyId: company.id } };
+      }
+    } else if (scope !== null && scope.length > 0) {
+      // Admin ที่ไม่ได้เลือก companyId เฉพาะ → แสดงคำถามของบริษัทแรกใน scope
+      // (สอดคล้องกับ getQuestionsWithCategory)
+      const primaryCompanyId = Math.min(...scope);
+      questionWhere = { category: { companyId: primaryCompanyId } };
+    }
+
+    const questions = await prisma.question.findMany({
+      where: questionWhere,
+      orderBy: { order: 'asc' },
+      select: {
+        id: true,
+        text: true,
+        order: true,
+        survey_answers: {
+          where: surveyAnswerWhere,
+          select: {
+            comment: true,
+            user: {
+              select: { name_user: true }
+            }
+          }
+        }
+      }
+    });
+
+    const result = questions.map(q => ({
+      id: q.order ?? q.id,
+      text: q.text,
+      survey_answers: q.survey_answers.map(sa => ({
+        comment: sa.comment,
+        user: sa.user ? { name_user: sa.user.name_user } : null
+      }))
+    }));
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error('เกิดข้อผิดพลาดในการดึงข้อมูลความคิดเห็น:', error);
+    res.status(500).json({ error: 'เซิร์ฟเวอร์ขัดข้อง', message: error.message });
+  }
+};
+
+// ========================================================
+// ✅ getQuestionsWithCategory (ใหม่)
+// ดึง questions พร้อม categoryId โดยใช้ auth scope แทน companyIds query param
+// SuperAdmin → ใช้บริษัท id น้อยสุดในระบบ
+// Admin → ใช้ id น้อยสุดใน scope ของตัวเอง
+// ========================================================
+const getQuestionsWithCategory = async (req, res) => {
+  try {
+    const scope = getCompanyScope(req);
+
+    const primaryCompanyId = await getPrimaryCompanyId(scope);
+
+    if (scope !== null && scope.length === 0) {
+      return res.status(200).json([]);
+    }
+
+    if (!primaryCompanyId) {
+      return res.status(404).json({ error: 'ไม่พบบริษัทในระบบ' });
+    }
+
+    const questions = await prisma.question.findMany({
+      where: { category: { companyId: primaryCompanyId } },
+      select: {
+        id: true,
+        text: true,
+        order: true,
+        categoryId: true,
+      },
+      orderBy: { order: 'asc' },
+    });
+
+    res.status(200).json(questions);
+  } catch (error) {
+    console.error('getQuestionsWithCategory error:', error);
+    res.status(500).json({ error: 'Internal Server Error', message: error.message });
+  }
+};
+
 module.exports = {
   getAggregatedSurveyData,
   getDemographicAnalysis,
@@ -670,4 +1129,7 @@ module.exports = {
   getWorkGroupRawData,
   getWorkGroupEvaluationData,
   getEvaluationData,
+  getRawAnswers,
+  getOpinionsData,
+  getQuestionsWithCategory,
 };

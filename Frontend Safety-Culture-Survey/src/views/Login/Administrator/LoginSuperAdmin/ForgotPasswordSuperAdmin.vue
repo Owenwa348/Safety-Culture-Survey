@@ -506,7 +506,6 @@ const handleEmailSubmit = async () => {
 
     // Generate OTP for frontend (in production, this should be sent via email/SMS)
     generatedOtp.value = Math.floor(100000 + Math.random() * 900000).toString()
-    console.log('Generated OTP for SuperAdmin:', generatedOtp.value)
     
     currentStep.value = 'otp'
     
@@ -538,7 +537,7 @@ const handleOtpVerified = async (otpCode) => {
 
 const handleOtpResend = () => {
   generatedOtp.value = Math.floor(100000 + Math.random() * 900000).toString()
-  console.log('New OTP for SuperAdmin:', generatedOtp.value)
+  // Debug log removed: do not print OTPs to console
 }
 
 const validatePasswordRequirements = () => {

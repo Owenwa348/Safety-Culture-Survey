@@ -1,4 +1,4 @@
-# Safety Culture Survey - Analytics & Chart System
+﻿# Safety Culture Survey - Analytics & Chart System
 
 ## 📋 Overview
 
@@ -9,9 +9,9 @@
 - ✅ ดึงข้อมูลบริษัททั้งหมด
 - ✅ ดึงข้อมูลหมวดหมู่และคำถาม
 - ✅ แสดงข้อมูลประเมินเป็นกราฟแนวนอน
-- ✅ เปรียบเทียบข้อมูลปัจจุบัน vs อนาคต
+- ✅ เปรียบเทียบข้อมูลปัจจุบัน vs เป้าหมาย
 - ✅ ฟิลเตอร์ตามบริษัท หมวดหมู่ และคำถาม
-- ✅ ฟิลเตอร์ตามมุมมอง (ปัจจุบัน/อนาคต/เปรียบเทียบ)
+- ✅ ฟิลเตอร์ตามมุมมอง (ปัจจุบัน/เป้าหมาย/เปรียบเทียบ)
 
 ## 🏗️ Architecture
 
@@ -110,7 +110,7 @@ GET /api/analytics/survey-data?questionId=1&companyId=combined&year=2025
     { "id": "PTT", "name": "PTT" }
   ],
   "current": [5, 3, 2, 8, 15],    // จำนวนคำตอบแต่ละระดับ (1-5)
-  "future": [2, 1, 3, 10, 17],   // ข้อมูลอนาคต
+  "future": [2, 1, 3, 10, 17],   // ข้อมูลเป้าหมาย
   "totalResponses": 33,
   "year": 2025
 }
@@ -340,9 +340,9 @@ app.use(cors());
 </select>
 
 <select v-model="selectedView">
-  <option value="both">เปรียบเทียบ (ปัจจุบัน กับ อนาคต)</option>
+  <option value="both">เปรียบเทียบ (ปัจจุบัน กับ เป้าหมาย)</option>
   <option value="current">ปัจจุบัน</option>
-  <option value="future">อนาคต</option>
+  <option value="future">เป้าหมาย</option>
 </select>
 ```
 
@@ -352,7 +352,7 @@ app.use(cors());
 <div class="legend">
   <div v-if="selectedView === 'both' || selectedView === 'future'">
     <div style="background: #10b981"></div>
-    <span>อนาคต (เป้าหมาย)</span>
+    <span>เป้าหมาย (เป้าหมาย)</span>
   </div>
   <div v-if="selectedView === 'both' || selectedView === 'current'">
     <div style="background: #3b82f6"></div>
@@ -406,3 +406,4 @@ For issues or questions:
 
 **Last Updated:** December 27, 2025
 **Status:** ✅ Ready for Testing
+

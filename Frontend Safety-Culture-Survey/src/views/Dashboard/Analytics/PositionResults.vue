@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { ref, computed, onMounted } from "vue";
 import BetChart from "../Showgraph/BetChart.vue";
 import NavbarDashboard from '../../../components/NavbarDashboard.vue';
@@ -310,7 +310,7 @@ const chartData = computed(() => {
     }
     if (shouldIncludePeriod("future")) {
       datasets.push({
-        label: "อนาคต",
+        label: "เป้าหมาย",
         backgroundColor: colors.future,
         data: getAverages(["company_1", "company_2"], "future")
       });
@@ -328,7 +328,7 @@ const chartData = computed(() => {
     }
     if (shouldIncludePeriod("future")) {
       datasets.push({
-        label: `${versionName} - อนาคต`,
+        label: `${versionName} - เป้าหมาย`,
         backgroundColor: colors.future,
         data: getAverages([version], "future")
       });
@@ -432,9 +432,9 @@ const dataSummary = computed(() => {
               v-model="selectedPeriod" 
               class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="both">เปรียบเทียบ (ปัจจุบัน กับ อนาคต)</option>
+              <option value="both">เปรียบเทียบ (ปัจจุบัน กับ เป้าหมาย)</option>
               <option value="current">ปัจจุบัน</option>
-              <option value="future">อนาคต</option>
+              <option value="future">เป้าหมาย</option>
             </select>
           </div>
         </div>
@@ -497,7 +497,7 @@ const dataSummary = computed(() => {
                 class="w-8 h-4 rounded"
                 :style="{ backgroundColor: selectedGroup === 'all' ? colorScheme.all.future : colorScheme[selectedGroup]?.future }"
               ></div>
-              <span class="text-sm text-gray-700">อนาคต</span>
+              <span class="text-sm text-gray-700">เป้าหมาย</span>
             </div>
           </div>
         </div>

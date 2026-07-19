@@ -1,3 +1,4 @@
+// controllers/User/userController.js
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 const prisma = new PrismaClient();
@@ -6,11 +7,15 @@ const prisma = new PrismaClient();
 // Helper: แปลง user record จาก DB → format สำหรับ frontend
 // ========================================================
 const formatRegisteredUser = (user, excelIndex = 0) => {
-  // user.position, user.department, user.work_group, user.experience เป็น relation objects
+  // Derive 4 states from registration_status + survey_status
+  // 1. not_registered (ยังไม่ได้ลงทะเบียน)
+  // 2. done (ทำแล้ว)
+  // 3. in_progress (กำลังทำ)
+  // 4. not_started (ยังไม่เริ่ม)
   const mappedStatus =
+    user.registration_status === 'pending' ? 'not_registered' :
     user.survey_status === 'done' ? 'done' :
     user.survey_status === 'in_progress' ? 'in_progress' :
-    user.survey_status === 'not_started' ? 'not_started' :
     'not_started';
 
   return {
@@ -18,14 +23,14 @@ const formatRegisteredUser = (user, excelIndex = 0) => {
     title_user: user.title_user || '-',
     name_user: user.name_user || '-',
     email_user: user.email_user,
-    company_user: user.company_user,
+    company_user: user.company?.name || '-',          // ✅ ใช้ relation
     phone_user: user.phone_user || '-',
     position_user: user.position?.name || '-',       // ✅ ใช้ relation
     job_field_user: user.department?.name || '-',    // ✅ ใช้ relation
     work_group_user: user.work_group?.name || '-',   // ✅ ใช้ relation
     years_of_service: user.experience?.name || '-', // ✅ ใช้ relation
     section_user: user.section_user || '-',
-    status: mappedStatus,
+    status: mappedStatus,                            // ✅ ใช้ survey_status เป็น status
     survey_status: user.survey_status,
     createdAt: user.createdAt,
     statusPriority: getStatusPriority(mappedStatus),
@@ -43,68 +48,49 @@ const getStatusPriority = (status) => {
 // ========================================================
 const getAllUsers = async (req, res) => {
   try {
-    const excelUsers = await prisma.user_excel.findMany({
-      select: { id: true, email_user: true, company_user: true, division_user: true, createdAt: true },
-      orderBy: { id: 'asc' }
-    });
+    const matchedCompanyIds = req.user?.matchedCompanyIds;
+    const normalizedRole = req.user?.role?.replace(/\s+/g, '') || 'Admin';
 
-    const registeredUsers = await prisma.user.findMany({
+    // ✅ สร้าง where clause ตาม role
+    let whereClause = {};
+
+    if (normalizedRole === 'SuperAdmin' || matchedCompanyIds === null) {
+      // SuperAdmin: ไม่ filter เห็นทุกบริษัท
+      whereClause = {};
+    } else if (Array.isArray(matchedCompanyIds) && matchedCompanyIds.length > 0) {
+      // Admin: เห็นเฉพาะบริษัทตัวเอง
+      whereClause = { company_id: { in: matchedCompanyIds } };
+    } else {
+      // Admin ที่ไม่มีบริษัท match เลย → ไม่แสดงข้อมูล
+      return res.status(200).json([]);
+    }
+
+    const allUsers = await prisma.user.findMany({
+      where: whereClause,
       include: {
-        position: true,    // ✅ include relations
+        company: true,
+        position: true,
         department: true,
         work_group: true,
         experience: true,
-      }
+      },
+      orderBy: { createdAt: 'asc' },
     });
 
-    const registeredUserMap = new Map(registeredUsers.map(u => [u.email_user, u]));
-    const excelUserMap = new Map(excelUsers.map(u => [u.email_user, u]));
+    const formattedUsers = allUsers.map((u, idx) => formatRegisteredUser(u, idx));
 
-    // รวม excel users กับ registered users
-    const allUsers = excelUsers.map((excelUser, idx) => {
-      const registeredUser = registeredUserMap.get(excelUser.email_user);
-      if (registeredUser) {
-        return formatRegisteredUser(registeredUser, idx);
-      }
-      return {
-        id: null,
-        title_user: '-',
-        name_user: '-',
-        email_user: excelUser.email_user,
-        company_user: excelUser.company_user,
-        phone_user: '-',
-        position_user: '-',
-        job_field_user: '-',
-        work_group_user: '-',
-        years_of_service: '-',
-        section_user: excelUser.division_user || '-',
-        status: 'not_registered',
-        survey_status: null,
-        createdAt: excelUser.createdAt,
-        statusPriority: getStatusPriority('not_registered'),
-        sortOrder: idx,
-      };
-    });
-
-    // เพิ่ม registered users ที่ไม่มีใน excel
-    const directRegistrations = registeredUsers
-      .filter(u => !excelUserMap.has(u.email_user))
-      .map((u, idx) => formatRegisteredUser(u, excelUsers.length + idx));
-
-    const combined = [...allUsers, ...directRegistrations];
-    combined.sort((a, b) =>
+    formattedUsers.sort((a, b) =>
       a.statusPriority !== b.statusPriority
         ? a.statusPriority - b.statusPriority
         : a.sortOrder - b.sortOrder
     );
 
-    res.status(200).json(combined);
+    res.status(200).json(formattedUsers);
   } catch (error) {
     console.error('Get all users error:', error);
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 };
-
 // ========================================================
 // POST /api/users/check-email
 // ========================================================
@@ -113,19 +99,27 @@ const checkUserEmail = async (req, res) => {
   if (!email) return res.status(400).json({ message: 'Email is required.' });
 
   try {
-    const excelUser = await prisma.user_excel.findUnique({ where: { email_user: email } });
-    if (!excelUser) return res.status(404).json({ message: 'Email not found in system.' });
+    const user = await prisma.user.findUnique({ 
+      where: { email_user: email },
+      include: { company: true }
+    });
 
-    const registeredUser = await prisma.user.findUnique({ where: { email_user: email } });
-    if (registeredUser) {
+    if (!user) {
+      return res.status(404).json({ message: 'Email not found in system.' });
+    }
+
+    // ตรวจสอบว่าเป็นผู้ใช้ที่อัปโหลดจาก Excel หรือลงทะเบียนแล้ว
+    const isRegistered = user.registration_status === 'completed' && user.name_user !== null;
+
+    if (isRegistered) {
       return res.status(200).json({
         message: 'User already registered.',
         email,
         isRegistered: true,
-        company: excelUser.company_user,
-        division: excelUser.division_user || '-',
-        surveyStatus: registeredUser.survey_status,  // ✅ snake_case
-        userId: registeredUser.id,
+        company: user.company?.name || '-',
+        division: user.section_user || '-',
+        surveyStatus: user.survey_status,
+        userId: user.id,
       });
     }
 
@@ -133,8 +127,8 @@ const checkUserEmail = async (req, res) => {
       message: 'Email found. Ready for registration.',
       email,
       isRegistered: false,
-      company: excelUser.company_user,
-      division: excelUser.division_user || '-',
+      company: user.company?.name || '-',
+      division: user.section_user || '-',
     });
   } catch (error) {
     console.error('Check user email error:', error);
@@ -153,14 +147,20 @@ const registerUser = async (req, res) => {
   }
 
   try {
+    // ตรวจสอบว่าผู้ใช้มีอยู่ในระบบแล้ว
     const existingUser = await prisma.user.findUnique({ where: { email_user: email } });
-    if (existingUser) return res.status(409).json({ message: 'User with this email already exists.' });
+    if (!existingUser) {
+      return res.status(404).json({ message: 'Email not found in system. Please upload Excel file first.' });
+    }
 
-    const excelUser = await prisma.user_excel.findUnique({ where: { email_user: email } });
-    if (!excelUser) return res.status(404).json({ message: 'Email not found in system.' });
+    // ตรวจสอบว่าลงทะเบียนแล้วหรือไม่
+    if (existingUser.registration_status === 'completed' && existingUser.name_user !== null) {
+      return res.status(409).json({ message: 'User already registered.' });
+    }
 
     // หา relation IDs จากชื่อที่รับมา
-    const [positionRecord, departmentRecord, workGroupRecord, experienceRecord] = await Promise.all([
+    const [companyRecord, positionRecord, departmentRecord, workGroupRecord, experienceRecord] = await Promise.all([
+      prisma.company.findFirst({ where: { name: company } }),
       prisma.position.findFirst({ where: { name: position } }),
       prisma.department.findFirst({ where: { name: department } }),
       prisma.work_group.findFirst({ where: { name: workGroup } }),
@@ -169,28 +169,29 @@ const registerUser = async (req, res) => {
 
     const hashedPassword = password ? await bcrypt.hash(password, 10) : null;
 
-    const newUser = await prisma.user.create({
+    // อัปเดตผู้ใช้ที่ได้จาก Excel ให้เป็นผู้ใช้ที่ลงทะเบียนแล้ว
+    const updatedUser = await prisma.user.update({
+      where: { email_user: email },
       data: {
         title_user: title,
         name_user: fullName,
-        email_user: email,
-        company_user: company,
         phone_user: phone,
-        position_id: positionRecord?.id || null,     // ✅ ใช้ FK id
-        department_id: departmentRecord?.id || null, // ✅ ใช้ FK id
-        work_group_id: workGroupRecord?.id || null,  // ✅ ใช้ FK id
-        experience_id: experienceRecord?.id || null, // ✅ ใช้ FK id
-        section_user: excelUser.division_user || '-',
+        company_id: companyRecord?.id || null,
+        position_id: positionRecord?.id || null,
+        department_id: departmentRecord?.id || null,
+        work_group_id: workGroupRecord?.id || null,
+        experience_id: experienceRecord?.id || null,
         password_user: hashedPassword,
         status: 'active',
-        survey_status: 'not_started',               // ✅ snake_case
+        registration_status: 'completed',
+        survey_status: 'not_started',
       },
-      include: { position: true, department: true, work_group: true, experience: true }
+      include: { company: true, position: true, department: true, work_group: true, experience: true }
     });
 
     res.status(201).json({
       message: 'User registered successfully.',
-      user: formatRegisteredUser(newUser)
+      user: formatRegisteredUser(updatedUser)
     });
   } catch (error) {
     console.error('Register user error:', error);
@@ -208,7 +209,7 @@ const loginUser = async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { email_user: email },
-      include: { position: true, department: true, work_group: true, experience: true }
+      include: { company: true, position: true, department: true, work_group: true, experience: true }
     });
 
     if (!user) return res.status(401).json({ message: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' });
@@ -237,16 +238,12 @@ const deleteUser = async (req, res) => {
     // ลบ survey_answers ก่อน (foreign key constraint)
     const userRecord = await prisma.user.findUnique({ where: { email_user: email } });
     if (userRecord) {
-      await prisma.survey_answer.deleteMany({ where: { userId: userRecord.id } }); // ✅ survey_answer
+      await prisma.survey_answer.deleteMany({ where: { userId: userRecord.id } });
       await prisma.user.delete({ where: { email_user: email } });
+      return res.status(200).json({ message: 'User deleted successfully.' });
     }
 
-    const deleteResult = await prisma.user_excel.deleteMany({ where: { email_user: email } });
-    if (deleteResult.count === 0 && !userRecord) {
-      return res.status(404).json({ message: 'User not found.' });
-    }
-
-    res.status(200).json({ message: 'User deleted successfully.' });
+    res.status(404).json({ message: 'User not found.' });
   } catch (error) {
     console.error('Delete user error:', error);
     res.status(500).json({ message: 'Internal server error', error: error.message });

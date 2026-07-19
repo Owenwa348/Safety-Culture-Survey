@@ -27,7 +27,7 @@ test('test', async ({ page }) => {
   await page.locator('div:nth-child(2) > .grid.grid-cols-12 > .col-span-3 > .grid > div > .relative > .w-5').first().click();
   await page.locator('div:nth-child(5) > .grid.grid-cols-12 > .col-span-3 > .grid > div:nth-child(2) > .relative > .w-5').click();
   page.once('dialog', dialog => {
-    console.log(`Dialog message: ${dialog.message()}`);
+    // Suppress debug output in test run
     dialog.dismiss().catch(() => {});
   });
   await page.getByRole('button', { name: 'ส่งแบบประเมิน' }).click();

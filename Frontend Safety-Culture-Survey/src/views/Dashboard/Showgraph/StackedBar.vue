@@ -1,4 +1,4 @@
-<!-- StackedBar.vue -->
+﻿<!-- StackedBar.vue -->
 <template>
   <div class="w-full h-full">
     <Bar v-if="formattedChartData?.datasets?.length" :data="formattedChartData" :options="chartOptions" />
@@ -36,25 +36,22 @@ const props = defineProps({
   chartData: Object,
 })
 
-// สีสำหรับคะแนนแต่ละระดับ - ปรับให้ชัดเจนและแยกแยะง่าย
 const scoreColors = {
-  1: '#7B341E',   // น้ำตาลเข้ม
-  2: '#E53E3E',   // แดง
-  3: '#ED8936',   // ส้ม
-  4: '#ECC94B',   // เหลือง
-  5: '#38A169'    // เขียว
+  1: '#7B341E',
+  2: '#E53E3E',
+  3: '#ED8936',
+  4: '#ECC94B',
+  5: '#38A169'
 }
 
-// สีสำหรับโหมดปัจจุบัน (เข้มชัด)
 const currentColors = {
-  1: '#7B341E',   // น้ำตาลเข้ม
-  2: '#E53E3E',   // แดง
-  3: '#ED8936',   // ส้ม
-  4: '#ECC94B',   // เหลือง
-  5: '#38A169'    // เขียว
+  1: '#7B341E',
+  2: '#E53E3E',
+  3: '#ED8936',
+  4: '#ECC94B',
+  5: '#38A169'
 }
 
-// สีสำหรับโหมดอนาคต (โทนอ่อนกว่า)
 const futureColors = {
   1: '#B5826F',
   2: '#fca5a5',
@@ -65,7 +62,6 @@ const futureColors = {
 
 const isCompareMode = computed(() => props.chartData?.datasets?.length === 2)
 
-// แปลงข้อมูลเป็นรูปแบบที่ Chart.js เข้าใจ
 const formattedChartData = computed(() => {
   if (!props.chartData || !props.chartData.labels || !props.chartData.datasets?.length) return null
 
@@ -73,11 +69,9 @@ const formattedChartData = computed(() => {
   const datasets = []
 
   if (isCompareMode.value) {
-    // โหมดเปรียบเทียบ
     const currentData = props.chartData.datasets[0]
     const futureData = props.chartData.datasets[1]
 
-    // สร้าง datasets สำหรับปัจจุบัน
     for (let level = 1; level <= 5; level++) {
       datasets.push({
         label: `คะแนน ${level} (ปัจจุบัน)`,
@@ -86,26 +80,28 @@ const formattedChartData = computed(() => {
         borderColor: 'rgba(255, 255, 255, 0.8)',
         borderWidth: 1.5,
         stack: 'current',
-        barThickness: 16,
-        maxBarThickness: 18,
+        // [แก้ไข #3] barPercentage/categoryPercentage ต้องอยู่ใน dataset level
+        // ไม่ใช่ใน scales.x — Chart.js v3 อ่านค่าเหล่านี้จาก dataset
+        // barPercentage: ความกว้างของ bar ภายใน slot (0.9 = แทบเต็ม slot)
+        // categoryPercentage: ขนาดของ slot ต่อ category (0.9 = ชิดกันมาก)
+        barPercentage: 0.9,
+        categoryPercentage: 0.85,
       })
     }
 
-    // สร้าง datasets สำหรับอนาคต
     for (let level = 1; level <= 5; level++) {
       datasets.push({
-        label: `คะแนน ${level} (อนาคต)`,
+        label: `คะแนน ${level} (เป้าหมาย)`,
         data: futureData.scoreCounts.map(scores => scores[level]),
         backgroundColor: futureColors[level],
         borderColor: 'rgba(255, 255, 255, 0.8)',
         borderWidth: 1.5,
         stack: 'future',
-        barThickness: 16,
-        maxBarThickness: 18,
+        barPercentage: 0.9,
+        categoryPercentage: 0.85,
       })
     }
   } else {
-    // โหมดเดี่ยว
     const singleData = props.chartData.datasets[0]
 
     for (let level = 1; level <= 5; level++) {
@@ -116,16 +112,13 @@ const formattedChartData = computed(() => {
         borderColor: 'rgba(255, 255, 255, 0.8)',
         borderWidth: 1.5,
         stack: 'stack1',
-        barThickness: 32,
-        maxBarThickness: 36,
+        barPercentage: 0.8,
+        categoryPercentage: 0.7,
       })
     }
   }
 
-  return {
-    labels,
-    datasets
-  }
+  return { labels, datasets }
 })
 
 const chartOptions = computed(() => ({
@@ -153,11 +146,9 @@ const chartOptions = computed(() => ({
         color: '#1F2937',
         usePointStyle: false,
         generateLabels: (chart) => {
-          const datasets = chart.data.datasets;
-          const labels = [];
-          
+          const labels = []
+
           if (isCompareMode.value) {
-            // แสดงเฉพาะ Legend สำหรับคะแนน 1-5 ของแต่ละโหมด
             for (let level = 1; level <= 5; level++) {
               labels.push({
                 text: `คะแนน ${level}`,
@@ -166,10 +157,8 @@ const chartOptions = computed(() => ({
                 lineWidth: 1.5,
                 hidden: false,
                 index: level - 1
-              });
+              })
             }
-            
-            // เพิ่ม separator
             labels.push({
               text: '─────────',
               fillStyle: 'transparent',
@@ -177,19 +166,18 @@ const chartOptions = computed(() => ({
               lineWidth: 0,
               hidden: false,
               fontColor: '#9CA3AF'
-            });
-            
+            })
             labels.push({
-              text: '■ ปัจจุบัน (เข้ม)   ■ อนาคต (อ่อน)',
+              text: '■ ปัจจุบัน (เข้ม)   ■ เป้าหมาย (อ่อน)',
               fillStyle: 'transparent',
               strokeStyle: 'transparent',
               lineWidth: 0,
               hidden: false,
               fontColor: '#6B7280'
-            });
+            })
           }
-          
-          return labels;
+
+          return labels
         }
       }
     },
@@ -197,15 +185,8 @@ const chartOptions = computed(() => ({
       backgroundColor: 'rgba(17, 24, 39, 0.95)',
       titleColor: '#F9FAFB',
       bodyColor: '#F3F4F6',
-      titleFont: {
-        size: 13,
-        weight: 'bold',
-        family: 'inherit'
-      },
-      bodyFont: {
-        size: 12,
-        family: 'inherit'
-      },
+      titleFont: { size: 13, weight: 'bold', family: 'inherit' },
+      bodyFont: { size: 12, family: 'inherit' },
       padding: 12,
       cornerRadius: 8,
       displayColors: true,
@@ -215,135 +196,93 @@ const chartOptions = computed(() => ({
       borderColor: 'rgba(255, 255, 255, 0.1)',
       borderWidth: 1,
       callbacks: {
-        title: (context) => {
-          return context[0].label
-        },
+        title: (context) => context[0].label,
         label: (context) => {
-          const label = context.dataset.label || ''
           const value = context.parsed.y
-          return value > 0 ? `${label}: ${value} คน` : ''
+          return value > 0 ? `${context.dataset.label}: ${value} คน` : ''
         },
         footer: (context) => {
-          const total = context.reduce((sum, item) => sum + item.parsed.y, 0)
-          return total > 0 ? `━━━━━━━━━━━\nรวมทั้งหมด: ${total} คน` : ''
+          // แยก sum ตาม stack (current vs future) ไม่รวมกัน
+          // เพราะคนละกลุ่มผู้ตอบ การรวมกันทำให้ตัวเลขเกินจริง
+          const currentTotal = context
+            .filter(item => item.dataset.stack === 'current' || item.dataset.stack === 'stack1')
+            .reduce((sum, item) => sum + item.parsed.y, 0)
+          const futureTotal = context
+            .filter(item => item.dataset.stack === 'future')
+            .reduce((sum, item) => sum + item.parsed.y, 0)
+
+          if (futureTotal > 0) {
+            // โหมด compare: แสดงแยก
+            return `━━━━━━━━━━━\nรวมปัจจุบัน: ${currentTotal} คน\nรวมเป้าหมาย: ${futureTotal} คน`
+          }
+          return currentTotal > 0 ? `━━━━━━━━━━━\nรวมทั้งหมด: ${currentTotal} คน` : ''
         }
       }
     },
-    datalabels: {
-      display: (context) => {
-        const value = context.dataset.data[context.dataIndex];
-        // ซ่อนตัวเลขถ้าค่าน้อยกว่า 5 เพื่อไม่ให้กราฟดูรกเกินไป
-        return value >= 5;
-      },
-      color: (context) => {
-        const value = context.dataset.data[context.dataIndex];
-        if (value === 0) return 'transparent';
-        
-        const datasetIndex = context.datasetIndex;
-        // ถ้าเป็นโหมดเปรียบเทียบ และเป็น dataset ของอนาคต (index 5-9) ให้ใช้สีดำ
-        if (isCompareMode.value && datasetIndex >= 5) {
-          return '#1F2937';
-        }
-        // นอกนั้นใช้สีขาว
-        return '#ffffff';
-      },
-      anchor: 'center',
-      align: 'center',
-      font: {
-        weight: 'bold',
-        size: 9,
-        family: 'inherit'
-      },
-      formatter: (value) => value >= 5 ? value : '',
-      textShadowColor: (context) => {
-        const value = context.dataset.data[context.dataIndex];
-        if (value === 0) return 'transparent';
-        
-        const datasetIndex = context.datasetIndex;
-        // ถ้าเป็นโหมดเปรียบเทียบ และเป็น dataset ของอนาคต ไม่ใช้ shadow
-        if (isCompareMode.value && datasetIndex >= 5) {
-          return 'transparent';
-        }
-        return 'rgba(0, 0, 0, 0.6)';
-      },
-      textShadowBlur: (context) => {
-        const value = context.dataset.data[context.dataIndex];
-        if (value === 0) return 0;
-        
-        const datasetIndex = context.datasetIndex;
-        if (isCompareMode.value && datasetIndex >= 5) {
-          return 0;
-        }
-        return 2;
-      }
-    }
+datalabels: {
+  display: (context) => context.dataset.data[context.dataIndex] > 0,
+  color: (context) => {
+    if (isCompareMode.value && context.datasetIndex >= 5) return '#1F2937'
+    return '#ffffff'
+  },
+  anchor: 'center',
+  align: 'center',
+  font: { weight: 'bold', size: 9, family: 'inherit' },
+  formatter: (value) => value > 0 ? value : '',
+  textShadowColor: (context) => {
+    if (isCompareMode.value && context.datasetIndex >= 5) return 'transparent'
+    return 'rgba(0, 0, 0, 0.6)'
+  },
+  textShadowBlur: (context) => {
+    if (isCompareMode.value && context.datasetIndex >= 5) return 0
+    return 2
+  }
+}
   },
   scales: {
     x: {
       stacked: true,
-      grid: {
-        display: false
-      },
+      grid: { display: false },
       ticks: {
-        font: {
-          size: 10,
-          family: 'inherit',
-          weight: '600'
-        },
+        font: { size: 10, family: 'inherit', weight: '600' },
         color: '#374151',
         maxRotation: 45,
         minRotation: 45,
         autoSkip: false,
         padding: 5
       },
-      border: {
-        display: true,
-        color: '#D1D5DB',
-        width: 1
-      }
+      border: { display: true, color: '#D1D5DB', width: 1 }
     },
     y: {
       stacked: true,
       beginAtZero: true,
+      // ปล่อยให้ Chart.js คำนวณ Y max เอง — ทำได้ถูกต้องกว่าการ override
       grid: {
         color: 'rgba(229, 231, 235, 0.8)',
         drawBorder: false,
         lineWidth: 1
       },
       ticks: {
-        font: {
-          size: 11,
-          family: 'inherit',
-          weight: '500'
-        },
-        color: '#4B5563',
+        // [แก้ไข #2] เพิ่ม font size จาก 11 → 13 และเข้มสีจาก #4B5563 → #111827
+        font: { size: 13, family: 'inherit', weight: '600' },
+        color: '#111827',
         precision: 0,
         padding: 8,
         callback: (value) => `${value}`
       },
-      border: {
-        display: false
-      },
+      border: { display: false },
       title: {
         display: true,
         text: 'จำนวนผู้ตอบ (คน)',
-        font: {
-          size: 13,
-          weight: 'bold',
-          family: 'inherit'
-        },
-        color: '#1F2937',
+        // [แก้ไข #2] เพิ่ม font size title แกน Y ด้วย
+        font: { size: 13, weight: 'bold', family: 'inherit' },
+        color: '#111827',
         padding: { top: 0, bottom: 12 }
       }
     }
   },
   layout: {
-    padding: {
-      left: 10,
-      right: 10,
-      top: 10,
-      bottom: 10
-    }
+    padding: { left: 10, right: 10, top: 10, bottom: 10 }
   }
 }))
 </script>

@@ -377,7 +377,6 @@ const handleEmailSubmit = async () => {
 
     // If verification is successful, proceed to OTP
     generatedOtp.value = Math.floor(100000 + Math.random() * 900000).toString();
-    console.log('Generated OTP for Admin:', generatedOtp.value); // For testing, will be sent via backend in reality
 
     currentStep.value = 'otp';
 
@@ -407,7 +406,7 @@ const handleOtpVerified = async (otpCode) => {
 
 const handleOtpResend = () => {
   generatedOtp.value = Math.floor(100000 + Math.random() * 900000).toString()
-  console.log('New OTP for Admin:', generatedOtp.value) // For testing purposes
+  // Debug log removed: do not print OTPs to console
 }
 
 const handlePasswordReset = async () => {
