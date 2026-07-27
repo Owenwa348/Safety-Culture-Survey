@@ -13,7 +13,7 @@ export default defineConfig({
       usePolling: true, // Enable polling for Docker
     },
     hmr: {
-      host: 'http://72.61.114.233/', // HMR host
+      host: '72.61.114.233', // HMR host: ต้องเป็น hostname/IP เท่านั้น ห้ามใส่ http:// หรือ /
       port: 5174,
     },
     proxy: {

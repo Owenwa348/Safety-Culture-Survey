@@ -324,6 +324,7 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import OTPSuperAdministrator from './OTPSuperAdmin.vue'
+import { API_BASE_URL as API_ROOT } from '../../../../config/api'
 
 const router = useRouter()
 
@@ -354,8 +355,8 @@ const showConfirmPassword = ref(false)
 const passwordError = ref('')
 const passwordMatchError = ref('')
 
-// API endpoint
-const API_BASE_URL = 'http://localhost:5000/api/super-admins'
+// API endpoint — dev: http://localhost:5000, prod: relative path (nginx proxy)
+const API_BASE_URL = `${API_ROOT}/api/super-admins`
 
 // Computed properties
 const isPasswordValid = computed(() => {

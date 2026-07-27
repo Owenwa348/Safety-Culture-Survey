@@ -10,10 +10,12 @@ require('dotenv').config(); // Load environment variables
 
 // CORS - รองรับทั้ง Development และ Docker
 const allowedOrigins = [
-  'http://localhost:5173',  // Vite dev server
-  'http://localhost',       // Docker frontend (port 80)
+  'http://localhost:5173',   // Vite dev server (เดิม)
+  'http://localhost:5174',   // Vite dev server (ตาม vite.config.ts ปัจจุบัน)
+  'http://localhost',        // Docker frontend (port 80)
   'http://localhost:80',     // Docker frontend (explicit port)
-  'http://72.61.114.233'    // <--- เพิ่ม IP เซิร์ฟเวอร์ของคุณตรงนี้
+  'http://72.61.114.233',    // Production server (nginx port 80)
+  'http://72.61.114.233:80'  // Production server (explicit port)
 ];
 
 app.use(cors({

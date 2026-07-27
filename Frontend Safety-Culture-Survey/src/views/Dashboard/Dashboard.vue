@@ -71,7 +71,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import axios from 'axios'
+import { axiosAuth as axios } from '../../utils/apiClient'
 import NavbarDashboard from '../../components/NavbarDashboard.vue'
 import PieChart from './Showgraph/PieChartDB.vue'
 import SalesBarChart from './Showgraph/SalesBarChartDB.vue'
@@ -90,7 +90,8 @@ const currentDate = computed(() => {
 
 onMounted(async () => {
   try {
-    const res = await axios.get('/user_excel/with-status')
+    // routes/index.js -> app.use('/api/users', userRoutes) และ userRoutes มี router.get('/users')
+    const res = await axios.get('/api/users/users')
     
     // Ensure allUsers is always an array
     if (Array.isArray(res.data)) {
