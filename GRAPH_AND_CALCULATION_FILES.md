@@ -268,7 +268,7 @@ const aggregatedData = await prisma.surveyAnswer.groupBy({
   "vue-chartjs": "^4.0.0",        // Vue bindings for Chart.js
   "@prisma/client": "^6.16.3",    // Database ORM
   "exceljs": "^4.4.0",            // Excel file handling
-  "mysql2": "^3.15.1",            // MySQL database
+  "pg": "^8.11.0",            // PostgreSQL database
   "bcryptjs": "^3.0.2",           // Password hashing (for validation)
 }
 ```
