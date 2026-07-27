@@ -248,8 +248,7 @@
 <script setup>
 import { ref, watch, nextTick } from 'vue'
 import { axiosAuth as axios } from '../../../../utils/apiClient'
-
-const API_BASE_URL = 'http://localhost:5000/api'
+import { API_BASE_URL } from '../../../../config/api'
 
 const props = defineProps({
   companyIds: { type: Array, required: true }
@@ -298,8 +297,8 @@ const loadData = async (silent = false) => {
   error.value = ''
   try {
     const [categoriesRes, questionsRes] = await Promise.all([
-      axios.get(`${API_BASE_URL}/categories`, { params: { companyIds: props.companyIds.join(',') } }),
-      axios.get(`${API_BASE_URL}/questions`, { params: { companyIds: props.companyIds.join(',') } }),
+      axios.get(`${API_BASE_URL}/api/categories`, { params: { companyIds: props.companyIds.join(',') } }),
+      axios.get(`${API_BASE_URL}/api/questions`, { params: { companyIds: props.companyIds.join(',') } }),
     ])
     categories.value = categoriesRes.data.map(cat => ({ ...cat, editing: false, tempName: '' }))
     allQuestions.value = questionsRes.data
@@ -330,7 +329,7 @@ const addCategory = async () => {
   if (!newCategoryName.value.trim()) { alert('กรุณากรอกชื่อหมวดหมู่'); return }
   submitting.value = true
   try {
-    const response = await axios.post(`${API_BASE_URL}/categories`, {
+    const response = await axios.post(`${API_BASE_URL}/api/categories`, {
       name: newCategoryName.value.trim(),
       companyIds: props.companyIds,
       insertAtIndex: newCategoryOrder.value,  // ✅ ส่งตำแหน่งไปด้วย
@@ -356,7 +355,7 @@ const saveCategoryName = async (category) => {
   if (!category.tempName.trim()) { alert('กรุณากรอกชื่อหมวดหมู่'); return }
   submitting.value = true
   try {
-    const response = await axios.put(`${API_BASE_URL}/categories/${category.id}`, { name: category.tempName.trim() })
+    const response = await axios.put(`${API_BASE_URL}/api/categories/${category.id}`, { name: category.tempName.trim() })
     category.name = response.data.name
     category.editing = false
     category.tempName = ''
@@ -384,7 +383,7 @@ const reorderCategory = async (categoryId, direction) => {
 
   submitting.value = true
   try {
-    await axios.put(`${API_BASE_URL}/categories/${categoryId}/reorder`, {
+    await axios.put(`${API_BASE_URL}/api/categories/${categoryId}/reorder`, {
       direction,
       companyIds: props.companyIds,
     })
@@ -409,7 +408,7 @@ const deleteCategory = async (categoryId) => {
     : 'คุณต้องการลบหมวดหมู่นี้หรือไม่?'
   if (!confirm(message)) return
   try {
-    await axios.delete(`${API_BASE_URL}/categories/${categoryId}`)
+    await axios.delete(`${API_BASE_URL}/api/categories/${categoryId}`)
     categories.value = categories.value.filter(c => c.id !== categoryId)
     allQuestions.value = allQuestions.value.filter(q => q.categoryId !== categoryId)
     showSuccess('ลบหมวดหมู่สำเร็จ')
