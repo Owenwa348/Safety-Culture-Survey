@@ -8,13 +8,13 @@ export default defineConfig({
   plugins: [vue(), tailwindcss()],
   server: {
     host: true, // Listen on all addresses
-    port: 5173,
+    port: 5174,
     watch: {
       usePolling: true, // Enable polling for Docker
     },
     hmr: {
-      host: 'localhost', // HMR host
-      port: 5173,
+      host: 'http://72.61.114.233/', // HMR host
+      port: 5174,
     },
     proxy: {
       // Proxy /api requests ไปยัง backend
