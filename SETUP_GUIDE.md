@@ -147,7 +147,7 @@ Future:  [2,   1,   3,   10,  17]  // 2 คน ตอบว่าระดับ
 
 3. **Setup environment variables (.env):**
    ```
-   DATABASE_URL="mysql://user:password@localhost:3306/survey_db"
+   DATABASE_URL="postgresql://postgres:password@localhost:5432/survey_db"
    PORT=3000
    NODE_ENV=development
    ```

@@ -1019,7 +1019,7 @@ npm install
 
 # สร้างไฟล์ .env
 cat > .env << EOF
-DATABASE_URL="mysql://user:password@localhost:3307/survey_db"
+DATABASE_URL="postgresql://postgres:password@localhost:5432/survey_db"
 PORT=5000
 EOF
 
@@ -1156,7 +1156,7 @@ docker system prune -a --volumes  # Remove all unused Docker data
 ### Environment Variables
 ```env
 # .env (Backend)
-DATABASE_URL="mysql://root:rootpassword@mysql:3306/survey_db"
+DATABASE_URL="postgresql://postgres:password@postgres:5432/survey_db"
 PORT=5000
 NODE_ENV=production
 ```
