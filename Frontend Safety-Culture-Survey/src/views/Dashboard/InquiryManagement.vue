@@ -185,7 +185,8 @@ const fetchInquiries = async () => {
   isLoading.value = true;
   error.value = "";
   try {
-    const url = new URL(`${API_BASE_URL}/api/inquiry/list`);
+    const base = API_BASE_URL && API_BASE_URL.length > 0 ? API_BASE_URL : window.location.origin;
+    const url = new URL('/api/inquiry/list', base);
     url.searchParams.append("page", currentPage.value);
     url.searchParams.append("limit", itemsPerPage.value);
 

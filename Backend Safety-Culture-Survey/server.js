@@ -12,7 +12,8 @@ require('dotenv').config(); // Load environment variables
 const allowedOrigins = [
   'http://localhost:5173',  // Vite dev server
   'http://localhost',       // Docker frontend (port 80)
-  'http://localhost:80'     // Docker frontend (explicit port)
+  'http://localhost:80',     // Docker frontend (explicit port)
+  'http://72.61.114.233'    // <--- เพิ่ม IP เซิร์ฟเวอร์ของคุณตรงนี้
 ];
 
 app.use(cors({
