@@ -165,6 +165,7 @@
 import { ref } from 'vue'
 import NavbarDashboard from '../../../../components/NavbarDashboard.vue';
 import axios from 'axios'
+import { API_BASE_URL } from '../../../../config/api'
 
 const file = ref(null)
 const loading = ref(false)
@@ -229,7 +230,7 @@ const handleUpload = async () => {
 
   try {
     const response = await axios.post(
-      'http://localhost:5000/excel-upload/upload',
+      `${API_BASE_URL}/excel-upload/upload`,
       formData,
       { headers: { 'Content-Type': 'multipart/form-data' } }
     )

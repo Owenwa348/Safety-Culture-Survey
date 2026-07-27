@@ -292,6 +292,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import OTPEvaluator from './OTPEvaluator.vue'
+import { API_BASE_URL as API_ROOT } from '../../../config/api'
 
 const router = useRouter()
 
@@ -319,8 +320,8 @@ const showConfirmPassword = ref(false)
 const passwordError = ref('')
 const confirmPasswordError = ref('')
 
-// API base URL
-const API_BASE_URL = 'http://localhost:5000/api/users' // Update this with your actual API URL
+// API base URL — dev: http://localhost:5000, prod: relative path (nginx proxy)
+const API_BASE_URL = `${API_ROOT}/api/users`
 
 // Computed properties
 const isPasswordValid = computed(() => {
