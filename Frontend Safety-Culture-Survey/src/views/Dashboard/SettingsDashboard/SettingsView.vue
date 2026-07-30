@@ -16,7 +16,7 @@ const tabs = [
   { id: 'workgroup',  name: 'กลุ่มงาน',    icon: '👥' },
   { id: 'experience', name: 'อายุงาน',     icon: '📅' },
   { id: 'questions',  name: 'คำถาม',       icon: '❓' },
-  { id: 'clear-assessment', name: 'ล้างข้อมูลประเมิน', icon: '🗑️' },
+  { id: 'clear-assessment', name: 'ล้างข้อมูล', icon: '🗑️' },
 ]
 
 // ✅ จำแท็บที่เปิดล่าสุดไว้ใน localStorage กันหน้าเด้งกลับไป "ตำแหน่งงาน" ทุกครั้งที่รีเฟรช
