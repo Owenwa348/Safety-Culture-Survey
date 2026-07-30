@@ -354,8 +354,9 @@ const showConfirmPassword = ref(false)
 const passwordError = ref('')
 const passwordMatchError = ref('')
 
-// API endpoint
-const API_BASE_URL = 'http://localhost:5000/api/super-admins'
+import { API_BASE_URL as API_BASE } from '../../../../config/api';
+// API endpoint (use configured base URL in dev, otherwise use window.location.origin)
+const API_BASE_URL = (API_BASE && API_BASE.length > 0 ? API_BASE : window.location.origin) + '/api/super-admins'
 
 // Computed properties
 const isPasswordValid = computed(() => {

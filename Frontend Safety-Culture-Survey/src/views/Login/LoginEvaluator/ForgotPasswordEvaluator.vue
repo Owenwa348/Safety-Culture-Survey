@@ -320,7 +320,9 @@ const passwordError = ref('')
 const confirmPasswordError = ref('')
 
 // API base URL
-const API_BASE_URL = 'http://localhost:5000/api/users' // Update this with your actual API URL
+import { API_BASE_URL as API_BASE } from '../../../config/api';
+// Use configured API base in dev, otherwise use window.location.origin
+const API_BASE_URL = (API_BASE && API_BASE.length > 0 ? API_BASE : window.location.origin) + '/api/users'
 
 // Computed properties
 const isPasswordValid = computed(() => {
