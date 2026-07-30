@@ -675,23 +675,24 @@ async function ใส่ข้อมูลผู้ดูแลระบบ(บ�
     console.log('📊 ตอนที่ 6: กำลังใส่ข้อมูลผู้ดูแลระบบ');
     console.log('----------------------------------------');
 
-    const รหัสผ่านเข้ารหัส = await bcrypt.hash('Admin@123', 10);
-    const pinเข้ารหัส      = await bcrypt.hash('123456', 10);
+    const รหัสผ่านเข้ารหัส   = await bcrypt.hash('Admin@123', 10);
+    const รหัสผ่านSuperAdmin = await bcrypt.hash('katha_verteculturelens2@26', 10);
+    const pinเข้ารหัส        = await bcrypt.hash('123456', 10);
 
     // SuperAdmin
-    const มีSuperAdmin = await prisma.super_admin_list.findFirst({ where: { email: 'superadmin@safeguardgroup.co.th' } });
+    const มีSuperAdmin = await prisma.super_admin_list.findFirst({ where: { email: 'superadmin@vertesmartsolution.com' } });
     if (!มีSuperAdmin) {
         await prisma.super_admin_list.create({
             data: {
-                email:    'superadmin@safeguardgroup.co.th',
+                email:    'superadmin@vertesmartsolution.com',
                 phone:    '0812345678',
-                password: รหัสผ่านเข้ารหัส,
+                password: รหัสผ่านSuperAdmin,
                 pin:      pinเข้ารหัส,
                 role:     'SuperAdmin',
                 status:   'ACTIVE',
             }
         });
-        console.log('  ✅ SuperAdmin: superadmin@safeguardgroup.co.th / Admin@123 / PIN: 123456');
+        console.log('  ✅ SuperAdmin: superadmin@vertesmartsolution.com / katha_verteculturelens2@26 / PIN: 123456');
     }
 
     // Admin

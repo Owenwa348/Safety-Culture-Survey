@@ -8,14 +8,16 @@ const registerRoutes = require('./routes'); // Import the central route registra
 const app = express();
 require('dotenv').config(); // Load environment variables
 
-// CORS - รองรับทั้ง Development และ Docker
+// CORS - รองรับทั้ง Development, Docker และโดเมนโปรดักชัน
 const allowedOrigins = [
-  'http://localhost:5173',   // Vite dev server (เดิม)
-  'http://localhost:5174',   // Vite dev server (ตาม vite.config.ts ปัจจุบัน)
-  'http://localhost',        // Docker frontend (port 80)
-  'http://localhost:80',     // Docker frontend (explicit port)
-  'http://72.61.114.233',    // Production server (nginx port 80)
-  'http://72.61.114.233:80'  // Production server (explicit port)
+  'http://localhost:5173',  // Vite dev server
+  'http://localhost',       // Docker frontend (port 80)
+  'http://localhost:80',    // Docker frontend (explicit port)
+  'http://72.61.114.233',   // legacy IP (keep if you still use the server IP)
+  'http://verteculturelens.com',
+  'https://verteculturelens.com',
+  'http://www.verteculturelens.com',
+  'https://www.verteculturelens.com'
 ];
 
 app.use(cors({
@@ -40,5 +42,5 @@ registerRoutes(app);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });

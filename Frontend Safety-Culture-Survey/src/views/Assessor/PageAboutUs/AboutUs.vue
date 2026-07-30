@@ -164,7 +164,7 @@ onMounted(() => {
             <div class="mt-8 p-5 rounded-xl border border-[#7AE2CF]/20 bg-[#7AE2CF]/5 relative overflow-hidden">
               <div class="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[#7AE2CF] to-blue-400"></div>
               <p class="text-[#7AE2CF] text-sm font-medium italic pl-4 leading-relaxed">
-                "Empowering Thai industry to enhance safety, reduce risks, and drive a future of sustainable operational excellence through SHE innovation"
+                "Empowering Thai industry to enhance safety, reduce risks, and drive a future of sustainable operational excellence through safety expertise and human-centered solutions."
               </p>
             </div>
           </div>
