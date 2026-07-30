@@ -292,6 +292,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import OTPEvaluator from './OTPEvaluator.vue'
+import { API_BASE_URL as API_ROOT } from '../../../config/api'
 
 const router = useRouter()
 

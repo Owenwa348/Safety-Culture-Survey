@@ -437,7 +437,7 @@ const addQuestion = async () => {
   submitting.value = true
   error.value = ''
   try {
-    const response = await axios.post(`${API_BASE_URL}/questions`, {
+    const response = await axios.post(`${API_BASE_URL}/api/questions`, {
       categoryId: parseInt(newQuestion.value.categoryId),
       text: newQuestion.value.text.trim(),
       options: validOptions.map(opt => ({ text: opt.text.trim() })),
@@ -487,7 +487,7 @@ const saveInlineEdit = async () => {
     if (newDisplayNumber != currentDisplayNumber) {
       updateData.order = (!isNaN(newDisplayNumber) && newDisplayNumber !== '') ? parseInt(newDisplayNumber) : newDisplayNumber
     }
-    const response = await axios.put(`${API_BASE_URL}/questions/${editingQuestionId.value}`, updateData)
+    const response = await axios.put(`${API_BASE_URL}/api/questions/${editingQuestionId.value}`, updateData)
     const index = allQuestions.value.findIndex(q => q.id === editingQuestionId.value)
     if (index !== -1) allQuestions.value[index] = response.data
     editingQuestionId.value = null
@@ -507,7 +507,7 @@ const deleteQuestion = async (id) => {
   if (!confirm('คุณต้องการลบคำถามนี้หรือไม่?')) return
   error.value = ''
   try {
-    await axios.delete(`${API_BASE_URL}/questions/${id}`)
+    await axios.delete(`${API_BASE_URL}/api/questions/${id}`)
     allQuestions.value = allQuestions.value.filter(q => q.id !== id)
     showSuccess('ลบคำถามสำเร็จ')
     await loadData()
@@ -520,7 +520,7 @@ const moveQuestion = async (questionId, newCategoryId) => {
   if (!newCategoryId) return
   error.value = ''
   try {
-    const response = await axios.put(`${API_BASE_URL}/questions/${questionId}/move`, { newCategoryId: parseInt(newCategoryId), companyIds: props.companyIds })
+    const response = await axios.put(`${API_BASE_URL}/api/questions/${questionId}/move`, { newCategoryId: parseInt(newCategoryId), companyIds: props.companyIds })
     const index = allQuestions.value.findIndex(q => q.id === questionId)
     if (index !== -1) allQuestions.value[index] = response.data
     showSuccess('ย้ายคำถามสำเร็จ')
